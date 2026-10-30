@@ -6,6 +6,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   UserRole, 
+  ThemeMode,
   ProductionStatus, 
   Order, 
   Profile, 
@@ -13,7 +14,8 @@ import {
   Appointment, 
   Feedback, 
   LookbookItem,
-  AppointmentStatus 
+  AppointmentStatus,
+  AtelierSettings
 } from '../types';
 import { 
   INITIAL_PROFILES, 
@@ -27,6 +29,29 @@ import {
 interface StitchFlowContextType {
   currentRole: UserRole;
   setCurrentRole: (role: UserRole) => void;
+  
+  // Theme & Appearance
+  themeMode: ThemeMode;
+  setThemeMode: (mode: ThemeMode) => void;
+  isDarkMode: boolean;
+
+  // Settings
+  settings: AtelierSettings;
+  updateSettings: (newSettings: Partial<AtelierSettings>) => void;
+  settingsModalOpen: boolean;
+  setSettingsModalOpen: (open: boolean) => void;
+
+  // Authentication & Access Control
+  currentUser: Profile | null;
+  loginAsUser: (profile: Profile) => void;
+  logout: () => void;
+  hasPermission: (requiredRole: UserRole) => boolean;
+  authModalOpen: boolean;
+  setAuthModalOpen: (open: boolean) => void;
+  authTargetRole: UserRole | null;
+  setAuthTargetRole: (role: UserRole | null) => void;
+
+  // Active user selections
   activeTailorId: string;
   setActiveTailorId: (id: string) => void;
   activeClientId: string;
@@ -43,24 +68,16 @@ interface StitchFlowContextType {
   feedbacks: Feedback[];
   lookbook: LookbookItem[];
 
-  // Order actions
+  // Actions
   updateOrderStatus: (orderId: string, newStatus: ProductionStatus, note?: string) => void;
   addOrder: (order: Partial<Order>) => Order;
   assignTailorToOrder: (orderId: string, tailorId: string) => void;
-
-  // Measurement actions
   updateMeasurement: (measurement: Measurement) => void;
   getMeasurementForClient: (clientId: string) => Measurement | undefined;
-
-  // Appointment actions
   bookAppointment: (apt: Omit<Appointment, 'id' | 'status'>) => Appointment;
   updateAppointmentStatus: (id: string, status: AppointmentStatus) => void;
-
-  // Feedback actions
   submitFeedback: (feedback: Omit<Feedback, 'id' | 'created_at' | 'resolution_status'>) => void;
   updateFeedbackStatus: (id: string, status: 'open' | 'addressed' | 'resolved') => void;
-
-  // Lookbook actions
   addLookbookItem: (item: Omit<LookbookItem, 'id'>) => void;
 
   // UI state
@@ -83,25 +100,58 @@ const StitchFlowContext = createContext<StitchFlowContextType | undefined>(undef
 
 const STORAGE_KEYS = {
   ROLE: 'stitchflow_role',
+  THEME: 'stitchflow_theme',
+  SETTINGS: 'stitchflow_settings',
+  CURRENT_USER: 'stitchflow_current_user',
   ORDERS: 'stitchflow_orders',
   PROFILES: 'stitchflow_profiles',
   MEASUREMENTS: 'stitchflow_measurements',
   APPOINTMENTS: 'stitchflow_appointments',
   FEEDBACK: 'stitchflow_feedback',
   LOOKBOOK: 'stitchflow_lookbook',
-  CURRENCY: 'stitchflow_currency',
   ACTIVE_TAILOR: 'stitchflow_tailor',
   ACTIVE_CLIENT: 'stitchflow_client'
 };
 
+const DEFAULT_SETTINGS: AtelierSettings = {
+  atelier_name: 'StitchFlow Pan-African Atelier',
+  studio_tagline: 'High-craft bespoke tailoring & African ceremonial regalia',
+  whatsapp_number: '+254 712 345 678',
+  currency: 'KES',
+  default_unit: 'in',
+  theme_mode: 'system',
+  notifications_enabled: true,
+  auto_backup: true
+};
+
 export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Theme & Appearance State
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
+    return (localStorage.getItem(STORAGE_KEYS.THEME) as ThemeMode) || 'system';
+  });
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Settings State
+  const [settings, setSettings] = useState<AtelierSettings>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+  });
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+
+  // Auth & Roles State
+  // Default to a guest visitor initially so security gate is live!
+  const [currentUser, setCurrentUser] = useState<Profile | null>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authTargetRole, setAuthTargetRole] = useState<UserRole | null>(null);
+
   const [currentRole, setCurrentRoleState] = useState<UserRole>(() => {
     return (localStorage.getItem(STORAGE_KEYS.ROLE) as UserRole) || 'visitor';
   });
 
-  const [currency, setCurrencyState] = useState<'KES' | 'USD'>(() => {
-    return (localStorage.getItem(STORAGE_KEYS.CURRENCY) as 'KES' | 'USD') || 'KES';
-  });
+  const [currency, setCurrencyState] = useState<'KES' | 'USD'>(settings.currency || 'KES');
 
   const [activeTailorId, setActiveTailorIdState] = useState<string>(() => {
     return localStorage.getItem(STORAGE_KEYS.ACTIVE_TAILOR) || 'usr_tailor_01';
@@ -141,21 +191,58 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return saved ? JSON.parse(saved) : INITIAL_LOOKBOOK;
   });
 
-  // Modal & Toast states
+  // UI states
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [trackingModalOpen, setTrackingModalOpen] = useState(false);
   const [selectedTrackOrderId, setSelectedTrackOrderId] = useState<string | null>(null);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [selectedLookbookForBooking, setSelectedLookbookForBooking] = useState<LookbookItem | null>(null);
 
-  // Sync state to local storage
+  // Sync theme mode to DOM & local storage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.THEME, themeMode);
+
+    const applyTheme = () => {
+      let activeDark = false;
+      if (themeMode === 'dark') {
+        activeDark = true;
+      } else if (themeMode === 'light') {
+        activeDark = false;
+      } else {
+        // System preference
+        activeDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+
+      setIsDarkMode(activeDark);
+      if (activeDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+
+    applyTheme();
+
+    if (themeMode === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const listener = () => applyTheme();
+      mediaQuery.addEventListener('change', listener);
+      return () => mediaQuery.removeEventListener('change', listener);
+    }
+  }, [themeMode]);
+
+  // Sync data to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.ROLE, currentRole);
   }, [currentRole]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CURRENCY, currency);
-  }, [currency]);
+    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(currentUser));
+  }, [currentUser]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+  }, [settings]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.ACTIVE_TAILOR, activeTailorId);
@@ -192,26 +279,85 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }, 4000);
   };
 
-  const setCurrentRole = (role: UserRole) => {
-    setCurrentRoleState(role);
-    const roleLabels = {
-      owner: 'Switched to Atelier Manager View 👑',
-      employee: 'Switched to Tailor & Artisan View ✂️',
-      client: 'Switched to Client Portal & Order Tracker 👗',
-      visitor: 'Switched to Public Portfolio & Booking 🌐'
+  const setThemeMode = (mode: ThemeMode) => {
+    setThemeModeState(mode);
+    setSettings(prev => ({ ...prev, theme_mode: mode }));
+    const labels = {
+      system: 'System Appearance Activated 💻',
+      light: 'Warm Linen Light Mode Activated ☀️',
+      dark: 'Ebony Obsidian Dark Mode Activated 🌙'
     };
-    showToast(roleLabels[role]);
+    showToast(labels[mode]);
+  };
+
+  const updateSettings = (newSettings: Partial<AtelierSettings>) => {
+    setSettings(prev => {
+      const merged = { ...prev, ...newSettings };
+      if (newSettings.currency) {
+        setCurrencyState(newSettings.currency);
+      }
+      if (newSettings.theme_mode) {
+        setThemeModeState(newSettings.theme_mode);
+      }
+      return merged;
+    });
+    showToast('Atelier settings updated successfully!');
+  };
+
+  // Authentication & Access Control
+  const hasPermission = (requiredRole: UserRole): boolean => {
+    if (requiredRole === 'visitor') return true;
+    if (!currentUser) return false;
+    if (currentUser.role === 'owner') return true; // Director has full administrative oversight
+    if (requiredRole === 'employee') return currentUser.role === 'employee';
+    if (requiredRole === 'client') return currentUser.role === 'client';
+    return false;
+  };
+
+  const loginAsUser = (profile: Profile) => {
+    setCurrentUser(profile);
+    if (profile.role === 'owner') {
+      setCurrentRoleState('owner');
+      showToast(`Welcome Director ${profile.full_name}. Full Atelier Access granted.`);
+    } else if (profile.role === 'employee') {
+      setActiveTailorIdState(profile.id);
+      setCurrentRoleState('employee');
+      showToast(`Welcome Artisan ${profile.full_name}. Workshop Bench ready.`);
+    } else if (profile.role === 'client') {
+      setActiveClientIdState(profile.id);
+      setCurrentRoleState('client');
+      showToast(`Welcome Patron ${profile.full_name}. Personal Wardrobe unlocked.`);
+    }
+    setAuthModalOpen(false);
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+    setCurrentRoleState('visitor');
+    showToast('Signed out of atelier session. Reverted to Public Lookbook.');
+  };
+
+  const setCurrentRole = (role: UserRole) => {
+    // Check if user has credentials for this role
+    if (role !== 'visitor' && !hasPermission(role)) {
+      setAuthTargetRole(role);
+      setAuthModalOpen(true);
+      showToast(`Access Restricted: Sign in with authorized credentials for ${role.toUpperCase()} portal.`);
+      return;
+    }
+    setCurrentRoleState(role);
   };
 
   const setCurrency = (c: 'KES' | 'USD') => {
     setCurrencyState(c);
+    setSettings(prev => ({ ...prev, currency: c }));
   };
 
   const setActiveTailorId = (id: string) => {
     setActiveTailorIdState(id);
     const tailor = profiles.find(p => p.id === id);
     if (tailor) {
-      showToast(`Active Tailor: ${tailor.full_name} (${tailor.title || 'Artisan'})`);
+      showToast(`Active Artisan: ${tailor.full_name}`);
     }
   };
 
@@ -219,11 +365,10 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setActiveClientIdState(id);
     const client = profiles.find(p => p.id === id);
     if (client) {
-      showToast(`Viewing as Client: ${client.full_name}`);
+      showToast(`Active Patron: ${client.full_name}`);
     }
   };
 
-  // 1 USD ~ 130 KES
   const formatCurrency = (kesAmount: number): string => {
     if (currency === 'USD') {
       const usdAmount = Math.round(kesAmount / 130);
@@ -233,8 +378,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const updateOrderStatus = (orderId: string, newStatus: ProductionStatus, note?: string) => {
-    const currentTailor = profiles.find(p => p.id === activeTailorId);
-    const authorName = currentRole === 'owner' ? 'Wanjiku Kamau (Director)' : currentTailor?.full_name || 'Artisan';
+    const authorName = currentUser?.full_name || (currentRole === 'owner' ? 'Wanjiku Kamau (Director)' : 'Master Artisan');
 
     setOrders(prev => prev.map(order => {
       if (order.id !== orderId) return order;
@@ -242,7 +386,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const newProgressNote = {
         stage: newStatus,
         timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
-        note: note || `Garment stage advanced to ${newStatus.toUpperCase()}`,
+        note: note || `Phase advanced to ${newStatus.toUpperCase()}`,
         author: authorName
       };
 
@@ -269,27 +413,27 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       assigned_tailor_id: tailor.id,
       assigned_tailor_name: tailor.full_name,
       status: (orderData.status as ProductionStatus) || 'cutting',
-      description: orderData.description || 'Bespoke custom garment tailored to client measurements.',
-      garment_type: orderData.garment_type || 'Bespoke Tailoring',
-      fabric_details: orderData.fabric_details || 'Selected Atelier Fabric',
+      description: orderData.description || 'Bespoke custom African attire.',
+      garment_type: orderData.garment_type || '3-Piece Grand Royal Agbada Set',
+      fabric_details: orderData.fabric_details || 'Selected African Fabric',
       estimated_delivery: orderData.estimated_delivery || new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
-      deposit_amount: orderData.deposit_amount || 30000,
-      balance_due: orderData.balance_due || 20000,
+      deposit_amount: orderData.deposit_amount || 40000,
+      balance_due: orderData.balance_due || 30000,
       currency: 'KES',
-      photo_url: orderData.photo_url || 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=600&auto=format&fit=crop&q=80',
+      photo_url: orderData.photo_url || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&auto=format&fit=crop&q=80',
       progress_notes: [
         {
           stage: 'cutting',
           timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
-          note: 'New bespoke order logged and assigned to workstation.',
-          author: 'Wanjiku Kamau'
+          note: 'New African commission drafted on cutting table.',
+          author: currentUser?.full_name || 'Wanjiku Kamau'
         }
       ],
       created_at: new Date().toISOString().slice(0, 10)
     };
 
     setOrders(prev => [newOrder, ...prev]);
-    showToast(`Order #${newId} created for ${client.full_name}!`);
+    showToast(`Commission #${newId} logged for ${client.full_name}!`);
     return newOrder;
   };
 
@@ -317,7 +461,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
       return [...prev, { ...newMeas, updated_at: new Date().toISOString().slice(0, 10) }];
     });
-    showToast('Measurement card successfully updated!');
+    showToast('African measurement card updated successfully!');
   };
 
   const getMeasurementForClient = (clientId: string) => {
@@ -333,7 +477,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     setAppointments(prev => [newAppointment, ...prev]);
-    showToast('Consultation appointment booked! Atelier team will confirm shortly.');
+    showToast('Ceremonial fitting request booked! Atelier will confirm shortly.');
     return newAppointment;
   };
 
@@ -351,7 +495,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     setFeedbacks(prev => [newFeedback, ...prev]);
-    showToast('Thank you! Your feedback and fit review was submitted to the atelier team.');
+    showToast('Thank you! Your ceremonial review was submitted to Director Wanjiku.');
   };
 
   const updateFeedbackStatus = (id: string, status: 'open' | 'addressed' | 'resolved') => {
@@ -365,7 +509,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       id: `LKB-${Date.now().toString().slice(-4)}`
     };
     setLookbook(prev => [newItem, ...prev]);
-    showToast(`Added "${itemData.title}" to public lookbook!`);
+    showToast(`Published "${itemData.title}" to public lookbook!`);
   };
 
   const resetToDefaults = () => {
@@ -375,15 +519,33 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setAppointments(INITIAL_APPOINTMENTS);
     setFeedbacks(INITIAL_FEEDBACK);
     setLookbook(INITIAL_LOOKBOOK);
+    setCurrentUser(null);
     setCurrentRoleState('visitor');
+    setThemeModeState('system');
     setCurrencyState('KES');
-    showToast('Reset data to default luxury atelier showcase!');
+    setSettings(DEFAULT_SETTINGS);
+    showToast('Reset data to initial African couture showcase!');
   };
 
   return (
     <StitchFlowContext.Provider value={{
       currentRole,
       setCurrentRole,
+      themeMode,
+      setThemeMode,
+      isDarkMode,
+      settings,
+      updateSettings,
+      settingsModalOpen,
+      setSettingsModalOpen,
+      currentUser,
+      loginAsUser,
+      logout,
+      hasPermission,
+      authModalOpen,
+      setAuthModalOpen,
+      authTargetRole,
+      setAuthTargetRole,
       activeTailorId,
       setActiveTailorId,
       activeClientId,

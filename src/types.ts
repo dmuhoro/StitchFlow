@@ -5,6 +5,8 @@
 
 export type UserRole = 'owner' | 'employee' | 'client' | 'visitor';
 
+export type ThemeMode = 'system' | 'light' | 'dark';
+
 export type ProductionStatus = 'cutting' | 'stitching' | 'fitting' | 'ready';
 
 export type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
@@ -26,6 +28,18 @@ export interface Profile {
   avatar_url: string;
   title?: string;
   specialty?: string;
+  passkey?: string; // e.g. "DIRECTOR-01", "AMANI-88"
+}
+
+export interface AtelierSettings {
+  atelier_name: string;
+  studio_tagline: string;
+  whatsapp_number: string;
+  currency: 'KES' | 'USD';
+  default_unit: 'in' | 'cm';
+  theme_mode: ThemeMode;
+  notifications_enabled: boolean;
+  auto_backup: boolean;
 }
 
 export interface Appointment {
@@ -38,7 +52,7 @@ export interface Appointment {
   slot_datetime: string;
   status: AppointmentStatus;
   notes?: string;
-  cultural_occasion?: string; // e.g. "Ruracio Ceremony", "Traditional Wedding", "Chieftaincy Gala"
+  cultural_occasion?: string;
   reference_url?: string;
 }
 
@@ -51,8 +65,8 @@ export interface Order {
   assigned_tailor_name: string;
   status: ProductionStatus;
   description: string;
-  garment_type: string; // e.g. "3-Piece Embroidered Grand Agbada", "Bespoke Senator Kaftan Set", "Kitenge Corseted Ruracio Gown"
-  fabric_details: string; // e.g. "Vlisco Hollandais Wax + Silk Satin Trim", "Raw Aso-Oke Hand-Woven Textile", "Bazin Riche + Gold Metallic Embroidery"
+  garment_type: string;
+  fabric_details: string;
   estimated_delivery: string;
   deposit_amount: number;
   balance_due: number;
@@ -72,16 +86,16 @@ export interface Measurement {
   client_id: string;
   client_name: string;
   unit: 'in' | 'cm';
-  chest: number; // Kaftan / Buba chest
+  chest: number;
   waist: number;
   hips: number;
-  length: number; // Robe / Tunic length
-  sleeve: number; // Sleeve length
-  shoulder: number; // Shoulder width
-  inseam: number; // Sokoto / Trouser inseam
-  neck: number; // Embroidered collar circumference
-  agbada_wingspan?: number; // Agbada wrist-to-wrist span
-  fila_cap_head?: number; // Matching traditional cap circumference
+  length: number;
+  sleeve: number;
+  shoulder: number;
+  inseam: number;
+  neck: number;
+  agbada_wingspan?: number;
+  fila_cap_head?: number;
   posture_notes: string;
   updated_at: string;
 }
@@ -113,7 +127,7 @@ export interface LookbookItem {
   turnaround_days: number;
   image_url: string;
   tags: string[];
-  cultural_origin: string; // e.g. "Yoruba & Hausa Royal Couture", "East African Kikoy & Swahili", "Kenyan Ruracio Bridal", "Ghanaian Kente"
+  cultural_origin: string;
   is_featured: boolean;
 }
 

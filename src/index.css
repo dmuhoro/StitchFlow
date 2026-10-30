@@ -25,7 +25,24 @@
     --sf-radius-sm: 6px;
     --sf-radius-md: 12px;
     --sf-radius-lg: 20px;
-    --sf-shadow-card: 0 2px 6px rgba(22, 19, 17, 0.04), 0 12px 28px -6px rgba(22, 19, 17, 0.06);
+  }
+
+  .dark {
+    --sf-color-ebony: #0D0B0A;
+    --sf-color-primary: #FAF6F0;
+    --sf-color-primary-fg: #161311;
+    --sf-color-gold: #E5B55E;
+    --sf-color-gold-hover: #D4A347;
+    --sf-color-terracotta: #D97347;
+    --sf-color-indigo: #2D3D58;
+    --sf-color-canvas: #12100E;
+    --sf-color-card: #1C1917;
+    --sf-color-subtle: #24201D;
+    --sf-color-border: #332C27;
+    --sf-color-border-strong: #4A4039;
+    --sf-color-text-primary: #F5EFE6;
+    --sf-color-text-secondary: #B8ABA0;
+    --sf-color-text-muted: #8A7D73;
   }
 }
 
@@ -34,6 +51,7 @@ body {
   background-color: var(--sf-color-canvas);
   color: var(--sf-color-text-primary);
   min-height: 100vh;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 .font-display {
@@ -45,18 +63,18 @@ body {
   font-feature-settings: "tnum";
 }
 
-/* Custom scrollbar matching African linen & ochre */
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #FAF6F0;
+  background: var(--sf-color-canvas);
 }
 ::-webkit-scrollbar-thumb {
-  background: #E5DACB;
+  background: var(--sf-color-border);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #D4A347;
+  background: var(--sf-color-gold);
 }
