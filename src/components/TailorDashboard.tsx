@@ -37,17 +37,6 @@ export const TailorDashboard: React.FC = () => {
     currentUser
   } = useStitchFlow();
 
-  // ACCESS GATE CHECK: Must be an employee/artisan (or director)
-  if (!hasPermission('employee')) {
-    return (
-      <AccessGate 
-        requiredRole="employee"
-        portalName="Master Artisan Workshop Bench"
-        portalDescription="Restricted to authorized African master tailors (Amani Mutiso, Kofi Mensah, Zari Odhiambo). Displays active cutting tasks, Agbada wingspan measurements, and bench note logs."
-      />
-    );
-  }
-
   const [selectedOrderForNote, setSelectedOrderForNote] = useState<Order | null>(null);
   const [stageNote, setStageNote] = useState('');
   const [selectedMeasurementClient, setSelectedMeasurementClient] = useState<Measurement | null>(null);
@@ -102,6 +91,17 @@ export const TailorDashboard: React.FC = () => {
       setMeasEditing(false);
     }
   };
+
+  // ACCESS GATE CHECK: Must be an employee/artisan (or director)
+  if (!hasPermission('employee')) {
+    return (
+      <AccessGate 
+        requiredRole="employee"
+        portalName="Master Artisan Workshop Bench"
+        portalDescription="Restricted to authorized African master tailors (Amani Mutiso, Kofi Mensah, Zari Odhiambo). Displays active cutting tasks, Agbada wingspan measurements, and bench note logs."
+      />
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-in fade-in duration-300">

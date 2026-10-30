@@ -196,14 +196,14 @@ export const BookingModal: React.FC = () => {
 
         {/* Step Progress indicators */}
         {!bookingSuccess && (
-          <div className="bg-[#F3ECE1] px-6 py-3 border-b border-[#E5DACB]">
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className={step >= 1 ? 'text-[#161311]' : 'text-[#98897C]'}>1. Cultural Service</span>
-              <ChevronRight className="w-3.5 h-3.5 text-[#98897C]" />
-              <span className={step >= 2 ? 'text-[#161311]' : 'text-[#98897C]'}>2. Master Artisan</span>
-              <ChevronRight className="w-3.5 h-3.5 text-[#98897C]" />
-              <span className={step >= 3 ? 'text-[#161311]' : 'text-[#98897C]'}>3. Date & Slot</span>
-              <ChevronRight className="w-3.5 h-3.5 text-[#98897C]" />
+          <div className="bg-[#F3ECE1] px-4 sm:px-6 py-3 border-b border-[#E5DACB]">
+            <div className="flex items-center justify-between text-[10px] sm:text-xs font-semibold">
+              <span className={step >= 1 ? 'text-[#161311]' : 'text-[#98897C]'}>1. Service</span>
+              <ChevronRight className="w-3 h-3 text-[#98897C] shrink-0" />
+              <span className={step >= 2 ? 'text-[#161311]' : 'text-[#98897C]'}>2. Artisan</span>
+              <ChevronRight className="w-3 h-3 text-[#98897C] shrink-0" />
+              <span className={step >= 3 ? 'text-[#161311]' : 'text-[#98897C]'}>3. Slot</span>
+              <ChevronRight className="w-3 h-3 text-[#98897C] shrink-0" />
               <span className={step >= 4 ? 'text-[#161311]' : 'text-[#98897C]'}>4. Details</span>
             </div>
           </div>

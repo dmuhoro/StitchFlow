@@ -43,17 +43,6 @@ export const OwnerDashboard: React.FC = () => {
     currentUser
   } = useStitchFlow();
 
-  // ACCESS GATE CHECK: Must be an owner (Director) to view this portal!
-  if (!hasPermission('owner')) {
-    return (
-      <AccessGate 
-        requiredRole="owner"
-        portalName="Atelier Director Executive Suite"
-        portalDescription="Restricted to Creative Director Wanjiku Kamau. Grants access to confidential financial revenue balances, master tailor bench workloads, and atelier operations."
-      />
-    );
-  }
-
   const [activeTab, setActiveTab] = useState<'production' | 'appointments' | 'clients' | 'lookbook' | 'feedback'>('production');
   const [newOrderModalOpen, setNewOrderModalOpen] = useState(false);
   const [newLookbookModalOpen, setNewLookbookModalOpen] = useState(false);
@@ -150,6 +139,17 @@ export const OwnerDashboard: React.FC = () => {
   };
 
   const stages: ProductionStatus[] = ['cutting', 'stitching', 'fitting', 'ready'];
+
+  // ACCESS GATE CHECK: Must be an owner (Director) to view this portal!
+  if (!hasPermission('owner')) {
+    return (
+      <AccessGate 
+        requiredRole="owner"
+        portalName="Atelier Director Executive Suite"
+        portalDescription="Restricted to Creative Director Wanjiku Kamau. Grants access to confidential financial revenue balances, master tailor bench workloads, and atelier operations."
+      />
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-300">

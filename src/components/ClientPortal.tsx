@@ -40,6 +40,12 @@ export const ClientPortal: React.FC = () => {
     currentUser
   } = useStitchFlow();
 
+  const [feedbackRating, setFeedbackRating] = useState(5);
+  const [fitRating, setFitRating] = useState<'tight' | 'perfect' | 'loose'>('perfect');
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [selectedOrderForFeedback, setSelectedOrderForFeedback] = useState<string>('ORD-892');
+
   // ACCESS GATE CHECK: Must be a client (patron) or director
   if (!hasPermission('client')) {
     return (
@@ -50,12 +56,6 @@ export const ClientPortal: React.FC = () => {
       />
     );
   }
-
-  const [feedbackRating, setFeedbackRating] = useState(5);
-  const [fitRating, setFitRating] = useState<'tight' | 'perfect' | 'loose'>('perfect');
-  const [feedbackComment, setFeedbackComment] = useState('');
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [selectedOrderForFeedback, setSelectedOrderForFeedback] = useState<string>('ORD-892');
 
   const clients = profiles.filter(p => p.role === 'client');
   const currentClient = profiles.find(p => p.id === activeClientId) || clients[0];
