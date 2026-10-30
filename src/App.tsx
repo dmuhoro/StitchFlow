@@ -61,7 +61,7 @@ const AppContent: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-[#98897C] leading-relaxed">
-                The all-in-one vertical SaaS platform engineered for Pan-African bespoke fashion houses, Grand Agbada master cutters, and Kitenge bridal ateliers across Nairobi, Lagos, and Accra.
+                A Pan-African atelier workflow prototype for bespoke fashion houses, Grand Agbada master cutters, and Kitenge bridal ateliers.
               </p>
             </div>
 
@@ -110,7 +110,7 @@ const AppContent: React.FC = () => {
                 Security & Appearance
               </h4>
               <p className="text-xs text-[#98897C] leading-relaxed">
-                Protected by strict Role-Based Access Control (RBAC). Featuring System, Warm Linen Light, and Ebony Obsidian Dark appearances.
+                Demo role gates for owner, artisan, and patron views, with System, Warm Linen Light, and Ebony Obsidian Dark appearances.
               </p>
             </div>
 
@@ -120,10 +120,10 @@ const AppContent: React.FC = () => {
             <p>© {new Date().getFullYear()} StitchFlow Atelier. All rights reserved.</p>
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1 text-[#D4A347]">
-                <ShieldCheck className="w-3.5 h-3.5" /> WCAG 2.1 AA Compliant
+                <ShieldCheck className="w-3.5 h-3.5" /> Accessibility-minded design
               </span>
               <span>•</span>
-              <span>Role-Based Access Control</span>
+              <span>Browser-local demo</span>
             </div>
           </div>
         </div>

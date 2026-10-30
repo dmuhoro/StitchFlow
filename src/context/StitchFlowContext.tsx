@@ -4,6 +4,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { clearStitchFlowStorage, readStorage, readStorageString, writeStorage } from '../lib/storage';
 import { 
   UserRole, 
   ThemeMode,
@@ -127,68 +128,60 @@ const DEFAULT_SETTINGS: AtelierSettings = {
 export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Theme & Appearance State
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
-    return (localStorage.getItem(STORAGE_KEYS.THEME) as ThemeMode) || 'system';
+    return readStorageString('theme', 'system') as ThemeMode;
   });
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Settings State
   const [settings, setSettings] = useState<AtelierSettings>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-    return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+    return readStorage('settings', DEFAULT_SETTINGS);
   });
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
   // Auth & Roles State
   // Default to a guest visitor initially so security gate is live!
   const [currentUser, setCurrentUser] = useState<Profile | null>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-    return saved ? JSON.parse(saved) : null;
+    return readStorage<Profile | null>('current_user', null);
   });
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authTargetRole, setAuthTargetRole] = useState<UserRole | null>(null);
 
   const [currentRole, setCurrentRoleState] = useState<UserRole>(() => {
-    return (localStorage.getItem(STORAGE_KEYS.ROLE) as UserRole) || 'visitor';
+    return readStorageString('role', 'visitor') as UserRole;
   });
 
   const [currency, setCurrencyState] = useState<'KES' | 'USD'>(settings.currency || 'KES');
 
   const [activeTailorId, setActiveTailorIdState] = useState<string>(() => {
-    return localStorage.getItem(STORAGE_KEYS.ACTIVE_TAILOR) || 'usr_tailor_01';
+    return readStorageString('tailor', 'usr_tailor_01');
   });
 
   const [activeClientId, setActiveClientIdState] = useState<string>(() => {
-    return localStorage.getItem(STORAGE_KEYS.ACTIVE_CLIENT) || 'usr_client_01';
+    return readStorageString('client', 'usr_client_01');
   });
 
   const [profiles] = useState<Profile[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.PROFILES);
-    return saved ? JSON.parse(saved) : INITIAL_PROFILES;
+    return readStorage<Profile[]>('profiles', INITIAL_PROFILES);
   });
 
   const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
-    return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+    return readStorage<Order[]>('orders', INITIAL_ORDERS);
   });
 
   const [measurements, setMeasurements] = useState<Measurement[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.MEASUREMENTS);
-    return saved ? JSON.parse(saved) : INITIAL_MEASUREMENTS;
+    return readStorage<Measurement[]>('measurements', INITIAL_MEASUREMENTS);
   });
 
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.APPOINTMENTS);
-    return saved ? JSON.parse(saved) : INITIAL_APPOINTMENTS;
+    return readStorage<Appointment[]>('appointments', INITIAL_APPOINTMENTS);
   });
 
   const [feedbacks, setFeedbacks] = useState<Feedback[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.FEEDBACK);
-    return saved ? JSON.parse(saved) : INITIAL_FEEDBACK;
+    return readStorage<Feedback[]>('feedback', INITIAL_FEEDBACK);
   });
 
   const [lookbook, setLookbook] = useState<LookbookItem[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.LOOKBOOK);
-    return saved ? JSON.parse(saved) : INITIAL_LOOKBOOK;
+    return readStorage<LookbookItem[]>('lookbook', INITIAL_LOOKBOOK);
   });
 
   // UI states
@@ -200,7 +193,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Sync theme mode to DOM & local storage
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.THEME, themeMode);
+    writeStorage('theme', themeMode);
 
     const applyTheme = () => {
       let activeDark = false;
@@ -233,43 +226,43 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Sync data to localStorage
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.ROLE, currentRole);
+    writeStorage('role', currentRole);
   }, [currentRole]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(currentUser));
+    writeStorage('current_user', currentUser);
   }, [currentUser]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+    writeStorage('settings', settings);
   }, [settings]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.ACTIVE_TAILOR, activeTailorId);
+    writeStorage('tailor', activeTailorId);
   }, [activeTailorId]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.ACTIVE_CLIENT, activeClientId);
+    writeStorage('client', activeClientId);
   }, [activeClientId]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+    writeStorage('orders', orders);
   }, [orders]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.MEASUREMENTS, JSON.stringify(measurements));
+    writeStorage('measurements', measurements);
   }, [measurements]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(appointments));
+    writeStorage('appointments', appointments);
   }, [appointments]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.FEEDBACK, JSON.stringify(feedbacks));
+    writeStorage('feedback', feedbacks);
   }, [feedbacks]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.LOOKBOOK, JSON.stringify(lookbook));
+    writeStorage('lookbook', lookbook);
   }, [lookbook]);
 
   const showToast = (msg: string) => {
@@ -513,7 +506,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const resetToDefaults = () => {
-    localStorage.clear();
+    clearStitchFlowStorage();
     setOrders(INITIAL_ORDERS);
     setMeasurements(INITIAL_MEASUREMENTS);
     setAppointments(INITIAL_APPOINTMENTS);

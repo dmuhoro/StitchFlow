@@ -52,7 +52,7 @@ export const ClientPortal: React.FC = () => {
       <AccessGate 
         requiredRole="client"
         portalName="VIP Patron Private Portal"
-        portalDescription="Restricted to verified bespoke patrons (Nyambura Mwangi, David Ochieng, Fatima El-Amin). Protects confidential anatomical measurement cards, live ceremony milestones, and referral commission rewards."
+        portalDescription="A presentation-oriented patron view for seeded demo profiles, including anatomical measurement cards, garment milestones, feedback, and referral messaging."
       />
     );
   }
@@ -161,7 +161,7 @@ export const ClientPortal: React.FC = () => {
               My Active African Commissions
             </h2>
             <p className="text-xs text-[#6A5D52] dark:text-[#B8ABA0]">
-              Live production milestones updated directly from our Nairobi cutting tables.
+              Demo production milestones from our Nairobi cutting-table showcase.
             </p>
           </div>
           <span className="text-xs font-mono font-bold text-[#8C6D2D] dark:text-[#D4A347]">

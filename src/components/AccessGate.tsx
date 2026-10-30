@@ -47,10 +47,10 @@ export const AccessGate: React.FC<AccessGateProps> = ({
 
       <div className="p-4 rounded-2xl bg-white dark:bg-[#1C1917] border border-[#E5DACB] dark:border-[#332C27] max-w-md mx-auto text-xs text-[#6A5D52] dark:text-[#B8ABA0] space-y-1 shadow-sm">
         <p className="font-semibold text-[#161311] dark:text-[#F5EFE6]">
-          🔒 Strict Role-Based Access Control:
+          🔒 Demo role gate:
         </p>
         <p>
-          Each portal in StitchFlow is segregated to guarantee confidentiality for patron measurements and workshop financials.
+          This prototype separates portal experiences for demonstration. Production confidentiality requires server-side authentication, authorization, and tenant-scoped data controls.
         </p>
       </div>
 

@@ -146,7 +146,7 @@ export const OwnerDashboard: React.FC = () => {
       <AccessGate 
         requiredRole="owner"
         portalName="Atelier Director Executive Suite"
-        portalDescription="Restricted to Creative Director Wanjiku Kamau. Grants access to confidential financial revenue balances, master tailor bench workloads, and atelier operations."
+        portalDescription="A presentation-oriented director view for seeded demo revenue, master tailor workloads, production stages, and atelier operations."
       />
     );
   }
@@ -172,7 +172,7 @@ export const OwnerDashboard: React.FC = () => {
             Executive Production & Financial Suite
           </h1>
           <p className="text-xs text-[#6A5D52] dark:text-[#B8ABA0] mt-0.5">
-            Real-time cashflow metrics, tailor bench workload distribution, and ceremony commissions.
+            Demo cashflow metrics, tailor bench workload distribution, and ceremony commissions.
           </p>
         </div>
 

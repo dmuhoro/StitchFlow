@@ -91,10 +91,10 @@ export const OrderTrackerModal: React.FC = () => {
             </div>
             <div>
               <h3 className="font-display text-xl sm:text-2xl font-bold tracking-wide">
-                Live African Garment Tracker
+                African Garment Demo Tracker
               </h3>
               <p className="text-xs text-[#98897C]">
-                Real-time bespoke production milestones from the cutting table to your ceremony.
+                Seeded bespoke production milestones from the cutting table to your ceremony.
               </p>
             </div>
           </div>
@@ -293,7 +293,7 @@ export const OrderTrackerModal: React.FC = () => {
             <div className="text-center py-12 text-[#98897C] space-y-2">
               <Scissors className="w-8 h-8 mx-auto text-[#D4A347] opacity-75" />
               <p className="text-xs">
-                Enter an Order ID above to see real-time cutting, chain-stitching, and fitting progress.
+                Enter a seeded demo Order ID above to see cutting, chain-stitching, and fitting progress in this browser.
               </p>
             </div>
           )}

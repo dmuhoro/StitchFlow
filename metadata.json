@@ -1,6 +1,10 @@
 {
-  "name": "StitchFlow - Fashion SaaS & Bespoke Atelier Management",
-  "description": "All-in-one SaaS platform for bespoke tailors and fashion designers: production tracking, measurement cards, lookbook portfolio, appointment scheduling, and client feedback loop.",
+  "name": "StitchFlow - Pan-African Atelier Workflow Prototype",
+  "description": "A browser-based workflow prototype for bespoke African ateliers: cultural lookbooks, fitting requests, production stages, specialized measurement cards, artisan workbench, and patron updates.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "BROWSER_LOCAL_DEMO_PERSISTENCE",
+    "ROLE_BASED_PORTAL_UX",
+    "CULTURAL_LOOKBOOK_AND_FITTING_FLOW"
+  ]
 }

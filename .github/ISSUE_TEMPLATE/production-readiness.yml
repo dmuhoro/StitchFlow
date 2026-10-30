@@ -1,0 +1,33 @@
+name: Production readiness
+
+description: Report a reliability, privacy, security, or business workflow gap before a live pilot.
+labels: [production-readiness]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What could fail for an atelier, artisan, or patron?
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Business impact
+      description: Describe who is affected and what could be lost or exposed.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence or reproduction
+      description: Include steps, screenshots, logs, or affected files. Do not include real customer data.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I have not included passwords, API keys, payment data, or real patron measurements.
+          required: true
