@@ -97,7 +97,7 @@ export const PublicPortfolio: React.FC = () => {
               </h1>
 
               <p className="text-[#C8B69F] text-sm sm:text-base max-w-xl font-light leading-relaxed">
-                From 3-Piece Grand Royal Agbadas and tailored Senator Kaftans to hand-beaded Kenyan Ruracio Kitenge bridal gowns. Track every cut, chain-stitch, and ceremonial fitting of your bespoke garment in real time.
+                From 3-Piece Grand Royal Agbadas and tailored Senator Kaftans to hand-beaded Kenyan Ruracio Kitenge bridal gowns. Explore the lookbook, request a fitting, and follow the seeded showcase from cutting to ceremonial handover.
               </p>
 
               {/* Action Buttons */}
