@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --sf-color-ebony: #161311;
+    --sf-color-primary: #161311;
+    --sf-color-primary-fg: #FAF6F0;
+    --sf-color-gold: #D4A347;
+    --sf-color-gold-hover: #BF8E36;
+    --sf-color-terracotta: #C25E34;
+    --sf-color-indigo: #1A2639;
+    --sf-color-canvas: #FAF6F0;
+    --sf-color-card: #FFFFFF;
+    --sf-color-subtle: #F3ECE1;
+    --sf-color-border: #E5DACB;
+    --sf-color-border-strong: #C8B69F;
+    --sf-color-text-primary: #1A1715;
+    --sf-color-text-secondary: #6A5D52;
+    --sf-color-text-muted: #98897C;
+
+    --sf-font-display: 'Cormorant Garamond', Georgia, serif;
+    --sf-font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --sf-font-mono: 'Space Grotesk', monospace;
+
+    --sf-radius-sm: 6px;
+    --sf-radius-md: 12px;
+    --sf-radius-lg: 20px;
+    --sf-shadow-card: 0 2px 6px rgba(22, 19, 17, 0.04), 0 12px 28px -6px rgba(22, 19, 17, 0.06);
+  }
+}
+
+body {
+  font-family: var(--sf-font-sans);
+  background-color: var(--sf-color-canvas);
+  color: var(--sf-color-text-primary);
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: var(--sf-font-display);
+}
+
+.font-mono-num {
+  font-family: var(--sf-font-mono);
+  font-feature-settings: "tnum";
+}
+
+/* Custom scrollbar matching African linen & ochre */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF6F0;
+}
+::-webkit-scrollbar-thumb {
+  background: #E5DACB;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #D4A347;
+}

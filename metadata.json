@@ -1,0 +1,6 @@
+{
+  "name": "StitchFlow - Fashion SaaS & Bespoke Atelier Management",
+  "description": "All-in-one SaaS platform for bespoke tailors and fashion designers: production tracking, measurement cards, lookbook portfolio, appointment scheduling, and client feedback loop.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
