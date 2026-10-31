@@ -24,13 +24,20 @@ export const AuthModal: React.FC = () => {
     authModalOpen, 
     setAuthModalOpen, 
     authTargetRole, 
-    profiles, 
-    loginAsUser, 
-    showToast 
+    profiles,
+    loginAsUser,
+    showToast,
+    isProductionMode,
+    signInWithPassword,
+    sendMagicLink,
+    authLoading,
+    authError
   } = useStitchFlow();
 
   const [selectedProfileId, setSelectedProfileId] = useState<string>('');
   const [pinCode, setPinCode] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
 
   if (!authModalOpen) return null;
@@ -80,6 +87,28 @@ export const AuthModal: React.FC = () => {
     }
   };
 
+  const handleProductionSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+    try {
+      await signInWithPassword(email, password);
+      setAuthModalOpen(false);
+      showToast('Signed in securely. Atelier access is now server-authorized.');
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : 'Unable to sign in. Check your credentials.');
+    }
+  };
+
+  const handleMagicLink = async () => {
+    setErrorMsg('');
+    try {
+      await sendMagicLink(email);
+      showToast('Magic link sent. Check your email to continue into the atelier.');
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : 'Unable to send a magic link.');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
       <div className="relative w-full max-w-xl bg-white dark:bg-[#1C1917] rounded-3xl shadow-2xl border border-[#E5DACB] dark:border-[#332C27] overflow-hidden text-[#1A1715] dark:text-[#F5EFE6] transition-colors">
@@ -123,6 +152,25 @@ export const AuthModal: React.FC = () => {
             </div>
           </div>
 
+          {isProductionMode ? (
+            <form onSubmit={handleProductionSignIn} className="space-y-4">
+              <div className="space-y-1.5">
+                <label htmlFor="stitchflow-email" className="text-xs font-bold uppercase tracking-wider text-[#6A5D52] dark:text-[#B8ABA0]">Atelier email</label>
+                <input id="stitchflow-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="director@youratelier.com" className="w-full p-3 bg-white dark:bg-[#24201D] border border-[#C8B69F] dark:border-[#4A4039] rounded-xl text-sm focus:ring-1 focus:ring-[#D4A347]" />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="stitchflow-password" className="text-xs font-bold uppercase tracking-wider text-[#6A5D52] dark:text-[#B8ABA0]">Password</label>
+                <input id="stitchflow-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your secure password" className="w-full p-3 bg-white dark:bg-[#24201D] border border-[#C8B69F] dark:border-[#4A4039] rounded-xl text-sm focus:ring-1 focus:ring-[#D4A347]" />
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button type="submit" disabled={authLoading} className="flex-1 px-5 py-3 bg-[#161311] dark:bg-[#D4A347] text-white dark:text-[#161311] rounded-xl text-xs font-bold disabled:opacity-50">{authLoading ? 'Authenticating…' : 'Sign in securely'}</button>
+                <button type="button" onClick={handleMagicLink} disabled={authLoading || !email.trim()} className="flex-1 px-5 py-3 border border-[#C8B69F] dark:border-[#4A4039] rounded-xl text-xs font-bold disabled:opacity-50">Email me a magic link</button>
+              </div>
+              <p className="text-[11px] text-[#6A5D52] dark:text-[#B8ABA0]">Production mode validates identity through Supabase Auth. Your role and atelier access come from the server-side members record.</p>
+              {(errorMsg || authError) && <p className="text-xs text-red-600 font-semibold">{errorMsg || authError}</p>}
+            </form>
+          ) : (
+          <>
           {/* Quick Credential Cards for Demonstration */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#6A5D52] dark:text-[#B8ABA0]">
@@ -205,6 +253,9 @@ export const AuthModal: React.FC = () => {
               )}
             </form>
           </div>
+
+          </>
+          )}
 
         </div>
 

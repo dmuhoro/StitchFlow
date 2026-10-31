@@ -52,6 +52,19 @@ export async function getAtelier(atelierId: string): Promise<AtelierSummary | nu
   return data as AtelierSummary | null;
 }
 
+export async function listAtelierMembers(atelierId: string): Promise<AtelierMember[]> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('members')
+    .select('id, atelier_id, role, full_name, phone, email, avatar_url, title, specialty, active')
+    .eq('atelier_id', atelierId)
+    .eq('active', true)
+    .order('full_name');
+
+  if (error) throw error;
+  return (data ?? []) as AtelierMember[];
+}
+
 export async function createAtelierForCurrentUser(input: {
   name: string;
   slug: string;

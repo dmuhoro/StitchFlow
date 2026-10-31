@@ -26,6 +26,8 @@ import {
   INITIAL_FEEDBACK, 
   INITIAL_LOOKBOOK 
 } from '../data/initialData';
+import { dataMode, supabase } from '../lib/supabase';
+import { getCurrentMember, listAtelierMembers, AtelierMember } from '../lib/atelier-repository';
 
 interface StitchFlowContextType {
   currentRole: UserRole;
@@ -45,7 +47,12 @@ interface StitchFlowContextType {
   // Authentication & Access Control
   currentUser: Profile | null;
   loginAsUser: (profile: Profile) => void;
+  signInWithPassword: (email: string, password: string) => Promise<void>;
+  sendMagicLink: (email: string) => Promise<void>;
   logout: () => void;
+  isProductionMode: boolean;
+  authLoading: boolean;
+  authError: string | null;
   hasPermission: (requiredRole: UserRole) => boolean;
   authModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
@@ -141,13 +148,15 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // Auth & Roles State
   // Default to a guest visitor initially so security gate is live!
   const [currentUser, setCurrentUser] = useState<Profile | null>(() => {
-    return readStorage<Profile | null>('current_user', null);
+    return dataMode === 'supabase' ? null : readStorage<Profile | null>('current_user', null);
   });
+  const [authLoading, setAuthLoading] = useState(dataMode === 'supabase');
+  const [authError, setAuthError] = useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authTargetRole, setAuthTargetRole] = useState<UserRole | null>(null);
 
   const [currentRole, setCurrentRoleState] = useState<UserRole>(() => {
-    return readStorageString('role', 'visitor') as UserRole;
+    return dataMode === 'supabase' ? 'visitor' : readStorageString('role', 'visitor') as UserRole;
   });
 
   const [currency, setCurrencyState] = useState<'KES' | 'USD'>(settings.currency || 'KES');
@@ -160,8 +169,8 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return readStorageString('client', 'usr_client_01');
   });
 
-  const [profiles] = useState<Profile[]>(() => {
-    return readStorage<Profile[]>('profiles', INITIAL_PROFILES);
+  const [profiles, setProfiles] = useState<Profile[]>(() => {
+    return dataMode === 'supabase' ? [] : readStorage<Profile[]>('profiles', INITIAL_PROFILES);
   });
 
   const [orders, setOrders] = useState<Order[]>(() => {
@@ -190,6 +199,67 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [selectedTrackOrderId, setSelectedTrackOrderId] = useState<string | null>(null);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [selectedLookbookForBooking, setSelectedLookbookForBooking] = useState<LookbookItem | null>(null);
+
+  const isProductionMode = dataMode === 'supabase';
+
+  const memberToProfile = (member: AtelierMember): Profile => ({
+    id: member.id,
+    role: member.role,
+    full_name: member.full_name,
+    phone: member.phone || '',
+    email: member.email || '',
+    avatar_url: member.avatar_url || '',
+    title: member.title || undefined,
+    specialty: member.specialty || undefined,
+  });
+
+  const applyAuthenticatedMember = async () => {
+    const member = await getCurrentMember();
+    if (!member) {
+      setCurrentUser(null);
+      setCurrentRoleState('visitor');
+      setProfiles([]);
+      return;
+    }
+
+    const atelierMembers = await listAtelierMembers(member.atelier_id);
+    const mappedProfiles = atelierMembers.map(memberToProfile);
+    const profile = memberToProfile(member);
+    setProfiles(mappedProfiles);
+    setCurrentUser(profile);
+    setActiveTailorIdState(member.role === 'employee' ? member.id : mappedProfiles.find(p => p.role === 'employee')?.id || '');
+    setActiveClientIdState(member.role === 'client' ? member.id : mappedProfiles.find(p => p.role === 'client')?.id || '');
+    setCurrentRoleState(member.role);
+  };
+
+  useEffect(() => {
+    if (!isProductionMode || !supabase) return;
+
+    const client = supabase;
+    let mounted = true;
+    const syncSession = async () => {
+      setAuthLoading(true);
+      setAuthError(null);
+      try {
+        const { data: { session } } = await client.auth.getSession();
+        if (mounted && session) await applyAuthenticatedMember();
+      } catch (error) {
+        if (mounted) setAuthError(error instanceof Error ? error.message : 'Unable to restore atelier session.');
+      } finally {
+        if (mounted) setAuthLoading(false);
+      }
+    };
+
+    void syncSession();
+    const { data: { subscription } } = client.auth.onAuthStateChange(() => {
+      void syncSession();
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [isProductionMode]);
 
   // Sync theme mode to DOM & local storage
   useEffect(() => {
@@ -324,8 +394,33 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setAuthModalOpen(false);
   };
 
+  const signInWithPassword = async (email: string, password: string) => {
+    if (!supabase) throw new Error('Supabase production mode is not configured.');
+    setAuthError(null);
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    if (error) {
+      setAuthError(error.message);
+      throw error;
+    }
+  };
+
+  const sendMagicLink = async (email: string) => {
+    if (!supabase) throw new Error('Supabase production mode is not configured.');
+    setAuthError(null);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: { emailRedirectTo: window.location.origin },
+    });
+    if (error) {
+      setAuthError(error.message);
+      throw error;
+    }
+  };
+
   const logout = () => {
+    if (isProductionMode && supabase) void supabase.auth.signOut();
     setCurrentUser(null);
+    setProfiles([]);
     setCurrentRoleState('visitor');
     showToast('Signed out of atelier session. Reverted to Public Lookbook.');
   };
@@ -533,7 +628,12 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setSettingsModalOpen,
       currentUser,
       loginAsUser,
+      signInWithPassword,
+      sendMagicLink,
       logout,
+      isProductionMode,
+      authLoading,
+      authError,
       hasPermission,
       authModalOpen,
       setAuthModalOpen,
