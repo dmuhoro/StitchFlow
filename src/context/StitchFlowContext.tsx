@@ -27,7 +27,7 @@ import {
   INITIAL_LOOKBOOK 
 } from '../data/initialData';
 import { dataMode, supabase } from '../lib/supabase';
-import { getCurrentMember, listAtelierMembers, AtelierMember } from '../lib/atelier-repository';
+import { getCurrentMember, listAtelierMembers, loadAtelierSnapshot, persistAppointment, persistAppointmentStatus, persistFeedback, persistMeasurement, persistOrder, persistOrderStatus, persistTailorAssignment, AtelierMember } from '../lib/atelier-repository';
 
 interface StitchFlowContextType {
   currentRole: UserRole;
@@ -152,6 +152,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
   const [authLoading, setAuthLoading] = useState(dataMode === 'supabase');
   const [authError, setAuthError] = useState<string | null>(null);
+  const [activeAtelierId, setActiveAtelierId] = useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authTargetRole, setAuthTargetRole] = useState<UserRole | null>(null);
 
@@ -225,8 +226,15 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const atelierMembers = await listAtelierMembers(member.atelier_id);
     const mappedProfiles = atelierMembers.map(memberToProfile);
     const profile = memberToProfile(member);
+    const snapshot = await loadAtelierSnapshot(member.atelier_id);
+    setActiveAtelierId(member.atelier_id);
     setProfiles(mappedProfiles);
     setCurrentUser(profile);
+    setOrders(snapshot.orders);
+    setMeasurements(snapshot.measurements);
+    setAppointments(snapshot.appointments);
+    setFeedbacks(snapshot.feedbacks);
+    setLookbook(snapshot.lookbook);
     setActiveTailorIdState(member.role === 'employee' ? member.id : mappedProfiles.find(p => p.role === 'employee')?.id || '');
     setActiveClientIdState(member.role === 'client' ? member.id : mappedProfiles.find(p => p.role === 'client')?.id || '');
     setCurrentRoleState(member.role);
@@ -296,44 +304,54 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Sync data to localStorage
   useEffect(() => {
+    if (isProductionMode) return;
     writeStorage('role', currentRole);
-  }, [currentRole]);
+  }, [currentRole, isProductionMode]);
 
   useEffect(() => {
+    if (isProductionMode) return;
     writeStorage('current_user', currentUser);
-  }, [currentUser]);
+  }, [currentUser, isProductionMode]);
 
   useEffect(() => {
+    if (isProductionMode) return;
     writeStorage('settings', settings);
-  }, [settings]);
+  }, [settings, isProductionMode]);
 
   useEffect(() => {
+    if (isProductionMode) return;
     writeStorage('tailor', activeTailorId);
-  }, [activeTailorId]);
+  }, [activeTailorId, isProductionMode]);
 
   useEffect(() => {
+    if (isProductionMode) return;
     writeStorage('client', activeClientId);
-  }, [activeClientId]);
+  }, [activeClientId, isProductionMode]);
 
   useEffect(() => {
+    if (isProductionMode) return;
     writeStorage('orders', orders);
-  }, [orders]);
+  }, [orders, isProductionMode]);
 
   useEffect(() => {
+    if (isProductionMode) return;
     writeStorage('measurements', measurements);
-  }, [measurements]);
+  }, [measurements, isProductionMode]);
 
   useEffect(() => {
+    if (isProductionMode) return;
     writeStorage('appointments', appointments);
-  }, [appointments]);
+  }, [appointments, isProductionMode]);
 
   useEffect(() => {
+    if (isProductionMode) return;
     writeStorage('feedback', feedbacks);
-  }, [feedbacks]);
+  }, [feedbacks, isProductionMode]);
 
   useEffect(() => {
+    if (isProductionMode) return;
     writeStorage('lookbook', lookbook);
-  }, [lookbook]);
+  }, [lookbook, isProductionMode]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -485,6 +503,12 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       };
     }));
 
+    if (isProductionMode) {
+      void persistOrderStatus(orderId, newStatus, note, currentUser?.id ?? null).catch(error => {
+        showToast(error instanceof Error ? `Unable to save order update: ${error.message}` : 'Unable to save order update.');
+      });
+    }
+
     showToast(`Order ${orderId} moved to ${newStatus.toUpperCase()}`);
   };
 
@@ -521,6 +545,11 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     setOrders(prev => [newOrder, ...prev]);
+    if (isProductionMode && activeAtelierId) {
+      void persistOrder(activeAtelierId, newOrder).catch(error => {
+        showToast(error instanceof Error ? `Unable to save commission: ${error.message}` : 'Unable to save commission.');
+      });
+    }
     showToast(`Commission #${newId} logged for ${client.full_name}!`);
     return newOrder;
   };
@@ -538,6 +567,12 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       };
     }));
 
+    if (isProductionMode) {
+      void persistTailorAssignment(orderId, tailorId).catch(error => {
+        showToast(error instanceof Error ? `Unable to assign artisan: ${error.message}` : 'Unable to assign artisan.');
+      });
+    }
+
     showToast(`Order ${orderId} reassigned to ${tailor.full_name}`);
   };
 
@@ -549,6 +584,11 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
       return [...prev, { ...newMeas, updated_at: new Date().toISOString().slice(0, 10) }];
     });
+    if (isProductionMode && activeAtelierId) {
+      void persistMeasurement(activeAtelierId, newMeas).catch(error => {
+        showToast(error instanceof Error ? `Unable to save measurement card: ${error.message}` : 'Unable to save measurement card.');
+      });
+    }
     showToast('African measurement card updated successfully!');
   };
 
@@ -557,7 +597,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const bookAppointment = (aptData: Omit<Appointment, 'id' | 'status'>): Appointment => {
-    const newId = `apt_${Date.now()}`;
+    const newId = isProductionMode ? crypto.randomUUID() : `apt_${Date.now()}`;
     const newAppointment: Appointment = {
       ...aptData,
       id: newId,
@@ -565,12 +605,22 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     setAppointments(prev => [newAppointment, ...prev]);
+    if (isProductionMode && activeAtelierId) {
+      void persistAppointment(activeAtelierId, newAppointment).catch(error => {
+        showToast(error instanceof Error ? `Unable to save appointment: ${error.message}` : 'Unable to save appointment.');
+      });
+    }
     showToast('Ceremonial fitting request booked! Atelier will confirm shortly.');
     return newAppointment;
   };
 
   const updateAppointmentStatus = (id: string, status: AppointmentStatus) => {
     setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    if (isProductionMode) {
+      void persistAppointmentStatus(id, status).catch(error => {
+        showToast(error instanceof Error ? `Unable to save appointment status: ${error.message}` : 'Unable to save appointment status.');
+      });
+    }
     showToast(`Appointment status updated to ${status}`);
   };
 
@@ -583,6 +633,11 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     setFeedbacks(prev => [newFeedback, ...prev]);
+    if (isProductionMode && activeAtelierId) {
+      void persistFeedback(activeAtelierId, fbData).catch(error => {
+        showToast(error instanceof Error ? `Unable to save feedback: ${error.message}` : 'Unable to save feedback.');
+      });
+    }
     showToast('Thank you! Your ceremonial review was submitted to Director Wanjiku.');
   };
 
