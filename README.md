@@ -11,7 +11,7 @@
 
 StitchFlow is a browser-based product prototype for African bespoke ateliers creating Grand Agbadas, Senator suits, Kitenge bridalwear, Kanzus, and other ceremonial garments. It brings the lookbook, fitting requests, production stages, culturally relevant measurement cards, artisan workbench, and patron updates into one warm, mobile-friendly experience.
 
-> **Prototype boundary:** StitchFlow currently runs with seeded demo data and browser-local persistence. It is not yet a hosted multi-tenant SaaS product and must not be used to store real customer measurements, payment details, or confidential business records.
+> **Migration boundary:** StitchFlow now has a Supabase relational foundation with tenant-scoped Row Level Security, but the deployed preview still runs in demo mode until the first owner account, atelier, and authenticated data flow are provisioned and verified.
 
 ## What is included
 
@@ -23,11 +23,17 @@ Protected views are presentation-oriented role demos, not production authenticat
 
 Never use the demo PIN or client-side role gates as a security boundary in a live business deployment.
 
+## Supabase backend foundation
+
+The connected Supabase project contains tenant-aware tables for ateliers, members, lookbook items, orders, order progress notes, measurements, appointments, and feedback. Row Level Security is enabled on every table. Staff access is scoped to an atelier, patrons are scoped to their own records, and only published lookbook items are public. The browser integration lives in `src/lib/supabase.ts` and `src/lib/atelier-repository.ts`; backend notes and verification gates are documented in [supabase/README.md](supabase/README.md).
+
+Copy `.env.example` to `.env.local` and provide `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Keep `VITE_DATA_MODE=demo` until Supabase Auth and the first owner onboarding flow have been tested. Never place a service-role key in Vite environment variables or browser code.
+
 ## Current scope and limitations
 
-StitchFlow is intentionally a frontend prototype. It currently does **not** provide a hosted backend, shared multi-user data, server-side authentication, server-side authorization, payment processing, transactional email/SMS, WhatsApp Business API messaging, media storage, or guaranteed server-side appointment locking. Booking and workflow updates are local to the browser running the demo.
+StitchFlow is still intentionally a staged production migration. The Supabase schema and security boundary exist, but the React context still defaults to seeded browser-local demo data. Authentication UI, repository-backed loading states, server-side appointment locking, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, audit history, and operational monitoring remain to be integrated and verified.
 
-For a real atelier rollout, implement tenant isolation, managed identity, server-side RBAC, a relational database, audit events, transactional scheduling, payment reconciliation, consent and retention controls, secure media storage, notifications, backups, and monitoring before importing live customer data.
+Do not import live customer data yet. Before a real atelier rollout, finish the authenticated repository migration, test tenant isolation with separate users, add transactional scheduling, payment reconciliation, consent and retention controls, secure media storage, notifications, backups, and monitoring.
 
 ## Quickstart
 
@@ -60,11 +66,13 @@ The app is a static Vite build. Run `npm run build` and publish `dist/` on Netli
 ```text
 src/
 ├── components/       Reusable UI and portal views
-├── context/          Demo state, theme, role UX, and local persistence
+├── context/          Demo state, theme, role UX, and migration boundary
 ├── data/              Seeded atelier profiles, garments, orders, and measurements
 ├── types.ts           Domain contracts for the prototype
 ├── App.tsx            Application shell and global navigation
 └── index.css          Design tokens and global styles
+supabase/
+└── README.md          Backend schema, access model, and verification gates
 design/
 ├── briefs/            Measurement, production, lookbook, and booking briefs
 └── directions/        Luxury atelier visual direction and design tokens
@@ -77,7 +85,7 @@ StitchFlow is designed around the working language of African bespoke tailoring 
 
 ## Roadmap to a real business product
 
-The next business-critical milestones are a tenant-aware relational model with migrations and audit events; managed authentication with server-enforced permissions; versioned measurement cards and garment specifications; customer CRM, fabric inventory, QC/rework, delivery, and alteration history; quotes, invoices, payment webhooks, tax and currency rules; timezone-aware transactional scheduling and reminders; secure media storage; privacy and consent workflows; backups with restore drills; and operational monitoring.
+The next business-critical milestones are to complete the Supabase Auth and repository migration; add server-side appointment capacity and double-booking protection; version measurement cards and garment specifications; add customer CRM, fabric inventory, QC/rework, delivery, and alteration history; implement quotes, invoices, payment webhooks, tax and currency rules; add secure media storage, privacy and consent workflows, backups with restore drills, and operational monitoring.
 
 ## Contributing
 
