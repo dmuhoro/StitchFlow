@@ -16,7 +16,8 @@ import {
   Feedback, 
   LookbookItem,
   AppointmentStatus,
-  AtelierSettings
+  AtelierSettings,
+  AtelierTenant
 } from '../types';
 import { 
   INITIAL_PROFILES, 
@@ -33,6 +34,12 @@ interface StitchFlowContextType {
   currentRole: UserRole;
   setCurrentRole: (role: UserRole) => void;
   
+  // Multi-Tenancy Architecture
+  tenants: AtelierTenant[];
+  currentAtelier: AtelierTenant;
+  switchAtelier: (tenantId: string) => void;
+  isSupabaseMode: boolean;
+
   // Theme & Appearance
   themeMode: ThemeMode;
   setThemeMode: (mode: ThemeMode) => void;
@@ -64,8 +71,8 @@ interface StitchFlowContextType {
   setActiveTailorId: (id: string) => void;
   activeClientId: string;
   setActiveClientId: (id: string) => void;
-  currency: 'KES' | 'USD';
-  setCurrency: (c: 'KES' | 'USD') => void;
+  currency: 'KES' | 'NGN' | 'USD';
+  setCurrency: (c: 'KES' | 'NGN' | 'USD') => void;
   formatCurrency: (kesAmount: number) => string;
   
   // Data entities
@@ -132,7 +139,54 @@ const DEFAULT_SETTINGS: AtelierSettings = {
   auto_backup: true
 };
 
+export const PREDEFINED_TENANTS: AtelierTenant[] = [
+  {
+    id: '11111111-1111-1111-1111-111111111111',
+    name: 'StitchFlow Atelier Nairobi',
+    slug: 'stitchflow-nairobi',
+    tagline: 'Haute Couture Pan-African Tailoring & Royal Bespoke Regalia',
+    city: 'Nairobi',
+    country: 'Kenya',
+    currency: 'KES',
+    phone: '+254712345678',
+    whatsapp: '+254712345678',
+    default_unit: 'in'
+  },
+  {
+    id: '22222222-2222-2222-2222-222222222222',
+    name: 'Aso-Oke Heritage House Lagos',
+    slug: 'asooke-lagos',
+    tagline: 'Ancestral Weaves & Luxury Yoruba Ceremonial Agbada',
+    city: 'Lagos',
+    country: 'Nigeria',
+    currency: 'NGN',
+    phone: '+2348039876543',
+    whatsapp: '+2348039876543',
+    default_unit: 'in'
+  }
+];
+
 export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Multi-Tenancy Architecture
+  const [tenants] = useState<AtelierTenant[]>(PREDEFINED_TENANTS);
+  const [currentAtelier, setCurrentAtelier] = useState<AtelierTenant>(() => {
+    const saved = localStorage.getItem('stitchflow_active_tenant');
+    if (saved) {
+      const match = PREDEFINED_TENANTS.find(t => t.id === saved);
+      if (match) return match;
+    }
+    return PREDEFINED_TENANTS[0];
+  });
+
+  const switchAtelier = (tenantId: string) => {
+    const target = PREDEFINED_TENANTS.find(t => t.id === tenantId);
+    if (target) {
+      setCurrentAtelier(target);
+      localStorage.setItem('stitchflow_active_tenant', target.id);
+      showToast(`Switched active atelier to ${target.name} (${target.city})`);
+    }
+  };
+
   // Theme & Appearance State
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
     return readStorageString('theme', 'system') as ThemeMode;
@@ -160,7 +214,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return dataMode === 'supabase' ? 'visitor' : readStorageString('role', 'visitor') as UserRole;
   });
 
-  const [currency, setCurrencyState] = useState<'KES' | 'USD'>(settings.currency || 'KES');
+  const [currency, setCurrencyState] = useState<'KES' | 'NGN' | 'USD'>(settings.currency || 'KES');
 
   const [activeTailorId, setActiveTailorIdState] = useState<string>(() => {
     return readStorageString('tailor', 'usr_tailor_01');
@@ -454,7 +508,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setCurrentRoleState(role);
   };
 
-  const setCurrency = (c: 'KES' | 'USD') => {
+  const setCurrency = (c: 'KES' | 'NGN' | 'USD') => {
     setCurrencyState(c);
     setSettings(prev => ({ ...prev, currency: c }));
   };
@@ -479,6 +533,10 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (currency === 'USD') {
       const usdAmount = Math.round(kesAmount / 130);
       return `$${usdAmount.toLocaleString()}`;
+    }
+    if (currency === 'NGN') {
+      const ngnAmount = Math.round(kesAmount * 11.5);
+      return `₦${ngnAmount.toLocaleString()}`;
     }
     return `${kesAmount.toLocaleString()} KES`;
   };
@@ -674,6 +732,10 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     <StitchFlowContext.Provider value={{
       currentRole,
       setCurrentRole,
+      tenants,
+      currentAtelier,
+      switchAtelier,
+      isSupabaseMode: dataMode === 'supabase',
       themeMode,
       setThemeMode,
       isDarkMode,

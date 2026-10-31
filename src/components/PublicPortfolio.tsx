@@ -163,22 +163,23 @@ export const PublicPortfolio: React.FC = () => {
             {/* Right Column: Featured Agbada Visual */}
             <div className="lg:col-span-5 relative">
               <div className="relative mx-auto max-w-md">
-                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#D4A347]/40 aspect-[4/5]">
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#D4A347]/40 aspect-[4/5] bg-[#24201D]">
                   <img
-                    src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=900&auto=format&fit=crop&q=80"
+                    src="/src/assets/images/agbada_aso_oke_1793438762681.jpg"
                     alt="Royal Grand Agbada handcrafted at StitchFlow"
+                    referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent pointer-events-none" />
                   <div className="absolute bottom-6 left-6 right-6">
                     <span className="text-[10px] uppercase font-bold tracking-widest text-[#D4A347] px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-[#D4A347]/30">
-                      Yoruba Royal Heritage
+                      Yoruba & Nigerian Aso-Oke
                     </span>
                     <h3 className="font-display text-xl font-bold text-white mt-2">
                       The Sovereign Grand Royal Agbada
                     </h3>
                     <p className="text-xs text-[#E5DACB] mt-0.5">
-                      Hand-cut by Master Agbada Architect Amani Mutiso • Original German Guinea Brocade
+                      Hand-cut by Master Agbada Architect Amani Mutiso • Handwoven Alaari Aso-Oke
                     </p>
                   </div>
                 </div>
@@ -205,30 +206,30 @@ export const PublicPortfolio: React.FC = () => {
       <section id="digital-lookbook" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-6 border-b border-[#E5DACB]">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-[#8C6D2D] uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Pan-African Couture Archives</span>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 pb-6 border-b border-[#E5DACB] dark:border-[#332C27]">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#8C6D2D] dark:text-[#D4A347] uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5 text-[#D4A347]" />
+              <span>Pan-African Couture Archives & Heritage Attires</span>
             </div>
-            <h2 className="font-display text-3xl sm:text-4xl font-bold text-[#161311] mt-1">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-[#161311] dark:text-[#F5EFE6]">
               Bespoke Cultural Lookbook
             </h2>
-            <p className="text-xs sm:text-sm text-[#6A5D52] mt-1 max-w-xl">
-              Authentic silhouettes tailored from Nigerian Aso-Oke, Ghanaian Bonwire Kente, Vlisco Hollandais Wax, Swahili Coastal Silks, and Kenyan Kikoy. Inquire directly or schedule your studio fitting.
+            <p className="text-xs sm:text-sm text-[#6A5D52] dark:text-[#B8ABA0] max-w-2xl leading-relaxed">
+              Authentic silhouettes tailored from Nigerian Aso-Oke, Ghanaian Bonwire Kente, Vlisco Hollandais Wax, Swahili Coastal Silks, and Kenyan Kikoy plus the attiersfor the major tribes of Kenya. Inquire directly or schedule your studio fitting.
             </p>
           </div>
 
-          {/* Category Filter Pills */}
-          <div className="flex flex-wrap gap-1.5 bg-[#F3ECE1] p-1.5 rounded-2xl border border-[#E5DACB]">
+          {/* Category Filter Pills (Responsive wrapping / horizontal scroll on mobile) */}
+          <div className="flex flex-wrap gap-1.5 bg-[#F3ECE1] dark:bg-[#1C1917] p-1.5 rounded-2xl border border-[#E5DACB] dark:border-[#332C27] shrink-0">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
                   selectedCategory === cat 
-                    ? 'bg-[#161311] text-[#FAF6F0] shadow-sm' 
-                    : 'text-[#6A5D52] hover:text-[#161311]'
+                    ? 'bg-[#161311] dark:bg-[#D4A347] text-[#FAF6F0] dark:text-[#161311] shadow-sm font-bold' 
+                    : 'text-[#6A5D52] dark:text-[#B8ABA0] hover:text-[#161311] dark:hover:text-white'
                 }`}
               >
                 {cat}
@@ -237,35 +238,42 @@ export const PublicPortfolio: React.FC = () => {
           </div>
         </div>
 
-        {/* Lookbook Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Lookbook Responsive Grid (320px: 1 col, 768px: 2 cols, 1280px: 3 cols, 1536px: 4 cols) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
           {filteredItems.map((item) => (
             <div 
               key={item.id}
-              className="group bg-white rounded-3xl overflow-hidden border border-[#E5DACB] hover:border-[#C8B69F] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
+              className="group bg-white dark:bg-[#1C1917] rounded-3xl overflow-hidden border border-[#E5DACB] dark:border-[#332C27] hover:border-[#D4A347] dark:hover:border-[#D4A347] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
             >
-              {/* Image Container with Zoom */}
-              <div className="relative aspect-[3/4] overflow-hidden bg-[#F3ECE1]">
+              {/* Image Container with Zoom & Badge Overlays */}
+              <div className="relative aspect-[3/4] overflow-hidden bg-[#24201D]">
                 <img
                   src={item.image_url}
                   alt={item.title}
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#161311]/85 backdrop-blur-sm text-white">
+                
+                {/* Category & Masterpiece Pills */}
+                <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#161311]/85 backdrop-blur-md text-[#FAF6F0] border border-white/10">
                     {item.category}
                   </span>
                   {item.is_featured && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#D4A347] text-[#161311]">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#D4A347] text-[#161311] shadow-sm">
                       Masterpiece
                     </span>
                   )}
                 </div>
 
-                <div className="absolute bottom-3 left-3 right-3 text-[10px] font-semibold px-2.5 py-1.5 rounded-xl bg-white/90 backdrop-blur-sm text-[#161311] flex items-center justify-between shadow-sm">
-                  <span className="font-bold text-[#8C6D2D] truncate">{item.cultural_origin}</span>
-                  <span className="flex items-center gap-1 text-[#6A5D52] shrink-0">
-                    <Clock className="w-3 h-3 text-[#D4A347]" /> {item.turnaround_days} Days
+                {/* Cultural Origin Bottom Ribbon */}
+                <div className="absolute bottom-3 left-3 right-3 text-[10px] font-semibold px-2.5 py-1.5 rounded-xl bg-white/95 dark:bg-[#161311]/90 backdrop-blur-md text-[#161311] dark:text-[#F5EFE6] flex items-center justify-between shadow-sm border border-black/5 dark:border-white/10">
+                  <span className="font-bold text-[#8C6D2D] dark:text-[#D4A347] truncate pr-2">
+                    {item.cultural_origin}
+                  </span>
+                  <span className="flex items-center gap-1 text-[#6A5D52] dark:text-[#B8ABA0] shrink-0 font-mono">
+                    <Clock className="w-3 h-3 text-[#D4A347]" /> {item.turnaround_days}d
                   </span>
                 </div>
               </div>
@@ -273,34 +281,35 @@ export const PublicPortfolio: React.FC = () => {
               {/* Card Body */}
               <div className="p-5 flex-1 flex flex-col justify-between">
                 <div>
-                  <h3 className="font-display text-xl font-bold text-[#161311] group-hover:text-[#8C6D2D] transition-colors">
+                  <h3 className="font-display text-lg font-bold text-[#161311] dark:text-[#F5EFE6] group-hover:text-[#8C6D2D] dark:group-hover:text-[#D4A347] transition-colors line-clamp-1">
                     {item.title}
                   </h3>
-                  <p className="text-xs text-[#6A5D52] mt-1.5 leading-relaxed line-clamp-2">
+                  <p className="text-xs text-[#6A5D52] dark:text-[#B8ABA0] mt-1.5 leading-relaxed line-clamp-2">
                     {item.description}
                   </p>
 
-                  <div className="mt-3 pt-3 border-t border-[#F3ECE1] text-xs">
-                    <span className="text-[#98897C] text-[11px]">Authentic Textile:</span>
-                    <p className="font-semibold text-[#161311] text-[11px] truncate">
+                  <div className="mt-3 pt-3 border-t border-[#F3ECE1] dark:border-[#2C241E] text-xs">
+                    <span className="text-[#98897C] text-[11px] block">Textile Origin:</span>
+                    <p className="font-semibold text-[#161311] dark:text-[#FAF6F0] text-[11px] truncate">
                       {item.fabric}
                     </p>
                   </div>
 
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {item.tags.map(t => (
-                      <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-[#FAF6F0] border border-[#E5DACB] text-[#6A5D52]">
+                  <div className="mt-2.5 flex flex-wrap gap-1">
+                    {item.tags.slice(0, 3).map(t => (
+                      <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-[#FAF6F0] dark:bg-[#24201D] border border-[#E5DACB] dark:border-[#332C27] text-[#6A5D52] dark:text-[#B8ABA0]">
                         #{t}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                {/* Card Actions */}
-                <div className="pt-5 mt-4 border-t border-[#E5DACB] flex items-center gap-2">
+                {/* Card Actions (Responsive buttons for 320px+) */}
+                <div className="pt-4 mt-4 border-t border-[#E5DACB] dark:border-[#332C27] flex items-center gap-1.5">
                   <button
                     onClick={() => handleInquireWhatsApp(item)}
-                    className="flex-1 py-2 px-3 rounded-xl text-xs font-semibold bg-[#25D366] hover:bg-[#20ba59] text-white flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                    className="flex-1 py-2 px-2.5 rounded-xl text-[11px] font-bold bg-[#25D366] hover:bg-[#20ba59] text-white flex items-center justify-center gap-1 transition-colors shadow-sm whitespace-nowrap"
+                    title="Inquire directly on WhatsApp"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
                     <span>WhatsApp</span>
@@ -308,16 +317,17 @@ export const PublicPortfolio: React.FC = () => {
 
                   <button
                     onClick={() => handleBookLook(item)}
-                    className="flex-1 py-2 px-3 rounded-xl text-xs font-semibold bg-[#161311] hover:bg-[#2C241E] text-white flex items-center justify-center gap-1.5 transition-colors"
+                    className="flex-1 py-2 px-2.5 rounded-xl text-[11px] font-bold bg-[#161311] dark:bg-[#D4A347] hover:bg-[#2C241E] dark:hover:bg-[#bf8e36] text-white dark:text-[#161311] flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
+                    title="Schedule bespoke fitting"
                   >
-                    <Calendar className="w-3.5 h-3.5 text-[#D4A347]" />
-                    <span>Book Fitting</span>
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Fitting</span>
                   </button>
 
                   <button
                     onClick={() => setActiveModalLook(item)}
-                    className="p-2 border border-[#C8B69F] rounded-xl text-[#6A5D52] hover:text-[#161311] hover:bg-[#F3ECE1] transition-colors"
-                    title="Quick Details"
+                    className="p-2 border border-[#C8B69F] dark:border-[#443831] rounded-xl text-[#6A5D52] dark:text-[#B8ABA0] hover:text-[#161311] dark:hover:text-white hover:bg-[#F3ECE1] dark:hover:bg-[#24201D] transition-colors shrink-0"
+                    title="View details & cultural lineage"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                   </button>
@@ -331,48 +341,49 @@ export const PublicPortfolio: React.FC = () => {
 
       {/* 3. LOOKBOOK DETAIL QUICK MODAL */}
       {activeModalLook && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-[#E5DACB] overflow-hidden text-[#1A1715]">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="relative w-full max-w-2xl bg-white dark:bg-[#1C1917] rounded-3xl shadow-2xl border border-[#E5DACB] dark:border-[#332C27] overflow-hidden text-[#1A1715] dark:text-[#F5EFE6]">
             <div className="grid grid-cols-1 md:grid-cols-2">
               <div className="relative aspect-[3/4] bg-black">
                 <img
                   src={activeModalLook.image_url}
                   alt={activeModalLook.title}
+                  referrerPolicy="no-referrer"
                   className="w-full h-full object-cover"
                 />
               </div>
               <div className="p-6 flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FAF6F0] text-[#8C6D2D] border border-[#E5DACB]">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FAF6F0] dark:bg-[#24201D] text-[#8C6D2D] dark:text-[#D4A347] border border-[#E5DACB] dark:border-[#332C27]">
                       {activeModalLook.category}
                     </span>
                     <button
                       onClick={() => setActiveModalLook(null)}
-                      className="text-[#98897C] hover:text-[#161311]"
+                      className="text-[#98897C] hover:text-[#161311] dark:hover:text-white p-1 rounded-full"
                     >
                       <X className="w-5 h-5" />
                     </button>
                   </div>
-                  <h3 className="font-display text-2xl font-bold text-[#161311] mt-2">
+                  <h3 className="font-display text-2xl font-bold text-[#161311] dark:text-[#F5EFE6] mt-2">
                     {activeModalLook.title}
                   </h3>
-                  <p className="text-xs text-[#6A5D52] mt-2 leading-relaxed">
+                  <p className="text-xs text-[#6A5D52] dark:text-[#B8ABA0] mt-2 leading-relaxed">
                     {activeModalLook.description}
                   </p>
 
-                  <div className="mt-4 space-y-2 bg-[#FAF6F0] p-3.5 rounded-2xl border border-[#E5DACB] text-xs">
+                  <div className="mt-4 space-y-2 bg-[#FAF6F0] dark:bg-[#24201D] p-3.5 rounded-2xl border border-[#E5DACB] dark:border-[#332C27] text-xs">
                     <div>
-                      <span className="text-[#98897C]">Cultural Lineage:</span>
-                      <p className="font-semibold text-[#8C6D2D]">{activeModalLook.cultural_origin}</p>
+                      <span className="text-[#98897C] text-[11px]">Cultural Lineage:</span>
+                      <p className="font-semibold text-[#8C6D2D] dark:text-[#D4A347]">{activeModalLook.cultural_origin}</p>
                     </div>
                     <div>
-                      <span className="text-[#98897C]">Textile Sourcing:</span>
-                      <p className="font-semibold text-[#161311]">{activeModalLook.fabric}</p>
+                      <span className="text-[#98897C] text-[11px]">Textile Sourcing:</span>
+                      <p className="font-semibold text-[#161311] dark:text-[#F5EFE6]">{activeModalLook.fabric}</p>
                     </div>
                     <div>
-                      <span className="text-[#98897C]">Bespoke Commission Range:</span>
-                      <p className="font-semibold text-[#161311]">{activeModalLook.price_range}</p>
+                      <span className="text-[#98897C] text-[11px]">Bespoke Commission Range:</span>
+                      <p className="font-semibold text-[#161311] dark:text-[#F5EFE6] font-mono">{activeModalLook.price_range}</p>
                     </div>
                   </div>
                 </div>
@@ -380,17 +391,17 @@ export const PublicPortfolio: React.FC = () => {
                 <div className="pt-6 space-y-2">
                   <button
                     onClick={() => handleBookLook(activeModalLook)}
-                    className="w-full py-2.5 bg-[#161311] hover:bg-[#2C241E] text-white rounded-xl text-xs font-bold uppercase tracking-wide transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-[#161311] dark:bg-[#D4A347] hover:bg-[#2C241E] dark:hover:bg-[#bf8e36] text-white dark:text-[#161311] rounded-xl text-xs font-bold uppercase tracking-wide transition-colors flex items-center justify-center gap-2 shadow-sm"
                   >
-                    <Calendar className="w-4 h-4 text-[#D4A347]" />
+                    <Calendar className="w-4 h-4" />
                     <span>Commission this African Silhouette</span>
                   </button>
                   <button
                     onClick={() => handleInquireWhatsApp(activeModalLook)}
-                    className="w-full py-2 bg-[#25D366] hover:bg-[#20ba59] text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 shadow-sm"
                   >
                     <MessageCircle className="w-4 h-4" />
-                    <span>Chat on WhatsApp with Artisan</span>
+                    <span>Chat on WhatsApp with Master Tailor</span>
                   </button>
                 </div>
               </div>
@@ -400,57 +411,57 @@ export const PublicPortfolio: React.FC = () => {
       )}
 
       {/* 4. THE AFRICAN BESPOKE JOURNEY */}
-      <section className="bg-[#F3ECE1] py-16 border-y border-[#E5DACB]">
+      <section className="bg-[#F3ECE1] dark:bg-[#12100E] py-16 border-y border-[#E5DACB] dark:border-[#332C27] transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#8C6D2D]">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#8C6D2D] dark:text-[#D4A347]">
               Authentic African Sartorial Craft
             </span>
-            <h2 className="font-display text-3xl font-bold text-[#161311] mt-1">
+            <h2 className="font-display text-3xl font-bold text-[#161311] dark:text-[#F5EFE6] mt-1">
               How Your Cultural Garment is Crafted
             </h2>
-            <p className="text-xs sm:text-sm text-[#6A5D52] mt-2">
+            <p className="text-xs sm:text-sm text-[#6A5D52] dark:text-[#B8ABA0] mt-2">
               Every Agbada, Senator suit, and Kitenge bridal ensemble is created with deep reverence for African textiles and ceremonial perfection.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-3xl border border-[#E5DACB] shadow-sm">
-              <div className="w-10 h-10 rounded-2xl bg-[#FEF3C7] text-[#92400E] flex items-center justify-center font-bold text-sm mb-4">
+            <div className="bg-white dark:bg-[#1C1917] p-6 rounded-3xl border border-[#E5DACB] dark:border-[#332C27] shadow-sm">
+              <div className="w-10 h-10 rounded-2xl bg-[#FEF3C7] dark:bg-[#FEF3C7]/20 text-[#92400E] dark:text-[#FBBF24] flex items-center justify-center font-bold text-sm mb-4">
                 01
               </div>
-              <h3 className="font-bold text-sm text-[#161311]">1. African Measurement & Wingspan</h3>
-              <p className="text-xs text-[#6A5D52] mt-1.5 leading-relaxed">
+              <h3 className="font-bold text-sm text-[#161311] dark:text-[#F5EFE6]">1. African Measurement & Wingspan</h3>
+              <p className="text-xs text-[#6A5D52] dark:text-[#B8ABA0] mt-1.5 leading-relaxed">
                 We capture your full Agbada wingspan, Sokoto taper, collar circumference, and drape allowances on our digital cards.
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-3xl border border-[#E5DACB] shadow-sm">
-              <div className="w-10 h-10 rounded-2xl bg-[#E0E7FF] text-[#3730A3] flex items-center justify-center font-bold text-sm mb-4">
+            <div className="bg-white dark:bg-[#1C1917] p-6 rounded-3xl border border-[#E5DACB] dark:border-[#332C27] shadow-sm">
+              <div className="w-10 h-10 rounded-2xl bg-[#E0E7FF] dark:bg-[#E0E7FF]/20 text-[#3730A3] dark:text-[#A5B4FC] flex items-center justify-center font-bold text-sm mb-4">
                 02
               </div>
-              <h3 className="font-bold text-sm text-[#161311]">2. Wax Print Grain Alignment</h3>
-              <p className="text-xs text-[#6A5D52] mt-1.5 leading-relaxed">
+              <h3 className="font-bold text-sm text-[#161311] dark:text-[#F5EFE6]">2. Wax Print Grain Alignment</h3>
+              <p className="text-xs text-[#6A5D52] dark:text-[#B8ABA0] mt-1.5 leading-relaxed">
                 Kitenge patterns, Kente strips, or Guinea Brocades are aligned symmetrically across center chest seams and lapels.
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-3xl border border-[#E5DACB] shadow-sm">
-              <div className="w-10 h-10 rounded-2xl bg-[#EDE9FE] text-[#5B21B6] flex items-center justify-center font-bold text-sm mb-4">
+            <div className="bg-white dark:bg-[#1C1917] p-6 rounded-3xl border border-[#E5DACB] dark:border-[#332C27] shadow-sm">
+              <div className="w-10 h-10 rounded-2xl bg-[#EDE9FE] dark:bg-[#EDE9FE]/20 text-[#5B21B6] dark:text-[#C4B5FD] flex items-center justify-center font-bold text-sm mb-4">
                 03
               </div>
-              <h3 className="font-bold text-sm text-[#161311]">3. Hand Embroidery & Chain-Stitch</h3>
-              <p className="text-xs text-[#6A5D52] mt-1.5 leading-relaxed">
+              <h3 className="font-bold text-sm text-[#161311] dark:text-[#F5EFE6]">3. Hand Embroidery & Chain-Stitch</h3>
+              <p className="text-xs text-[#6A5D52] dark:text-[#B8ABA0] mt-1.5 leading-relaxed">
                 Intricate Hausa/Yoruba chest filigree, Maasai beadwork borders, or Lamu plackets are hand-applied on the workbench.
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-3xl border border-[#E5DACB] shadow-sm">
-              <div className="w-10 h-10 rounded-2xl bg-[#D1FAE5] text-[#065F46] flex items-center justify-center font-bold text-sm mb-4">
+            <div className="bg-white dark:bg-[#1C1917] p-6 rounded-3xl border border-[#E5DACB] dark:border-[#332C27] shadow-sm">
+              <div className="w-10 h-10 rounded-2xl bg-[#D1FAE5] dark:bg-[#D1FAE5]/20 text-[#065F46] dark:text-[#6EE7B7] flex items-center justify-center font-bold text-sm mb-4">
                 04
               </div>
-              <h3 className="font-bold text-sm text-[#161311]">4. Final Fitting with Fila & Gele</h3>
-              <p className="text-xs text-[#6A5D52] mt-1.5 leading-relaxed">
+              <h3 className="font-bold text-sm text-[#161311] dark:text-[#F5EFE6]">4. Final Fitting with Fila & Gele</h3>
+              <p className="text-xs text-[#6A5D52] dark:text-[#B8ABA0] mt-1.5 leading-relaxed">
                 Client tries on the finished garment with matching hand-sewn Fila cap or Gele headwrap prior to the cultural celebration.
               </p>
             </div>
@@ -462,63 +473,63 @@ export const PublicPortfolio: React.FC = () => {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mb-8">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-[#8C6D2D]">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#8C6D2D] dark:text-[#D4A347]">
               Patron Praise
             </span>
-            <h2 className="font-display text-3xl font-bold text-[#161311] mt-1">
+            <h2 className="font-display text-3xl font-bold text-[#161311] dark:text-[#F5EFE6] mt-1">
               Reviews from Cultural Celebrations
             </h2>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-[#6A5D52]">
+          <div className="flex items-center gap-1.5 text-xs text-[#6A5D52] dark:text-[#B8ABA0]">
             <div className="flex text-amber-500">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} className="w-4 h-4 fill-current" />
               ))}
             </div>
-            <span className="font-bold text-[#161311]">4.95 Average</span>
+            <span className="font-bold text-[#161311] dark:text-[#F5EFE6]">4.95 Average</span>
             <span>(from verified ceremonies)</span>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {feedbacks.map((fb) => (
-            <div key={fb.id} className="bg-white p-6 rounded-3xl border border-[#E5DACB] shadow-sm space-y-3">
+            <div key={fb.id} className="bg-white dark:bg-[#1C1917] p-6 rounded-3xl border border-[#E5DACB] dark:border-[#332C27] shadow-sm space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex text-amber-500">
                   {[...Array(fb.rating)].map((_, i) => (
                     <Star key={i} className="w-3.5 h-3.5 fill-current" />
                   ))}
                 </div>
-                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                   Fit: {fb.fit_rating}
                 </span>
               </div>
-              <p className="text-xs text-[#1A1715] italic leading-relaxed">
+              <p className="text-xs text-[#1A1715] dark:text-[#FAF6F0] italic leading-relaxed">
                 "{fb.comments}"
               </p>
-              <div className="pt-2 border-t border-[#F3ECE1] flex items-center justify-between text-xs">
-                <span className="font-bold text-[#161311]">{fb.client_name}</span>
+              <div className="pt-2 border-t border-[#F3ECE1] dark:border-[#2C241E] flex items-center justify-between text-xs">
+                <span className="font-bold text-[#161311] dark:text-[#F5EFE6]">{fb.client_name}</span>
                 <span className="text-[11px] text-[#98897C] font-mono">{fb.created_at}</span>
               </div>
             </div>
           ))}
 
-          <div className="bg-white p-6 rounded-3xl border border-[#E5DACB] shadow-sm space-y-3">
+          <div className="bg-white dark:bg-[#1C1917] p-6 rounded-3xl border border-[#E5DACB] dark:border-[#332C27] shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex text-amber-500">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-3.5 h-3.5 fill-current" />
                 ))}
               </div>
-              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                 Fit: Perfect
               </span>
             </div>
-            <p className="text-xs text-[#1A1715] italic leading-relaxed">
+            <p className="text-xs text-[#1A1715] dark:text-[#FAF6F0] italic leading-relaxed">
               "For our traditional Ruracio dowry ceremony, Zari crafted a Kitenge peplum gown that honored both our Kikuyu and Luo heritage. The cowrie beadwork was regal and the matching Gele was perfectly contoured."
             </p>
-            <div className="pt-2 border-t border-[#F3ECE1] flex items-center justify-between text-xs">
-              <span className="font-bold text-[#161311]">Nyambura Mwangi</span>
+            <div className="pt-2 border-t border-[#F3ECE1] dark:border-[#2C241E] flex items-center justify-between text-xs">
+              <span className="font-bold text-[#161311] dark:text-[#F5EFE6]">Nyambura Mwangi</span>
               <span className="text-[11px] text-[#98897C] font-mono">2026-10-29</span>
             </div>
           </div>

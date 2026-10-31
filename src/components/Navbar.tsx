@@ -22,7 +22,8 @@ import {
   Lock,
   KeyRound,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Building2
 } from 'lucide-react';
 import { useStitchFlow } from '../context/StitchFlowContext';
 import { UserRole } from '../types';
@@ -46,7 +47,11 @@ export const Navbar: React.FC = () => {
     hasPermission,
     setSettingsModalOpen,
     setAuthModalOpen,
-    setAuthTargetRole
+    setAuthTargetRole,
+    currentAtelier,
+    tenants,
+    switchAtelier,
+    isSupabaseMode
   } = useStitchFlow();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -157,6 +162,30 @@ export const Navbar: React.FC = () => {
               </div>
 
               {/* Atelier Settings Button */}
+              {/* Multi-Tenant Atelier Switcher (Tenant A: Nairobi vs Tenant B: Lagos) */}
+              {currentAtelier && (
+                <div className="relative hidden lg:block">
+                  <button
+                    onClick={() => {
+                      if (!tenants || tenants.length === 0) return;
+                      const nextTenant = tenants.find(t => t.id !== currentAtelier.id) || tenants[0];
+                      if (nextTenant) switchAtelier(nextTenant.id);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-[#E5DACB] dark:border-[#332C27] bg-white dark:bg-[#1C1917] hover:border-[#D4A347] transition-colors"
+                    title="Click to toggle Tenant A (Nairobi) vs Tenant B (Lagos) for RLS isolation verification"
+                  >
+                    <Building2 className="w-3.5 h-3.5 text-[#D4A347]" />
+                    <span className="font-bold text-[#161311] dark:text-[#F5EFE6]">
+                      {currentAtelier.name?.includes('Nairobi') ? '🇰🇪 Nairobi' : '🇳🇬 Lagos'}
+                    </span>
+                    <span className="text-[10px] text-[#8C6D2D] dark:text-[#D4A347] font-bold">
+                      ({currentAtelier.currency || 'KES'})
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              {/* Atelier Settings Button */}
               <button
                 onClick={() => setSettingsModalOpen(true)}
                 className="p-2 rounded-xl border border-[#E5DACB] dark:border-[#332C27] bg-white dark:bg-[#1C1917] text-[#6A5D52] dark:text-[#B8ABA0] hover:text-[#161311] dark:hover:text-white hover:border-[#D4A347] transition-colors"
@@ -173,7 +202,7 @@ export const Navbar: React.FC = () => {
               >
                 <GitCommit className="w-3.5 h-3.5 text-[#D4A347]" />
                 <span className="hidden lg:inline">Deliverables</span>
-                <span>(17)</span>
+                <span>(22)</span>
               </button>
 
               {/* Authentication Status / Profile Switcher */}

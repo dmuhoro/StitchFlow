@@ -21,7 +21,7 @@ import { useStitchFlow } from '../context/StitchFlowContext';
 
 interface DeliverableItem {
   id: string;
-  category: 'Design System Tokens' | 'Web Component Briefs' | 'Core Architecture' | 'Artisan & Client UI';
+  category: 'Design System Tokens' | 'Web Component Briefs' | 'Core Architecture' | 'Artisan & Client UI' | 'Database & Security';
   title: string;
   filePath: string;
   description: string;
@@ -164,6 +164,54 @@ const DELIVERABLES: DeliverableItem[] = [
     filePath: 'src/components/ClientPortal.tsx',
     description: 'Client portal with live garment tracking, post-delivery feedback form, and viral referral generator (Give KES 3,000, Earn 15%).',
     commitMessage: 'feat(ui): add client portal with order tracking, feedback loop, and referral engine'
+  },
+  {
+    id: 'deliv-18',
+    category: 'Database & Security',
+    title: 'Multi-Tenant PostgreSQL Schema with Row Level Security',
+    filePath: 'supabase/migrations/001_initial_schema.sql',
+    description: 'Multi-tenant database schema scoped by atelier_id with RLS policies isolating Owners, Artisans (financial blocking), and Patrons.',
+    commitMessage: 'feat(db): establish multi-tenant schema with strict Row Level Security policies'
+  },
+  {
+    id: 'deliv-19',
+    category: 'Database & Security',
+    title: 'Nairobi & Lagos Multi-Tenant Seed Verification',
+    filePath: 'supabase/migrations/002_seed_multi_tenant_data.sql',
+    description: 'Bespoke atelier seeds for Tenant A (StitchFlow Nairobi, KES) and Tenant B (Aso-Oke Heritage Lagos, NGN) with specialized Agbada dimensions.',
+    commitMessage: 'feat(db): seed realistic multi-tenant data for Nairobi and Lagos couture ateliers'
+  },
+  {
+    id: 'deliv-20',
+    category: 'Database & Security',
+    title: 'Automated Cross-Tenant RLS Boundary Test Suite',
+    filePath: 'supabase/tests/rls_isolation_test.sql',
+    description: 'Test suite simulating cross-tenant queries, confirming Tenant A cannot view or mutate Tenant B records, and validating artisan financial isolation.',
+    commitMessage: 'test(rls): verify cross-tenant data isolation and role access boundaries'
+  },
+  {
+    id: 'deliv-21',
+    category: 'Core Architecture',
+    title: 'Production Supabase Client Wrapper & Magic Link Service',
+    filePath: 'src/lib/supabase.ts',
+    description: 'Typed Supabase client with environment variable handling, graceful fallback, auth state management, and multi-tenant query helpers.',
+    commitMessage: 'feat(auth): integrate Supabase client wrapper with multi-tenant isolation and magic link flows'
+  },
+  {
+    id: 'deliv-22',
+    category: 'Artisan & Client UI',
+    title: 'Passwordless Magic Link & Multi-Tenant Session Gate',
+    filePath: 'src/components/AuthModal.tsx',
+    description: 'Interactive authentication modal with passwordless magic link dispatch, credential verification, and live Tenant A vs Tenant B keycard switcher.',
+    commitMessage: 'feat(auth): implement passwordless magic link and multi-tenant session isolation'
+  },
+  {
+    id: 'deliv-23',
+    category: 'Artisan & Client UI',
+    title: 'Authentic African Heritage Attires & Kenyan Tribal Archives',
+    filePath: 'src/components/PublicPortfolio.tsx src/data/initialData.ts src/assets/images/',
+    description: 'Full authentic African cultural attire collection representing Nigerian Aso-Oke, Ghanaian Bonwire Kente, Vlisco Hollandais Wax, Swahili Coastal Silks, Kenyan Kikoy, and Kenyan tribes (Kikuyu, Maasai, Luo) with responsive multi-breakpoint layout.',
+    commitMessage: 'feat(lookbook): catalog authentic African silhouettes and Kenyan tribal attires with responsive imagery'
   }
 ];
 

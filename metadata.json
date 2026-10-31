@@ -3,8 +3,6 @@
   "description": "A browser-based workflow prototype for bespoke African ateliers: cultural lookbooks, fitting requests, production stages, specialized measurement cards, artisan workbench, and patron updates.",
   "requestFramePermissions": [],
   "majorCapabilities": [
-    "BROWSER_LOCAL_DEMO_PERSISTENCE",
-    "ROLE_BASED_PORTAL_UX",
-    "CULTURAL_LOOKBOOK_AND_FITTING_FLOW"
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }

@@ -19,8 +19,22 @@ export type AppointmentType =
   | 'basted_fitting'
   | 'final_collection';
 
+export interface AtelierTenant {
+  id: string;
+  name: string;
+  slug: string;
+  tagline: string;
+  city: string;
+  country: string;
+  currency: 'KES' | 'NGN' | 'USD';
+  phone: string;
+  whatsapp: string;
+  default_unit: 'in' | 'cm';
+}
+
 export interface Profile {
   id: string;
+  atelier_id?: string;
   role: 'owner' | 'employee' | 'client';
   full_name: string;
   phone: string;
@@ -32,10 +46,11 @@ export interface Profile {
 }
 
 export interface AtelierSettings {
+  atelier_id?: string;
   atelier_name: string;
   studio_tagline: string;
   whatsapp_number: string;
-  currency: 'KES' | 'USD';
+  currency: 'KES' | 'NGN' | 'USD';
   default_unit: 'in' | 'cm';
   theme_mode: ThemeMode;
   notifications_enabled: boolean;
@@ -44,6 +59,7 @@ export interface AtelierSettings {
 
 export interface Appointment {
   id: string;
+  atelier_id?: string;
   client_id: string;
   client_name: string;
   client_phone: string;
@@ -58,6 +74,7 @@ export interface Appointment {
 
 export interface Order {
   id: string; // e.g. ORD-892
+  atelier_id?: string;
   client_id: string;
   client_name: string;
   client_phone: string;
@@ -70,7 +87,7 @@ export interface Order {
   estimated_delivery: string;
   deposit_amount: number;
   balance_due: number;
-  currency: 'KES' | 'USD';
+  currency: 'KES' | 'NGN' | 'USD';
   photo_url: string;
   progress_notes: {
     stage: ProductionStatus;
@@ -83,6 +100,7 @@ export interface Order {
 
 export interface Measurement {
   id: string;
+  atelier_id?: string;
   client_id: string;
   client_name: string;
   unit: 'in' | 'cm';
@@ -102,6 +120,7 @@ export interface Measurement {
 
 export interface Feedback {
   id: string;
+  atelier_id?: string;
   order_id: string;
   client_id: string;
   client_name: string;
@@ -114,6 +133,7 @@ export interface Feedback {
 
 export interface LookbookItem {
   id: string;
+  atelier_id?: string;
   title: string;
   category: 
     | 'Grand Agbada & Boubou'
