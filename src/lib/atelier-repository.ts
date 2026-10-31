@@ -73,15 +73,30 @@ export async function createAtelierForCurrentUser(input: {
   whatsappNumber?: string;
 }): Promise<string> {
   const client = requireSupabase();
-  const { data, error } = await client.rpc('create_atelier_for_current_user', {
-    atelier_name: input.name,
-    atelier_slug: input.slug,
-    atelier_tagline: input.tagline ?? null,
-    atelier_whatsapp: input.whatsappNumber ?? null,
-  });
+  const { data: authData, error: authError } = await client.auth.getUser();
+  if (authError || !authData.user) throw authError ?? new Error('Authentication required.');
+  const { data: atelier, error: atelierError } = await client
+    .from('ateliers')
+    .insert({
+      name: input.name.trim(),
+      slug: input.slug,
+      tagline: input.tagline ?? null,
+      whatsapp_number: input.whatsappNumber ?? null,
+      created_by: authData.user.id,
+    })
+    .select('id')
+    .single();
+  if (atelierError) throw atelierError;
 
-  if (error) throw error;
-  return data as string;
+  const { error: memberError } = await client.from('members').insert({
+    id: authData.user.id,
+    atelier_id: atelier.id,
+    role: 'owner',
+    full_name: authData.user.user_metadata?.full_name ?? authData.user.email?.split('@')[0] ?? 'Atelier Owner',
+    email: authData.user.email ?? null,
+  });
+  if (memberError) throw memberError;
+  return atelier.id;
 }
 
 export async function signOut(): Promise<void> {
