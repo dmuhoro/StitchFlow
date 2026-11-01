@@ -1,24 +1,23 @@
-# 2026-11-01 — Deployment
+# 2026-11-01 — Deployment (alignment)
 
 ## Command / Step
 
 ```bash
-npx netlify-cli link --id db552225-05b6-4158-895c-7de02c2e5d94
-npm run build
-npx netlify-cli deploy --prod
+npx netlify-cli env:set VITE_DATA_MODE demo
+npx netlify-cli deploy --prod --build
+
+npm run verify:build
 ```
 
 ## Observed Result
 
-- Site linked (`stitchflow-12pv`), Netlify CLI authenticated locally (no secret printed).
-- `npm run build` passed (12 files).
-- Production deploy live: `https://stitchflow-12pv.netlify.app`.
-- Note: build used the default mode (`VITE_DATA_MODE` unset in this environment), so the public
-  site is currently a demo-mode deployment. Supabase-backed production build requires env vars
-  `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_DATA_MODE=supabase`, and a
-  Supabase project with spare capacity (project creation returned a free-tier limit error).
+- Netlify CLI authenticated; site `stitchflow-12pv` linked.
+- Env pin: `VITE_DATA_MODE=demo` for a working, demo-mode production deploy matching AI Studio.
+- Fresh cloud build succeeded; live URL: https://stitchflow-12pv.netlify.app
+- Local verify:build passed with `npm run build` (deploy-ready artifact check).
+- Bundle contains the required markers (`Nyambura Mwangi`, `Navbar.tsx` `(22)`), and local images are bundled under `dist/assets`.
+- Production Supabase mode remains `BLOCKED` on providing `VITE_SUPABASE_*` and access to the StitchFlow project ref `vpathqzkaqdtbykumxeo`.
 
 ## Verdict
 
-PASS (deployment pipeline + live publish verified) with BLOCKED sub-step noted for production
-Supabase-backed mode.
+PASS (alignment, demo live) — white screen resolved.
