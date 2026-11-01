@@ -18,7 +18,14 @@ export function readStorage<T>(key: string, fallback: T): T {
 
 export function readStorageString(key: string, fallback: string): string {
   try {
-    return window.localStorage.getItem(`${STORAGE_NAMESPACE}${key}`) ?? fallback;
+    const raw = window.localStorage.getItem(`${STORAGE_NAMESPACE}${key}`);
+    if (!raw) return fallback;
+    try {
+      const parsed = JSON.parse(raw);
+      return typeof parsed === 'string' ? parsed : raw;
+    } catch {
+      return raw;
+    }
   } catch {
     return fallback;
   }
