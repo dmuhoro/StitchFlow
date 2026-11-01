@@ -1,0 +1,35 @@
+# Evidence Log
+
+> Dated verification records. A PASS cites a command, test, or manual step. Narrative alone is not
+> evidence (Constitution Article VI).
+
+## Index
+
+| Date | Topic | File | Verdict |
+|------|-------|------|---------|
+| 2026-11-01 | Database migration chain and RLS | `2026-11-01_database_chain.md` | PENDING |
+| 2026-11-01 | Build artifacts and bundle assertions | `2026-11-01_build_artifacts.md` | PENDING |
+| 2026-11-01 | Release and tag | `2026-11-01_release.md` | PENDING |
+| 2026-11-01 | Deployment | `2026-11-01_deployment.md` | PENDING |
+
+## Format
+
+```markdown
+# <Date> — <Topic>
+
+## Command / Step
+<exact command or manual step>
+
+## Observed Result
+<output excerpt, exit code, screenshot reference>
+
+## Verdict
+PASS / FAIL / BLOCKED
+```
+
+## Rules
+
+1. Redact any credential as `***REDACTED***` before saving.
+2. Record the actual command and the actual result. No post-hoc embellishment.
+3. A BLOCKED verdict names the human owner and the exact authorization needed.
+4. Update this index in the same commit as the evidence file.

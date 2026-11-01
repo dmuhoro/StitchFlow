@@ -9,7 +9,11 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "audit": "npm audit --audit-level=high"
+    "audit": "npm audit --audit-level=high",
+    "check:docs": "node scripts/ci/check-doc-links.mjs",
+    "verify:build": "node scripts/ci/verify-build.mjs",
+    "verify:db": "bash scripts/verify-db.sh docker",
+    "verify:db:host": "bash scripts/verify-db.sh host"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
