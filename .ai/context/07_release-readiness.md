@@ -12,7 +12,7 @@
 | L3 | Local imagery bundles with hashed URLs | DONE | `docs/evidence/2026-11-01_build_artifacts.md` |
 | L4 | Persistence wired for every supported action | DONE | `docs/evidence/2026-11-01_persistence.md` |
 | L5 | CI runs lint, build, docs links, DB verification | DONE | `docs/evidence/2026-11-01_ci.md` |
-| L6 | Release versioned, tagged, pushed | DONE | `docs/evidence/2026-11-01_release.md` pending; release notes `docs/releases/RELEASE_1.0.0_NOTES.md`, version 1.0.0 |
+| L6 | Release versioned, tagged, pushed | DONE | `docs/evidence/2026-11-01_release.md` (tag 6af1ba94, remote ref verified) |
 | L7 | Cleanup (nested clone gone, obsolete script removed, lock committed) | PENDING | — |
 | L8 | README, CHANGELOG, sprints updated | PENDING | — |
 | L9 | Deployment verified | BLOCKED | Netlify authorization + Supabase project access are human-owned |
