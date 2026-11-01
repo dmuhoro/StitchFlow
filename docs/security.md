@@ -69,7 +69,7 @@ to expose an RPC surface.
 |------|----------|------------|
 | Anonymous booking has no rate limit | Medium | PostgREST/edge rate limit post-launch |
 | No appointment capacity lock | Medium | Server-side function post-launch |
-| Demo PIN reachable in demo builds | Low in demo, P0 in prod | Production build blocks it |
+| Demo PIN reachable in demo builds | Low in demo, P0 in prod | Refused at the action boundary in `supabase` mode (`StitchFlowContext.tsx:576`, `AuthModal.tsx:81`) |
 | No audit trail for owner money edits | Medium | Add audit table post-launch |
 | Hosted project access unverified | Blocker for deploy | Owner authorization |
 

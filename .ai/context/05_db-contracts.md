@@ -43,7 +43,10 @@ except `order_progress_notes`, which derives tenancy from `orders`.
 | `appointments` | `persistAppointment`, `persistAppointmentStatus` |
 | `feedback` | `persistFeedback`, `persistFeedbackStatus` |
 | `lookbook_items` | `persistLookbookItem` |
-| `ateliers`, `members` | `createAtelierForCurrentUser`, onboarding flow |
+| `ateliers`, `members` | `createAtelierForCurrentUser`, `persistAtelierSettings` |
+
+Anonymous fitting requests are written by `persistAppointment` with `client_id = null`, `status =
+'pending'`, and the guest's name/phone. A member booking carries their auth uid.
 
 ## Coupling risks
 

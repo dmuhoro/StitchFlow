@@ -77,13 +77,18 @@ export const AuthModal: React.FC = () => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (pinCode.trim() === '1234' || pinCode.trim().length >= 4) {
+    if (isProductionMode) {
+      setErrorMsg('Demo PIN access is disabled in production. Sign in with your atelier account.');
+      return;
+    }
+
+    if (pinCode.trim() === '1234') {
       const match = profiles.find(p => p.id === selectedProfileId) || eligibleProfiles[0];
       if (match) {
         loginAsUser(match);
       }
     } else {
-      setErrorMsg('Invalid Keycard PIN. Enter standard demo PIN (1234) or select a credential card below.');
+      setErrorMsg('Invalid demo PIN. Use the demo PIN 1234 or select a credential card below.');
     }
   };
 

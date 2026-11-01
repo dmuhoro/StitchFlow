@@ -28,7 +28,24 @@ import {
   INITIAL_LOOKBOOK 
 } from '../data/initialData';
 import { dataMode, supabase } from '../lib/supabase';
-import { getCurrentMember, listAtelierMembers, loadAtelierSnapshot, persistAppointment, persistAppointmentStatus, persistFeedback, persistMeasurement, persistOrder, persistOrderStatus, persistTailorAssignment, AtelierMember } from '../lib/atelier-repository';
+import {
+  getAtelier,
+  getCurrentMember,
+  listAtelierMembers,
+  loadAtelierSnapshot,
+  loadPublicAtelierSnapshot,
+  persistAppointment,
+  persistAppointmentStatus,
+  persistAtelierSettings,
+  persistFeedback,
+  persistFeedbackStatus,
+  persistLookbookItem,
+  persistMeasurement,
+  persistOrder,
+  persistOrderStatus,
+  persistTailorAssignment,
+  AtelierMember,
+} from '../lib/atelier-repository';
 
 interface StitchFlowContextType {
   currentRole: UserRole;
@@ -179,6 +196,10 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
 
   const switchAtelier = (tenantId: string) => {
+    if (isProductionMode) {
+      showToast('Atelier switching is disabled in production. Your tenant comes from your account.');
+      return;
+    }
     const target = PREDEFINED_TENANTS.find(t => t.id === tenantId);
     if (target) {
       setCurrentAtelier(target);
@@ -229,23 +250,23 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
 
   const [orders, setOrders] = useState<Order[]>(() => {
-    return readStorage<Order[]>('orders', INITIAL_ORDERS);
+    return dataMode === 'supabase' ? [] : readStorage<Order[]>('orders', INITIAL_ORDERS);
   });
 
   const [measurements, setMeasurements] = useState<Measurement[]>(() => {
-    return readStorage<Measurement[]>('measurements', INITIAL_MEASUREMENTS);
+    return dataMode === 'supabase' ? [] : readStorage<Measurement[]>('measurements', INITIAL_MEASUREMENTS);
   });
 
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
-    return readStorage<Appointment[]>('appointments', INITIAL_APPOINTMENTS);
+    return dataMode === 'supabase' ? [] : readStorage<Appointment[]>('appointments', INITIAL_APPOINTMENTS);
   });
 
   const [feedbacks, setFeedbacks] = useState<Feedback[]>(() => {
-    return readStorage<Feedback[]>('feedback', INITIAL_FEEDBACK);
+    return dataMode === 'supabase' ? [] : readStorage<Feedback[]>('feedback', INITIAL_FEEDBACK);
   });
 
   const [lookbook, setLookbook] = useState<LookbookItem[]>(() => {
-    return readStorage<LookbookItem[]>('lookbook', INITIAL_LOOKBOOK);
+    return dataMode === 'supabase' ? [] : readStorage<LookbookItem[]>('lookbook', INITIAL_LOOKBOOK);
   });
 
   // UI states
@@ -281,6 +302,29 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const mappedProfiles = atelierMembers.map(memberToProfile);
     const profile = memberToProfile(member);
     const snapshot = await loadAtelierSnapshot(member.atelier_id);
+    const atelier = await getAtelier(member.atelier_id);
+    if (atelier) {
+      setCurrentAtelier(prev => ({
+        ...prev,
+        id: atelier.id,
+        name: atelier.name,
+        slug: atelier.slug,
+        tagline: atelier.tagline ?? prev.tagline,
+        currency: atelier.default_currency,
+        whatsapp: atelier.whatsapp_number ?? prev.whatsapp,
+        default_unit: atelier.default_unit,
+      }));
+      setSettings(prev => ({
+        ...prev,
+        atelier_id: atelier.id,
+        atelier_name: atelier.name,
+        studio_tagline: atelier.tagline ?? prev.studio_tagline,
+        whatsapp_number: atelier.whatsapp_number ?? prev.whatsapp_number,
+        currency: atelier.default_currency,
+        default_unit: atelier.default_unit,
+      }));
+      setCurrencyState(atelier.default_currency);
+    }
     setActiveAtelierId(member.atelier_id);
     setProfiles(mappedProfiles);
     setCurrentUser(profile);
@@ -322,6 +366,52 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       subscription.unsubscribe();
     };
   }, [isProductionMode]);
+
+  // Public surface: in production an anonymous visitor must see the real
+  // published lookbook and atelier profile from Supabase, never demo data.
+  useEffect(() => {
+    if (!isProductionMode || !supabase || currentUser) return;
+
+    let mounted = true;
+    const loadPublic = async () => {
+      try {
+        const snapshot = await loadPublicAtelierSnapshot(currentAtelier.id);
+        if (!mounted) return;
+        setLookbook(snapshot.lookbook);
+        if (snapshot.atelier) {
+          setCurrentAtelier(prev => ({
+            ...prev,
+            id: snapshot.atelier!.id,
+            name: snapshot.atelier!.name,
+            slug: snapshot.atelier!.slug,
+            tagline: snapshot.atelier!.tagline ?? prev.tagline,
+            currency: snapshot.atelier!.default_currency,
+            whatsapp: snapshot.atelier!.whatsapp_number ?? prev.whatsapp,
+            default_unit: snapshot.atelier!.default_unit,
+          }));
+          setSettings(prev => ({
+            ...prev,
+            atelier_id: snapshot.atelier!.id,
+            atelier_name: snapshot.atelier!.name,
+            studio_tagline: snapshot.atelier!.tagline ?? prev.studio_tagline,
+            whatsapp_number: snapshot.atelier!.whatsapp_number ?? prev.whatsapp_number,
+            currency: snapshot.atelier!.default_currency,
+            default_unit: snapshot.atelier!.default_unit,
+          }));
+          setCurrencyState(snapshot.atelier!.default_currency);
+        }
+      } catch (error) {
+        if (mounted) {
+          setAuthError(error instanceof Error ? error.message : 'Unable to load the public lookbook.');
+        }
+      }
+    };
+
+    void loadPublic();
+    return () => {
+      mounted = false;
+    };
+  }, [isProductionMode, currentUser, currentAtelier.id]);
 
   // Sync theme mode to DOM & local storage
   useEffect(() => {
@@ -414,6 +504,26 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }, 4000);
   };
 
+  /**
+   * Run a Supabase write and only report success when the database accepted it.
+   * On failure the caller is told, and the authenticated snapshot is reloaded so
+   * local state cannot silently diverge from the server.
+   */
+  const saveOrToast = async (work: Promise<void>, successMessage: string) => {
+    try {
+      await work;
+      showToast(successMessage);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : 'unknown error';
+      showToast(`Unable to save: ${detail}`);
+      try {
+        await applyAuthenticatedMember();
+      } catch {
+        // Keep the last known state; the failure is already surfaced.
+      }
+    }
+  };
+
   const setThemeMode = (mode: ThemeMode) => {
     setThemeModeState(mode);
     setSettings(prev => ({ ...prev, theme_mode: mode }));
@@ -426,17 +536,27 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const updateSettings = (newSettings: Partial<AtelierSettings>) => {
-    setSettings(prev => {
-      const merged = { ...prev, ...newSettings };
-      if (newSettings.currency) {
-        setCurrencyState(newSettings.currency);
-      }
-      if (newSettings.theme_mode) {
-        setThemeModeState(newSettings.theme_mode);
-      }
-      return merged;
-    });
-    showToast('Atelier settings updated successfully!');
+    const merged: AtelierSettings = { ...settings, ...newSettings };
+    setSettings(merged);
+    if (newSettings.currency) {
+      setCurrencyState(newSettings.currency);
+    }
+    if (newSettings.theme_mode) {
+      setThemeModeState(newSettings.theme_mode);
+    }
+
+    const touchesAtelier =
+      newSettings.atelier_name !== undefined ||
+      newSettings.studio_tagline !== undefined ||
+      newSettings.whatsapp_number !== undefined ||
+      newSettings.currency !== undefined ||
+      newSettings.default_unit !== undefined;
+
+    if (isProductionMode && activeAtelierId && touchesAtelier) {
+      void saveOrToast(persistAtelierSettings(activeAtelierId, merged), 'Atelier settings saved to the server.');
+    } else {
+      showToast('Atelier settings updated successfully!');
+    }
   };
 
   // Authentication & Access Control
@@ -450,6 +570,13 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const loginAsUser = (profile: Profile) => {
+    // Fail closed: demo role selection must never authenticate a production
+    // build. Production identity comes only from Supabase Auth + members RLS.
+    if (isProductionMode) {
+      setAuthError('Demo role sign-in is disabled in production. Sign in with your atelier account.');
+      showToast('Demo access is disabled in production. Sign in with your atelier account.');
+      return;
+    }
     setCurrentUser(profile);
     if (profile.role === 'owner') {
       setCurrentRoleState('owner');
@@ -562,12 +689,13 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }));
 
     if (isProductionMode) {
-      void persistOrderStatus(orderId, newStatus, note, currentUser?.id ?? null).catch(error => {
-        showToast(error instanceof Error ? `Unable to save order update: ${error.message}` : 'Unable to save order update.');
-      });
+      void saveOrToast(
+        persistOrderStatus(orderId, newStatus, note, currentUser?.id ?? null),
+        `Order ${orderId} moved to ${newStatus.toUpperCase()}`
+      );
+    } else {
+      showToast(`Order ${orderId} moved to ${newStatus.toUpperCase()}`);
     }
-
-    showToast(`Order ${orderId} moved to ${newStatus.toUpperCase()}`);
   };
 
   const addOrder = (orderData: Partial<Order>): Order => {
@@ -589,7 +717,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       estimated_delivery: orderData.estimated_delivery || new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
       deposit_amount: orderData.deposit_amount || 40000,
       balance_due: orderData.balance_due || 30000,
-      currency: 'KES',
+      currency: orderData.currency ?? currency,
       photo_url: orderData.photo_url || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&auto=format&fit=crop&q=80',
       progress_notes: [
         {
@@ -604,11 +732,13 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     setOrders(prev => [newOrder, ...prev]);
     if (isProductionMode && activeAtelierId) {
-      void persistOrder(activeAtelierId, newOrder).catch(error => {
-        showToast(error instanceof Error ? `Unable to save commission: ${error.message}` : 'Unable to save commission.');
-      });
+      void saveOrToast(
+        persistOrder(activeAtelierId, newOrder),
+        `Commission #${newId} logged for ${client.full_name}!`
+      );
+    } else {
+      showToast(`Commission #${newId} logged for ${client.full_name}!`);
     }
-    showToast(`Commission #${newId} logged for ${client.full_name}!`);
     return newOrder;
   };
 
@@ -626,12 +756,13 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }));
 
     if (isProductionMode) {
-      void persistTailorAssignment(orderId, tailorId).catch(error => {
-        showToast(error instanceof Error ? `Unable to assign artisan: ${error.message}` : 'Unable to assign artisan.');
-      });
+      void saveOrToast(
+        persistTailorAssignment(orderId, tailorId),
+        `Order ${orderId} reassigned to ${tailor.full_name}`
+      );
+    } else {
+      showToast(`Order ${orderId} reassigned to ${tailor.full_name}`);
     }
-
-    showToast(`Order ${orderId} reassigned to ${tailor.full_name}`);
   };
 
   const updateMeasurement = (newMeas: Measurement) => {
@@ -643,11 +774,13 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return [...prev, { ...newMeas, updated_at: new Date().toISOString().slice(0, 10) }];
     });
     if (isProductionMode && activeAtelierId) {
-      void persistMeasurement(activeAtelierId, newMeas).catch(error => {
-        showToast(error instanceof Error ? `Unable to save measurement card: ${error.message}` : 'Unable to save measurement card.');
-      });
+      void saveOrToast(
+        persistMeasurement(activeAtelierId, newMeas),
+        'African measurement card saved to the server.'
+      );
+    } else {
+      showToast('African measurement card updated successfully!');
     }
-    showToast('African measurement card updated successfully!');
   };
 
   const getMeasurementForClient = (clientId: string) => {
@@ -663,23 +796,30 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     setAppointments(prev => [newAppointment, ...prev]);
-    if (isProductionMode && activeAtelierId) {
-      void persistAppointment(activeAtelierId, newAppointment).catch(error => {
-        showToast(error instanceof Error ? `Unable to save appointment: ${error.message}` : 'Unable to save appointment.');
-      });
+    if (isProductionMode) {
+      // Anonymous visitors have no active member, so the public atelier is the
+      // target. The RLS policy accepts only a pending request with no account.
+      const atelierId = activeAtelierId ?? currentAtelier.id;
+      void saveOrToast(
+        persistAppointment(atelierId, newAppointment),
+        'Ceremonial fitting request sent to the atelier.'
+      );
+    } else {
+      showToast('Ceremonial fitting request booked! Atelier will confirm shortly.');
     }
-    showToast('Ceremonial fitting request booked! Atelier will confirm shortly.');
     return newAppointment;
   };
 
   const updateAppointmentStatus = (id: string, status: AppointmentStatus) => {
     setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
     if (isProductionMode) {
-      void persistAppointmentStatus(id, status).catch(error => {
-        showToast(error instanceof Error ? `Unable to save appointment status: ${error.message}` : 'Unable to save appointment status.');
-      });
+      void saveOrToast(
+        persistAppointmentStatus(id, status),
+        `Appointment status updated to ${status}`
+      );
+    } else {
+      showToast(`Appointment status updated to ${status}`);
     }
-    showToast(`Appointment status updated to ${status}`);
   };
 
   const submitFeedback = (fbData: Omit<Feedback, 'id' | 'created_at' | 'resolution_status'>) => {
@@ -692,16 +832,22 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     setFeedbacks(prev => [newFeedback, ...prev]);
     if (isProductionMode && activeAtelierId) {
-      void persistFeedback(activeAtelierId, fbData).catch(error => {
-        showToast(error instanceof Error ? `Unable to save feedback: ${error.message}` : 'Unable to save feedback.');
-      });
+      void saveOrToast(
+        persistFeedback(activeAtelierId, fbData),
+        'Thank you! Your ceremonial review was submitted to the atelier.'
+      );
+    } else {
+      showToast('Thank you! Your ceremonial review was submitted to Director Wanjiku.');
     }
-    showToast('Thank you! Your ceremonial review was submitted to Director Wanjiku.');
   };
 
   const updateFeedbackStatus = (id: string, status: 'open' | 'addressed' | 'resolved') => {
     setFeedbacks(prev => prev.map(f => f.id === id ? { ...f, resolution_status: status } : f));
-    showToast(`Feedback marked as ${status}`);
+    if (isProductionMode) {
+      void saveOrToast(persistFeedbackStatus(id, status), `Feedback marked as ${status}`);
+    } else {
+      showToast(`Feedback marked as ${status}`);
+    }
   };
 
   const addLookbookItem = (itemData: Omit<LookbookItem, 'id'>) => {
@@ -710,10 +856,21 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       id: `LKB-${Date.now().toString().slice(-4)}`
     };
     setLookbook(prev => [newItem, ...prev]);
-    showToast(`Published "${itemData.title}" to public lookbook!`);
+    if (isProductionMode && activeAtelierId) {
+      void saveOrToast(
+        persistLookbookItem(activeAtelierId, itemData),
+        `Published "${itemData.title}" to the public lookbook.`
+      );
+    } else {
+      showToast(`Published "${itemData.title}" to public lookbook!`);
+    }
   };
 
   const resetToDefaults = () => {
+    if (isProductionMode) {
+      showToast('Reset is a demo-only action and is disabled against a live atelier.');
+      return;
+    }
     clearStitchFlowStorage();
     setOrders(INITIAL_ORDERS);
     setMeasurements(INITIAL_MEASUREMENTS);

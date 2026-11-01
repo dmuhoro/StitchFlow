@@ -49,7 +49,7 @@ default_currency, whatsapp_number, default_unit, timestamps). It does not receiv
 
 | Risk | Status |
 |------|--------|
-| Demo PIN in production | Must be disabled (P0) |
+| Demo PIN in production | Refused at the action boundary (`StitchFlowContext.tsx:576`, `AuthModal.tsx:81`) |
 | No rate limiting on anonymous booking | Open; PostgREST-level, post-launch |
 | No appointment capacity lock | Open; post-launch |
 | Remote project access unverified | Blocked on owner authorization |

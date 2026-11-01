@@ -11,7 +11,7 @@
  *
  * When the build ran with VITE_DATA_MODE=supabase:
  *   - the Supabase client is present (the bundle is not demo-only)
- *   - the demo-access marker is absent
+ *   - the runtime guards that refuse demo sign-in and demo reset are present
  */
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, resolve, dirname, extname } from 'node:path';
@@ -53,7 +53,7 @@ if (corpus.includes('/src/assets/')) {
   fail('bundle contains a literal /src/assets/ path; an image import was not rewritten.');
 }
 
-if (corpus.includes('your-project-ref')) {
+if (corpus.includes('https://your-project-ref.supabase.co')) {
   fail('bundle contains the placeholder Supabase host "your-project-ref".');
 }
 
@@ -75,8 +75,11 @@ if (mode === 'supabase') {
   if (!/GoTrueClient|createClient/.test(corpus)) {
     fail('VITE_DATA_MODE=supabase build does not include the Supabase client.');
   }
-  if (corpus.includes('DEMO_ACCESS_MARKER')) {
-    fail('production build still contains the demo access marker.');
+  if (!corpus.includes('Demo role sign-in is disabled in production')) {
+    fail('production build is missing the runtime guard that refuses demo role sign-in.');
+  }
+  if (!corpus.includes('Reset is a demo-only action')) {
+    fail('production build is missing the runtime guard that refuses demo-only reset.');
   }
 }
 

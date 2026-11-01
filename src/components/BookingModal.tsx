@@ -28,6 +28,7 @@ export const BookingModal: React.FC = () => {
     profiles, 
     appointments, 
     bookAppointment,
+    currentUser,
     selectedLookbookForBooking,
     setSelectedLookbookForBooking
   } = useStitchFlow();
@@ -52,6 +53,11 @@ export const BookingModal: React.FC = () => {
   if (!bookingModalOpen) return null;
 
   const tailors = profiles.filter(p => p.role === 'employee');
+  // Production profiles carry real UUIDs; a seeded demo id must never be sent
+  // to a uuid column.
+  const effectiveTailorId = tailors.some(t => t.id === selectedTailorId)
+    ? selectedTailorId
+    : (tailors[0]?.id ?? '');
 
   const services: { id: AppointmentType; title: string; duration: string; price: string; description: string }[] = [
     {
@@ -134,10 +140,11 @@ export const BookingModal: React.FC = () => {
     ].filter(Boolean).join(' | ');
 
     const newApt = bookAppointment({
-      client_id: `cli_${Date.now()}`,
+      client_id: currentUser?.id ?? null,
       client_name: fullName,
       client_phone: phone,
-      assigned_tailor_id: selectedTailorId,
+      client_email: email || undefined,
+      assigned_tailor_id: effectiveTailorId,
       service_type: selectedService,
       slot_datetime: `${selectedDate}T${selectedTime}:00`,
       cultural_occasion: occasion,

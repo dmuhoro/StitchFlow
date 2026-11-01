@@ -1,5 +1,5 @@
 import { supabase, requireSupabase } from './supabase';
-import { Appointment, Feedback, LookbookItem, Measurement, Order, ProductionStatus, AppointmentStatus } from '../types';
+import { Appointment, AppointmentStatus, AtelierSettings, Feedback, LookbookItem, Measurement, Order, ProductionStatus } from '../types';
 
 export interface AtelierMember {
   id: string;
@@ -20,7 +20,7 @@ export interface AtelierSummary {
   slug: string;
   tagline: string | null;
   whatsapp_number: string | null;
-  default_currency: 'KES' | 'USD';
+  default_currency: 'KES' | 'NGN' | 'USD';
   default_unit: 'cm' | 'in';
 }
 
@@ -121,8 +121,8 @@ export async function loadAtelierSnapshot(atelierId: string): Promise<AtelierSna
     client.from('orders').select('id, atelier_id, order_code, client_id, assigned_tailor_id, status, description, garment_type, fabric_details, estimated_delivery, photo_url, created_at, updated_at').eq('atelier_id', atelierId).order('created_at', { ascending: false }),
     client.from('order_progress_notes').select('id, order_id, author_id, stage, note, created_at').order('created_at', { ascending: true }),
     client.from('order_financials').select('order_id, deposit_amount, balance_due, currency').eq('atelier_id', atelierId),
-    client.from('measurements').select('id, client_id, unit, chest, waist, hips, length, sleeve, shoulder, inseam, neck, agbada_wingspan, fila_cap_head, posture_notes, updated_at').eq('atelier_id', atelierId),
-    client.from('appointments').select('id, client_id, assigned_tailor_id, service_type, slot_datetime, status, notes, cultural_occasion, reference_url').eq('atelier_id', atelierId).order('slot_datetime'),
+    client.from('measurements').select('id, client_id, unit, chest, waist, hips, length, sleeve, shoulder, inseam, neck, agbada_wingspan, sokoto_inseam, fila_cap_head, buba_chest, posture_notes, updated_at').eq('atelier_id', atelierId),
+    client.from('appointments').select('id, client_id, client_name, client_phone, client_email, assigned_tailor_id, service_type, slot_datetime, status, notes, cultural_occasion, reference_url').eq('atelier_id', atelierId).order('slot_datetime'),
     client.from('feedback').select('id, order_id, client_id, rating, fit_rating, comments, resolution_status, created_at').eq('atelier_id', atelierId).order('created_at', { ascending: false }),
     client.from('lookbook_items').select('id, title, category, description, fabric, price_range, turnaround_days, image_url, tags, cultural_origin, is_featured').eq('atelier_id', atelierId).order('created_at', { ascending: false }),
   ]);
@@ -158,7 +158,7 @@ export async function loadAtelierSnapshot(atelierId: string): Promise<AtelierSna
       estimated_delivery: row.estimated_delivery ?? '',
       deposit_amount: Number(financial?.deposit_amount ?? 0),
       balance_due: Number(financial?.balance_due ?? 0),
-      currency: financial?.currency === 'USD' ? 'USD' : 'KES',
+      currency: financial?.currency === 'USD' || financial?.currency === 'NGN' ? financial.currency : 'KES',
       photo_url: row.photo_url ?? '',
       progress_notes: (notesByOrder.get(row.id) ?? []).map(note => ({
         stage: note.stage as ProductionStatus,
@@ -175,9 +175,56 @@ export async function loadAtelierSnapshot(atelierId: string): Promise<AtelierSna
     profiles: members,
     orders,
     measurements: (measurementsResult.data ?? []).map((row: any) => ({ ...row, client_name: memberById.get(row.client_id)?.full_name ?? 'Patron', updated_at: row.updated_at })) as Measurement[],
-    appointments: (appointmentsResult.data ?? []).map((row: any) => ({ ...row, client_name: memberById.get(row.client_id)?.full_name ?? 'Patron', client_phone: memberById.get(row.client_id)?.phone ?? '', assigned_tailor_name: memberById.get(row.assigned_tailor_id)?.full_name ?? 'Unassigned' })) as Appointment[],
+    appointments: (appointmentsResult.data ?? []).map((row: any) => ({
+      ...row,
+      client_id: row.client_id ?? null,
+      client_name: memberById.get(row.client_id)?.full_name ?? row.client_name ?? 'Guest Patron',
+      client_phone: memberById.get(row.client_id)?.phone ?? row.client_phone ?? '',
+      client_email: row.client_email ?? '',
+      assigned_tailor_name: row.assigned_tailor_id
+        ? memberById.get(row.assigned_tailor_id)?.full_name ?? 'Unassigned'
+        : 'Unassigned',
+    })) as Appointment[],
     feedbacks: (feedbackResult.data ?? []).map((row: any) => ({ ...row, order_id: orders.find(order => orderById.get(row.order_id)?.order_code === order.id)?.id ?? row.order_id, client_name: memberById.get(row.client_id)?.full_name ?? 'Patron' })) as Feedback[],
     lookbook: (lookbookResult.data ?? []).map((row: any) => ({ ...row, image_url: row.image_url ?? '', tags: row.tags ?? [] })) as LookbookItem[],
+  };
+}
+
+export interface PublicAtelierSnapshot {
+  atelier: AtelierSummary | null;
+  lookbook: LookbookItem[];
+}
+
+/**
+ * Anonymous/public read path. RLS restricts this to the public atelier columns
+ * and published lookbook rows, so the query is safe without a session.
+ */
+export async function loadPublicAtelierSnapshot(atelierId: string): Promise<PublicAtelierSnapshot> {
+  const client = requireSupabase();
+  const [atelierResult, lookbookResult] = await Promise.all([
+    client
+      .from('ateliers')
+      .select('id, name, slug, tagline, whatsapp_number, default_currency, default_unit')
+      .eq('id', atelierId)
+      .maybeSingle(),
+    client
+      .from('lookbook_items')
+      .select('id, title, category, description, fabric, price_range, turnaround_days, image_url, tags, cultural_origin, is_featured')
+      .eq('atelier_id', atelierId)
+      .eq('is_published', true)
+      .order('created_at', { ascending: false }),
+  ]);
+
+  const error = atelierResult.error ?? lookbookResult.error;
+  if (error) throw error;
+
+  return {
+    atelier: (atelierResult.data as AtelierSummary | null) ?? null,
+    lookbook: (lookbookResult.data ?? []).map((row: any) => ({
+      ...row,
+      image_url: row.image_url ?? '',
+      tags: row.tags ?? [],
+    })) as LookbookItem[],
   };
 }
 
@@ -210,13 +257,28 @@ export async function persistTailorAssignment(orderCode: string, tailorId: strin
 
 export async function persistMeasurement(atelierId: string, measurement: Measurement): Promise<void> {
   const client = requireSupabase();
-  const { error } = await client.from('measurements').upsert({ atelier_id: atelierId, client_id: measurement.client_id, unit: measurement.unit, chest: measurement.chest, waist: measurement.waist, hips: measurement.hips, length: measurement.length, sleeve: measurement.sleeve, shoulder: measurement.shoulder, inseam: measurement.inseam, neck: measurement.neck, agbada_wingspan: measurement.agbada_wingspan ?? null, fila_cap_head: measurement.fila_cap_head ?? null, posture_notes: measurement.posture_notes, verified_at: new Date().toISOString() }, { onConflict: 'atelier_id,client_id' });
+  const { error } = await client.from('measurements').upsert({ atelier_id: atelierId, client_id: measurement.client_id, unit: measurement.unit, chest: measurement.chest, waist: measurement.waist, hips: measurement.hips, length: measurement.length, sleeve: measurement.sleeve, shoulder: measurement.shoulder, inseam: measurement.inseam, neck: measurement.neck, agbada_wingspan: measurement.agbada_wingspan ?? null, sokoto_inseam: measurement.sokoto_inseam ?? null, fila_cap_head: measurement.fila_cap_head ?? null, buba_chest: measurement.buba_chest ?? null, posture_notes: measurement.posture_notes, verified_at: new Date().toISOString() }, { onConflict: 'atelier_id,client_id' });
   if (error) throw error;
 }
 
 export async function persistAppointment(atelierId: string, appointment: Appointment): Promise<void> {
   const client = requireSupabase();
-  const { error } = await client.from('appointments').insert({ id: appointment.id, atelier_id: atelierId, client_id: appointment.client_id, assigned_tailor_id: appointment.assigned_tailor_id || null, service_type: appointment.service_type, slot_datetime: appointment.slot_datetime, status: appointment.status, notes: appointment.notes ?? null, cultural_occasion: appointment.cultural_occasion ?? null, reference_url: appointment.reference_url ?? null });
+  const { error } = await client.from('appointments').insert({
+    id: appointment.id,
+    atelier_id: atelierId,
+    // Anonymous public requests carry no account; the RLS policy requires null.
+    client_id: appointment.client_id ?? null,
+    client_name: appointment.client_name,
+    client_phone: appointment.client_phone,
+    client_email: appointment.client_email ?? null,
+    assigned_tailor_id: appointment.assigned_tailor_id || null,
+    service_type: appointment.service_type,
+    slot_datetime: appointment.slot_datetime,
+    status: appointment.status,
+    notes: appointment.notes ?? null,
+    cultural_occasion: appointment.cultural_occasion ?? null,
+    reference_url: appointment.reference_url ?? null,
+  });
   if (error) throw error;
 }
 
@@ -232,5 +294,42 @@ export async function persistFeedback(atelierId: string, feedback: Omit<Feedback
   if (orderError) throw orderError;
   if (!order) throw new Error('Order not found or not accessible.');
   const { error } = await client.from('feedback').insert({ atelier_id: atelierId, order_id: order.id, client_id: feedback.client_id, rating: feedback.rating, fit_rating: feedback.fit_rating, comments: feedback.comments });
+  if (error) throw error;
+}
+
+export async function persistFeedbackStatus(id: string, status: 'open' | 'addressed' | 'resolved'): Promise<void> {
+  const client = requireSupabase();
+  const { error } = await client.from('feedback').update({ resolution_status: status }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function persistLookbookItem(atelierId: string, item: Omit<LookbookItem, 'id'>): Promise<void> {
+  const client = requireSupabase();
+  const { error } = await client.from('lookbook_items').insert({
+    atelier_id: atelierId,
+    title: item.title,
+    category: item.category,
+    description: item.description,
+    fabric: item.fabric,
+    price_range: item.price_range,
+    turnaround_days: item.turnaround_days,
+    image_url: item.image_url,
+    tags: item.tags,
+    cultural_origin: item.cultural_origin,
+    is_featured: item.is_featured,
+    is_published: true,
+  });
+  if (error) throw error;
+}
+
+export async function persistAtelierSettings(atelierId: string, settings: AtelierSettings): Promise<void> {
+  const client = requireSupabase();
+  const { error } = await client.from('ateliers').update({
+    name: settings.atelier_name,
+    tagline: settings.studio_tagline,
+    whatsapp_number: settings.whatsapp_number,
+    default_currency: settings.currency,
+    default_unit: settings.default_unit,
+  }).eq('id', atelierId);
   if (error) throw error;
 }

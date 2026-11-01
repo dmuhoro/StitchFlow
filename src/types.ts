@@ -60,9 +60,11 @@ export interface AtelierSettings {
 export interface Appointment {
   id: string;
   atelier_id?: string;
-  client_id: string;
+  // Null for an anonymous public fitting request; an auth uid for a member.
+  client_id: string | null;
   client_name: string;
   client_phone: string;
+  client_email?: string;
   assigned_tailor_id: string;
   service_type: AppointmentType;
   slot_datetime: string;
@@ -113,7 +115,9 @@ export interface Measurement {
   inseam: number;
   neck: number;
   agbada_wingspan?: number;
+  sokoto_inseam?: number;
   fila_cap_head?: number;
+  buba_chest?: number;
   posture_notes: string;
   updated_at: string;
 }

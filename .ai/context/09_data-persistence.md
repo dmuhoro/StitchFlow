@@ -33,8 +33,11 @@ then reloads the snapshot or patches state from the confirmed result. A failed w
 context surfaces a toast and does not claim success.
 
 Writes covered at this release: order create, order status, tailor assignment, measurement upsert,
-appointment create, appointment status, feedback create, feedback resolution, lookbook create,
-atelier settings update.
+appointment create (member or anonymous), appointment status, feedback create, feedback resolution,
+lookbook create, atelier settings update.
+
+Anonymous visitors use `loadPublicAtelierSnapshot` to read the public atelier profile and published
+lookbook. Supabase mode never seeds demo orders, measurements, appointments, feedback, or lookbook.
 
 Writes deliberately not offered in `supabase` mode: tenant switching (the switcher is demo-only),
 reset-to-defaults against a live tenant (destructive), and role escalation.
