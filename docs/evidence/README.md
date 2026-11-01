@@ -8,7 +8,7 @@
 | Date | Topic | File | Verdict |
 |------|-------|------|---------|
 | 2026-11-01 | Database migration chain and RLS | `2026-11-01_database_chain.md` | PASS |
-| 2026-11-01 | Build artifacts and bundle assertions | `2026-11-01_build_artifacts.md` | PENDING |
+| 2026-11-01 | Build artifacts and bundle assertions | `2026-11-01_build_artifacts.md` | PASS |
 | 2026-11-01 | Release and tag | `2026-11-01_release.md` | PENDING |
 | 2026-11-01 | Deployment | `2026-11-01_deployment.md` | PENDING |
 

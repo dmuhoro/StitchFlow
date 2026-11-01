@@ -15,7 +15,7 @@ versioned release, and honest documentation.
 |-------|-------|--------|-------|
 | L1 | Migration chain replays from empty; seed separated; currency contract aligned | DONE | `docs/evidence/2026-11-01_database_chain.md` |
 | L2 | RLS isolation suite (10 scenarios) green | DONE | same evidence |
-| L3 | Local imagery imported through Vite, hashed in `dist/` | PENDING | `docs/evidence/2026-11-01_build_artifacts.md` |
+| L3 | Local imagery imported through Vite, hashed in `dist/` | DONE | `docs/evidence/2026-11-01_build_artifacts.md` |
 | L4 | Persistence wired; demo PIN fails closed in production; currency and status drift fixed | PENDING | lint/build + sprint record |
 | L5 | CI: lint, build, artifacts, docs, DB | PENDING | `.github/workflows/ci.yml` |
 | L6 | Version 1.0.0, changelog, release notes, annotated tag | PENDING | `docs/evidence/2026-11-01_release.md` |
@@ -45,5 +45,12 @@ versioned release, and honest documentation.
   patron-directory assertion to "self only, never another patron".
 - Proof: `npm run verify:db` → exit `0`, all 10 scenarios PASS, recorded in
   `docs/evidence/2026-11-01_database_chain.md`.
+
+### L3 — Bundled cultural imagery (DONE)
+
+- Local couture photographs were referenced as literal source paths, which 404 in production.
+- Imported all eight images through Vite (ADR-006), so they emit as hashed files under `dist/assets/`.
+- Proof: `npm run build && npm run verify:build` → 8 hashed image assets, no source-path literal,
+  recorded in `docs/evidence/2026-11-01_build_artifacts.md`.
 
 Remaining layers are filled in as they close. Final sign-off is in `docs/release-readiness.md`.

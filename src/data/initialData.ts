@@ -5,6 +5,17 @@
 
 import { Profile, Order, Measurement, Appointment, Feedback, LookbookItem } from '../types';
 
+// Local couture imagery is imported so Vite emits it with a content hash. A
+// literal source-folder path 404s in a production build (ADR-006).
+import agbadaAsoOke from '../assets/images/agbada_aso_oke_1793438762681.jpg';
+import senatorSuitKaftan from '../assets/images/senator_suit_kaftan_1793438763426.jpg';
+import kitengeRuracioBridal from '../assets/images/kitenge_ruracio_bridal_1793438764201.jpg';
+import bonwireKenteRegalia from '../assets/images/bonwire_kente_regalia_1793438764736.jpg';
+import swahiliLamuKanzu from '../assets/images/swahili_lamu_kanzu_1793438765918.jpg';
+import kenyanTribalKikuyu from '../assets/images/kenyan_tribal_kikuyu_1793438766135.jpg';
+import kenyanTribalMaasai from '../assets/images/kenyan_tribal_maasai_1793438766637.jpg';
+import kenyanKikoyModern from '../assets/images/kenyan_kikoy_modern_1793438766233.jpg';
+
 export const INITIAL_PROFILES: Profile[] = [
   {
     id: 'usr_owner_01',
@@ -338,7 +349,7 @@ export const INITIAL_LOOKBOOK: LookbookItem[] = [
     fabric: 'Handwoven Alaari Aso-Oke with Metallic Gold Thread',
     price_range: '85,000 - 140,000 KES',
     turnaround_days: 14,
-    image_url: '/src/assets/images/agbada_aso_oke_1793438762681.jpg',
+    image_url: agbadaAsoOke,
     tags: ['Grand Agbada', 'Nigerian Aso-Oke', 'Royal Alaari', 'Yoruba Fila', 'Bespoke'],
     cultural_origin: 'Yoruba & West African High Royal Regalia',
     is_featured: true
@@ -351,7 +362,7 @@ export const INITIAL_LOOKBOOK: LookbookItem[] = [
     fabric: 'Super 150s Tropical Wool & Hand-Finished Silk Thread',
     price_range: '48,000 - 68,000 KES',
     turnaround_days: 10,
-    image_url: '/src/assets/images/senator_suit_kaftan_1793438763426.jpg',
+    image_url: senatorSuitKaftan,
     tags: ['Senator Kaftan', 'Executive', 'Hausa Embroidery', 'Mandarin Collar', 'Pan-African'],
     cultural_origin: 'West African & Niger Delta Executive Couture',
     is_featured: true
@@ -364,7 +375,7 @@ export const INITIAL_LOOKBOOK: LookbookItem[] = [
     fabric: 'Original Vlisco Hollandais Wax, Organza & Natural Cowrie Shells',
     price_range: '70,000 - 115,000 KES',
     turnaround_days: 18,
-    image_url: '/src/assets/images/kitenge_ruracio_bridal_1793438764201.jpg',
+    image_url: kitengeRuracioBridal,
     tags: ['Ruracio Bridal', 'Vlisco Hollandais', 'Kikuyu Wedding', 'Cowrie Beads', 'Kenyan Bridal'],
     cultural_origin: 'Kenyan Central & Western Traditional Dowry (Ruracio)',
     is_featured: true
@@ -377,7 +388,7 @@ export const INITIAL_LOOKBOOK: LookbookItem[] = [
     fabric: 'Authentic Hand-Loomed Bonwire Kente Silk & Pure Black Velvet',
     price_range: '75,000 - 120,000 KES',
     turnaround_days: 14,
-    image_url: '/src/assets/images/bonwire_kente_regalia_1793438764736.jpg',
+    image_url: bonwireKenteRegalia,
     tags: ['Bonwire Kente', 'Ghanaian Couture', 'Ashanti Royalty', 'Gala Cape', 'Gold Weave'],
     cultural_origin: 'Ghanaian Ashanti Royalty & Ceremonial Gala',
     is_featured: true
@@ -390,7 +401,7 @@ export const INITIAL_LOOKBOOK: LookbookItem[] = [
     fabric: 'Egyptian Cotton Damask & Moroccan Metallic Bullion Cord',
     price_range: '45,000 - 65,000 KES',
     turnaround_days: 8,
-    image_url: '/src/assets/images/swahili_lamu_kanzu_1793438765918.jpg',
+    image_url: swahiliLamuKanzu,
     tags: ['Swahili Kanzu', 'Lamu Archipelago', 'Ceremonial Bisht', 'Gold Placket', 'Coastal Heritage'],
     cultural_origin: 'Swahili Coast & Lamu Heritage (Kenyan Coast)',
     is_featured: true
@@ -403,7 +414,7 @@ export const INITIAL_LOOKBOOK: LookbookItem[] = [
     fabric: 'Tanned Earth Linen, Calfskin & Hand-Strung Glass Beadwork',
     price_range: '55,000 - 85,000 KES',
     turnaround_days: 12,
-    image_url: '/src/assets/images/kenyan_tribal_kikuyu_1793438766135.jpg',
+    image_url: kenyanTribalKikuyu,
     tags: ['Kikuyu Heritage', 'Agikuyu Traditional', 'Ruracio Ceremony', 'Beaded Collars', 'Kenyan Tribe'],
     cultural_origin: 'Kikuyu / Agikuyu Tribal Heritage (Central Kenya)',
     is_featured: true
@@ -416,7 +427,7 @@ export const INITIAL_LOOKBOOK: LookbookItem[] = [
     fabric: 'Authentic Hand-Treated Kenyan Acrylic Shúkà & Maasai Beadwork',
     price_range: '48,000 - 72,000 KES',
     turnaround_days: 10,
-    image_url: '/src/assets/images/kenyan_tribal_maasai_1793438766637.jpg',
+    image_url: kenyanTribalMaasai,
     tags: ['Maasai Shúkà', 'Enkarewa Beadwork', 'Maasai Tribe', 'Kenyan Warrior Regalia', 'Ceremonial'],
     cultural_origin: 'Maasai Tribal Regalia (Great Rift Valley, Kenya)',
     is_featured: true
@@ -429,7 +440,7 @@ export const INITIAL_LOOKBOOK: LookbookItem[] = [
     fabric: 'Pure Kenyan Hand-Loomed Kikoy Cotton & Belgian Linen',
     price_range: '36,000 - 52,000 KES',
     turnaround_days: 7,
-    image_url: '/src/assets/images/kenyan_kikoy_modern_1793438766233.jpg',
+    image_url: kenyanKikoyModern,
     tags: ['Kenyan Kikoy', 'Safari Duster', 'Modern African', 'Lamu Stripe', 'Contemporary'],
     cultural_origin: 'Kenyan Coastal Kikoy & East African Heritage',
     is_featured: false

@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useStitchFlow } from '../context/StitchFlowContext';
 import { LookbookItem } from '../types';
+import agbadaAsoOke from '../assets/images/agbada_aso_oke_1793438762681.jpg';
 
 export const PublicPortfolio: React.FC = () => {
   const { 
@@ -165,7 +166,7 @@ export const PublicPortfolio: React.FC = () => {
               <div className="relative mx-auto max-w-md">
                 <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#D4A347]/40 aspect-[4/5] bg-[#24201D]">
                   <img
-                    src="/src/assets/images/agbada_aso_oke_1793438762681.jpg"
+                    src={agbadaAsoOke}
                     alt="Royal Grand Agbada handcrafted at StitchFlow"
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
