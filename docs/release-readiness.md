@@ -8,8 +8,8 @@
 | ID | Gate | Status | Evidence |
 |----|------|--------|----------|
 | L0 | Operating scaffold: docs, ADRs, sprints, agents, scripts | DONE | `sprints/sprint-00-operating-scaffold.md` |
-| L1 | Reproducible migration chain from empty database | PENDING | — |
-| L2 | RLS isolation suite green | PENDING | — |
+| L1 | Reproducible migration chain from empty database | DONE | `docs/evidence/2026-11-01_database_chain.md` |
+| L2 | RLS isolation suite green | DONE | same evidence — 10 scenarios + structural assertions |
 | L3 | Local imagery bundled with hashed URLs | PENDING | — |
 | L4 | Persistence wired for every supported action | PENDING | — |
 | L5 | CI runs lint, build, docs, DB verification | PENDING | — |

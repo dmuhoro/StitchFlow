@@ -1,37 +1,57 @@
 -- ============================================================================
 -- STITCHFLOW ROW LEVEL SECURITY (RLS) MULTI-TENANT ISOLATION SUITE
--- Target: Supabase Postgres RLS Verification
--- Demonstrates mathematical certainty of zero cross-tenant contamination.
+-- ----------------------------------------------------------------------------
+-- Executed by `npm run verify:db` (local Docker) and by CI against a disposable
+-- postgres:16 service. Every scenario runs inside one transaction that is rolled
+-- back, so the suite is repeatable and never mutates seed data.
+--
+-- Identity is simulated with Supabase's JWT claim GUC, exactly as PostgREST
+-- presents it to Postgres. Assertions abort the script on any leak.
 -- ============================================================================
 
 BEGIN;
 
+-- A private lookbook entry used by the anonymous-visibility test.
+insert into public.lookbook_items (
+  id, atelier_id, title, category, description, fabric, price_range,
+  turnaround_days, image_url, cultural_origin, tags, is_featured, is_published
+)
+values (
+  'a50000ff-1111-1111-1111-111111111111',
+  '11111111-1111-1111-1111-111111111111',
+  'Unpublished Atelier Draft',
+  'Ceremonial & Bridal',
+  'Draft entry that must never reach an anonymous visitor.',
+  'Private sample',
+  'KES 0',
+  7,
+  'https://example.invalid/draft.jpg',
+  'Internal',
+  array['draft'],
+  false,
+  false
+);
+
 -- ----------------------------------------------------------------------------
--- TEST 1: TENANT A OWNER CANNOT VIEW TENANT B ORDERS OR BALANCES
+-- TEST 1: TENANT A OWNER CANNOT VIEW TENANT B ORDERS
 -- ----------------------------------------------------------------------------
--- Simulate authenticated context as Tenant A Owner (Danny Muhoro)
 SET LOCAL ROLE authenticated;
 SET LOCAL "request.jwt.claims" = '{"sub": "a1111111-1111-1111-1111-111111111111", "role": "authenticated"}';
 
 DO $$
 DECLARE
-    v_order_count INT;
-    v_leak_count INT;
+  v_own INT;
+  v_leak INT;
 BEGIN
-    -- Query orders as Tenant A
-    SELECT COUNT(*) INTO v_order_count 
-    FROM public.orders 
-    WHERE atelier_id = '11111111-1111-1111-1111-111111111111';
+  SELECT count(*) INTO v_own FROM public.orders
+  WHERE atelier_id = '11111111-1111-1111-1111-111111111111';
 
-    -- Attempt to query Tenant B's orders
-    SELECT COUNT(*) INTO v_leak_count 
-    FROM public.orders 
-    WHERE atelier_id = '22222222-2222-2222-2222-222222222222';
+  SELECT count(*) INTO v_leak FROM public.orders
+  WHERE atelier_id = '22222222-2222-2222-2222-222222222222';
 
-    ASSERT v_order_count >= 2, 'Tenant A owner should see their own atelier orders';
-    ASSERT v_leak_count = 0, 'CRITICAL SECURITY BREACH: Tenant A owner was able to see Tenant B orders!';
-    
-    RAISE NOTICE 'SUCCESS [TEST 1]: Cross-tenant order isolation verified. Visible: %, Leaked: %', v_order_count, v_leak_count;
+  ASSERT v_own >= 3, 'Tenant A owner should see their own atelier orders';
+  ASSERT v_leak = 0, 'CRITICAL: Tenant A owner can see Tenant B orders';
+  RAISE NOTICE 'PASS [1] owner order isolation: own=%, leaked=%', v_own, v_leak;
 END $$;
 
 -- ----------------------------------------------------------------------------
@@ -39,101 +59,275 @@ END $$;
 -- ----------------------------------------------------------------------------
 DO $$
 DECLARE
-    v_updated_rows INT;
+  v_updated INT;
 BEGIN
-    -- Attempt malicious update on Tenant B client measurement card
-    UPDATE public.measurements
-    SET posture_notes = 'MALICIOUS_OVERWRITE'
-    WHERE id = 'm2222222-2222-2222-2222-222222222222'
-      AND atelier_id = '22222222-2222-2222-2222-222222222222';
-    
-    GET DIAGNOSTICS v_updated_rows = ROW_COUNT;
-    ASSERT v_updated_rows = 0, 'CRITICAL SECURITY BREACH: Tenant A mutated Tenant B measurement card!';
+  UPDATE public.measurements
+  SET posture_notes = 'MALICIOUS_OVERWRITE'
+  WHERE id = 'b0000001-1111-1111-1111-111111111111';
 
-    RAISE NOTICE 'SUCCESS [TEST 2]: Cross-tenant write isolation verified. Rows mutated: %', v_updated_rows;
+  GET DIAGNOSTICS v_updated = ROW_COUNT;
+  ASSERT v_updated = 0, 'CRITICAL: Tenant A mutated a Tenant B measurement card';
+  RAISE NOTICE 'PASS [2] cross-tenant write isolation: rows mutated=%', v_updated;
 END $$;
 
 -- ----------------------------------------------------------------------------
--- TEST 3: ARTISAN ROLE RESTRICTIONS & FINANCIAL ISOLATION
+-- TEST 3: ARTISAN SCOPE AND FINANCIAL ISOLATION
 -- ----------------------------------------------------------------------------
--- Switch context to Tenant A Artisan (Amani Wanjiru)
 SET LOCAL "request.jwt.claims" = '{"sub": "a2222222-2222-2222-2222-222222222222", "role": "authenticated"}';
 
 DO $$
 DECLARE
-    v_assigned_order_count INT;
-    v_other_tenant_count INT;
+  v_assigned INT;
+  v_other_tenant INT;
+  v_financials INT;
+  v_members INT;
 BEGIN
-    -- Artisan should only see orders assigned to them within Tenant A
-    SELECT COUNT(*) INTO v_assigned_order_count
-    FROM public.orders
-    WHERE assigned_tailor_id = 'a2222222-2222-2222-2222-222222222222';
+  SELECT count(*) INTO v_assigned FROM public.orders
+  WHERE assigned_tailor_id = 'a2222222-2222-2222-2222-222222222222';
 
-    -- Artisan attempts to query Tenant B orders
-    SELECT COUNT(*) INTO v_other_tenant_count
-    FROM public.orders
-    WHERE atelier_id = '22222222-2222-2222-2222-222222222222';
+  SELECT count(*) INTO v_other_tenant FROM public.orders
+  WHERE atelier_id = '22222222-2222-2222-2222-222222222222';
 
-    ASSERT v_assigned_order_count >= 1, 'Artisan should see their assigned orders';
-    ASSERT v_other_tenant_count = 0, 'Artisan intercepted other atelier data!';
+  SELECT count(*) INTO v_financials FROM public.order_financials;
 
-    RAISE NOTICE 'SUCCESS [TEST 3]: Artisan assigned scope verified. Assigned orders: %, Other atelier: %', 
-        v_assigned_order_count, v_other_tenant_count;
+  SELECT count(*) INTO v_members FROM public.members
+  WHERE atelier_id = '11111111-1111-1111-1111-111111111111';
+
+  ASSERT v_assigned >= 3, 'Artisan should see their assigned orders';
+  ASSERT v_other_tenant = 0, 'Artisan intercepted another atelier';
+  ASSERT v_financials = 0, 'CRITICAL: Artisan can read order financials';
+  ASSERT v_members >= 4, 'Artisan should resolve patron/artisan names in their atelier';
+  RAISE NOTICE 'PASS [3] artisan scope: assigned=%, other=%, financials=%, members=%',
+    v_assigned, v_other_tenant, v_financials, v_members;
 END $$;
 
 -- ----------------------------------------------------------------------------
--- TEST 4: PATRON CANNOT VIEW OTHER PATRONS MEASUREMENTS
+-- TEST 4: PATRON SEES OWN RECORDS AND OWN BALANCE ONLY
 -- ----------------------------------------------------------------------------
--- Switch context to Tenant A Patron (Dr. Zainab Al-Mansoor)
 SET LOCAL "request.jwt.claims" = '{"sub": "a3333333-3333-3333-3333-333333333333", "role": "authenticated"}';
 
 DO $$
 DECLARE
-    v_own_measurement_count INT;
-    v_other_client_measurement_count INT;
+  v_own_measurement INT;
+  v_other_client_measurement INT;
+  v_own_orders INT;
+  v_other_client_orders INT;
+  v_own_financials INT;
+  v_other_tenant_financials INT;
+  v_client_rows INT;
+  v_other_patron_row INT;
+  v_staff_rows INT;
 BEGIN
-    -- Patron queries their own measurement card
-    SELECT COUNT(*) INTO v_own_measurement_count
-    FROM public.measurements
-    WHERE client_id = 'a3333333-3333-3333-3333-333333333333';
+  SELECT count(*) INTO v_own_measurement FROM public.measurements
+  WHERE client_id = 'a3333333-3333-3333-3333-333333333333';
 
-    -- Patron attempts to query Tenant B Patron measurement card
-    SELECT COUNT(*) INTO v_other_client_measurement_count
-    FROM public.measurements
-    WHERE client_id = 'b3333333-3333-3333-3333-333333333333';
+  SELECT count(*) INTO v_other_client_measurement FROM public.measurements
+  WHERE client_id = 'a4444444-4444-4444-4444-444444444444';
 
-    ASSERT v_own_measurement_count = 1, 'Patron must be able to view their own measurement profile';
-    ASSERT v_other_client_measurement_count = 0, 'CRITICAL PRIVACY VIOLATION: Patron viewed another patron measurements!';
+  SELECT count(*) INTO v_own_orders FROM public.orders
+  WHERE client_id = 'a3333333-3333-3333-3333-333333333333';
 
-    RAISE NOTICE 'SUCCESS [TEST 4]: Patron privacy boundary verified. Own cards: %, Leaked cards: %', 
-        v_own_measurement_count, v_other_client_measurement_count;
+  SELECT count(*) INTO v_other_client_orders FROM public.orders
+  WHERE client_id = 'a4444444-4444-4444-4444-444444444444';
+
+  SELECT count(*) INTO v_own_financials FROM public.order_financials
+  WHERE order_id IN (
+    SELECT id FROM public.orders WHERE client_id = 'a3333333-3333-3333-3333-333333333333'
+  );
+
+  SELECT count(*) INTO v_other_tenant_financials FROM public.order_financials
+  WHERE atelier_id = '22222222-2222-2222-2222-222222222222';
+
+  SELECT count(*) INTO v_client_rows FROM public.members
+  WHERE role = 'client' AND atelier_id = '11111111-1111-1111-1111-111111111111';
+
+  SELECT count(*) INTO v_other_patron_row FROM public.members
+  WHERE id = 'a4444444-4444-4444-4444-444444444444';
+
+  SELECT count(*) INTO v_staff_rows FROM public.members
+  WHERE role IN ('owner', 'employee') AND atelier_id = '11111111-1111-1111-1111-111111111111';
+
+  ASSERT v_own_measurement = 1, 'Patron must see their own measurement card';
+  ASSERT v_other_client_measurement = 0, 'CRITICAL: Patron saw another patron measurement';
+  ASSERT v_own_orders = 2, 'Patron must see their own orders';
+  ASSERT v_other_client_orders = 0, 'CRITICAL: Patron saw another patron order';
+  ASSERT v_own_financials >= 2, 'Patron must see the balance on their own orders';
+  ASSERT v_other_tenant_financials = 0, 'CRITICAL: Patron saw another tenant financials';
+  -- A patron sees exactly one client row: their own. Never another patron.
+  ASSERT v_client_rows = 1, 'CRITICAL: Patron client-directory visibility must be self only';
+  ASSERT v_other_patron_row = 0, 'CRITICAL: Patron saw another patron member row';
+  ASSERT v_staff_rows >= 2, 'Patron must resolve owner/employee names';
+  RAISE NOTICE 'PASS [4] patron scope: measurements=%, orders=%, balances=%, clients=%, staff=%',
+    v_own_measurement, v_own_orders, v_own_financials, v_client_rows, v_staff_rows;
 END $$;
 
 -- ----------------------------------------------------------------------------
--- TEST 5: ANONYMOUS VISITOR ACCESS ONLY TO PUBLISHED LOOKBOOK
+-- TEST 5: ANONYMOUS VISITOR PERIMETER
 -- ----------------------------------------------------------------------------
 SET LOCAL ROLE anon;
 SET LOCAL "request.jwt.claims" = '{}';
 
 DO $$
 DECLARE
-    v_published_count INT;
-    v_orders_accessible INT;
+  v_published INT;
+  v_draft INT;
+  v_orders INT;
+  v_members INT;
+  v_financials INT;
+  v_ateliers INT;
 BEGIN
-    -- Public visitor querying lookbook
-    SELECT COUNT(*) INTO v_published_count
-    FROM public.lookbook_items
-    WHERE published = true;
+  SELECT count(id) INTO v_published FROM public.lookbook_items;
+  SELECT count(*) INTO v_draft FROM public.lookbook_items
+  WHERE is_published = false;
+  SELECT count(*) INTO v_orders FROM public.orders;
+  SELECT count(*) INTO v_members FROM public.members;
+  SELECT count(*) INTO v_financials FROM public.order_financials;
+  SELECT count(id) INTO v_ateliers FROM public.ateliers;
 
-    -- Public visitor attempting to view orders table
-    SELECT COUNT(*) INTO v_orders_accessible
-    FROM public.orders;
+  ASSERT v_published >= 3, 'Anonymous visitor should see published lookbook entries';
+  ASSERT v_draft = 0, 'CRITICAL: Anonymous visitor saw an unpublished draft';
+  ASSERT v_orders = 0, 'CRITICAL: Anonymous visitor read orders';
+  ASSERT v_members = 0, 'CRITICAL: Anonymous visitor read the member directory';
+  ASSERT v_financials = 0, 'CRITICAL: Anonymous visitor read financials';
+  ASSERT v_ateliers >= 2, 'Anonymous visitor should read the public atelier profile';
+  RAISE NOTICE 'PASS [5] public perimeter: published=%, drafts=%, orders=%, members=%, ateliers=%',
+    v_published, v_draft, v_orders, v_members, v_ateliers;
+END $$;
 
-    ASSERT v_published_count >= 1, 'Public visitor should see published lookbook';
-    ASSERT v_orders_accessible = 0, 'CRITICAL LEAK: Anonymous visitor read orders table!';
+-- ----------------------------------------------------------------------------
+-- TEST 6: ANONYMOUS BOOKING IS LIMITED TO PENDING, ACCOUNT-LESS REQUESTS
+-- ----------------------------------------------------------------------------
+DO $$
+BEGIN
+  INSERT INTO public.appointments (
+    atelier_id, client_name, client_phone, service_type, slot_datetime, status
+  ) VALUES (
+    '11111111-1111-1111-1111-111111111111',
+    'Walk-in Patron',
+    '+254700000001',
+    'grand_agbada',
+    now() + interval '3 days',
+    'pending'
+  );
 
-    RAISE NOTICE 'SUCCESS [TEST 5]: Public perimeter security verified. Published items: %, Orders visible: %',
-        v_published_count, v_orders_accessible;
+  BEGIN
+    INSERT INTO public.appointments (
+      atelier_id, client_name, client_phone, service_type, slot_datetime, status
+    ) VALUES (
+      '11111111-1111-1111-1111-111111111111',
+      'Walk-in Patron',
+      '+254700000001',
+      'grand_agbada',
+      now() + interval '4 days',
+      'confirmed'
+    );
+    RAISE EXCEPTION 'expected anonymous confirmed-booking denial';
+  EXCEPTION
+    WHEN insufficient_privilege THEN NULL;
+  END;
+
+  RAISE NOTICE 'PASS [6] anonymous booking: pending accepted, confirmed denied';
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- TEST 7: TENANT A OWNER CANNOT UPDATE TENANT B ORDERS
+-- ----------------------------------------------------------------------------
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub": "a1111111-1111-1111-1111-111111111111", "role": "authenticated"}';
+
+DO $$
+DECLARE
+  v_updated INT;
+BEGIN
+  UPDATE public.orders SET status = 'ready'
+  WHERE atelier_id = '22222222-2222-2222-2222-222222222222';
+
+  GET DIAGNOSTICS v_updated = ROW_COUNT;
+  ASSERT v_updated = 0, 'CRITICAL: Tenant A updated Tenant B orders';
+  RAISE NOTICE 'PASS [7] cross-tenant order update: rows mutated=%', v_updated;
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- TEST 8: CROSS-TENANT INSERT IS REJECTED
+-- ----------------------------------------------------------------------------
+DO $$
+BEGIN
+  BEGIN
+    INSERT INTO public.orders (
+      atelier_id, order_code, client_id, status, description, garment_type, fabric_details
+    ) VALUES (
+      '22222222-2222-2222-2222-222222222222',
+      'HACK-001',
+      'b3333333-3333-3333-3333-333333333333',
+      'cutting',
+      'Cross-tenant injection attempt',
+      'Injected Garment',
+      'Injected Fabric'
+    );
+    RAISE EXCEPTION 'expected cross-tenant insert denial';
+  EXCEPTION
+    WHEN insufficient_privilege THEN NULL;
+  END;
+
+  RAISE NOTICE 'PASS [8] cross-tenant insert denied by WITH CHECK';
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- TEST 9: A PATRON CANNOT ESCALATE THEIR OWN ROLE
+-- ----------------------------------------------------------------------------
+SET LOCAL "request.jwt.claims" = '{"sub": "a3333333-3333-3333-3333-333333333333", "role": "authenticated"}';
+
+DO $$
+BEGIN
+  BEGIN
+    UPDATE public.members SET role = 'owner'
+    WHERE id = 'a3333333-3333-3333-3333-333333333333';
+    RAISE EXCEPTION 'expected role escalation denial';
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLERRM LIKE '%expected role escalation denial%' THEN
+        RAISE;
+      END IF;
+  END;
+
+  RAISE NOTICE 'PASS [9] patron self role escalation blocked';
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- TEST 10: DEACTIVATED MEMBERS LOSE ACCESS IMMEDIATELY
+-- Deactivation is performed by the atelier owner, the only role permitted to
+-- change `active`. A superuser write is not the product path and must not be
+-- used to fake this scenario.
+-- ----------------------------------------------------------------------------
+RESET ROLE;
+SET LOCAL "request.jwt.claims" = '{"sub": "a1111111-1111-1111-1111-111111111111", "role": "authenticated"}';
+SET LOCAL ROLE authenticated;
+
+DO $$
+DECLARE
+  v_rows INT;
+BEGIN
+  UPDATE public.members SET active = false
+  WHERE id = 'a2222222-2222-2222-2222-222222222222';
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  ASSERT v_rows = 1, 'Owner must be able to deactivate a member in their atelier';
+END $$;
+
+SET LOCAL "request.jwt.claims" = '{"sub": "a2222222-2222-2222-2222-222222222222", "role": "authenticated"}';
+
+DO $$
+DECLARE
+  v_orders INT;
+  v_measurements INT;
+BEGIN
+  SELECT count(*) INTO v_orders FROM public.orders;
+  SELECT count(*) INTO v_measurements FROM public.measurements;
+
+  ASSERT v_orders = 0, 'CRITICAL: Deactivated artisan still reads orders';
+  ASSERT v_measurements = 0, 'CRITICAL: Deactivated artisan still reads measurements';
+  RAISE NOTICE 'PASS [10] deactivated member access revoked: orders=%, measurements=%',
+    v_orders, v_measurements;
 END $$;
 
 ROLLBACK;

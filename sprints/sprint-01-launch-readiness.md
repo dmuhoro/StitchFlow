@@ -13,8 +13,8 @@ versioned release, and honest documentation.
 
 | Layer | Scope | Status | Proof |
 |-------|-------|--------|-------|
-| L1 | Migration chain replays from empty; seed separated; currency contract aligned | PENDING | `docs/evidence/2026-11-01_database_chain.md` |
-| L2 | RLS isolation suite (10 scenarios) green | PENDING | same evidence |
+| L1 | Migration chain replays from empty; seed separated; currency contract aligned | DONE | `docs/evidence/2026-11-01_database_chain.md` |
+| L2 | RLS isolation suite (10 scenarios) green | DONE | same evidence |
 | L3 | Local imagery imported through Vite, hashed in `dist/` | PENDING | `docs/evidence/2026-11-01_build_artifacts.md` |
 | L4 | Persistence wired; demo PIN fails closed in production; currency and status drift fixed | PENDING | lint/build + sprint record |
 | L5 | CI: lint, build, artifacts, docs, DB | PENDING | `.github/workflows/ci.yml` |
@@ -32,4 +32,18 @@ versioned release, and honest documentation.
 
 ## Outcome
 
-Filled in as layers close. Final sign-off is in `docs/release-readiness.md`.
+### L1–L2 — Database chain and RLS (DONE)
+
+- Removed the seed migration; schema and seed are now separate (ADR-003).
+- Added `20261031110000_baseline_reconciliation.sql` so the tracked chain rebuilds the schema the
+  client queries (ADR-004) and `20261031112000_rls_final.sql` as the authoritative policy set.
+- Added `20261031113000_currency_alignment.sql` because the schema rejected `NGN` while the Lagos
+  tenant trades in NGN — a real defect found by replaying the seed.
+- Added `scripts/verify-db.sh` and `scripts/db/supabase-shim.sql` to replay the whole chain on a
+  disposable Postgres without a hosted project.
+- Reworked the RLS suite to 10 adversarial scenarios plus structural assertions, and tightened the
+  patron-directory assertion to "self only, never another patron".
+- Proof: `npm run verify:db` → exit `0`, all 10 scenarios PASS, recorded in
+  `docs/evidence/2026-11-01_database_chain.md`.
+
+Remaining layers are filled in as they close. Final sign-off is in `docs/release-readiness.md`.

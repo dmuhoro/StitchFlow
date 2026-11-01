@@ -189,9 +189,12 @@ All definer functions set `search_path = ''`; `PUBLIC` and `anon` execute is rev
 20261031111200_revoke_public_function_execute.sql
 20261031111500_direct_uid_rls.sql
 20261031112000_rls_final.sql
+20261031113000_currency_alignment.sql
 ```
 
-`rls_final` is authoritative. Earlier files are historical layers kept so the chain replays.
+`rls_final` is authoritative for policies; `currency_alignment` widens the currency contract to
+`KES`/`USD`/`NGN` for both `order_financials.currency` and `ateliers.default_currency`. Earlier files
+are historical layers kept so the chain replays.
 
 ## Verification
 

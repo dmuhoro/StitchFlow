@@ -53,6 +53,7 @@
 | `migrations/20261031110500_security_hardening.sql` | Financials split, integrity triggers |
 | `migrations/20261031111500_direct_uid_rls.sql` | Direct-uid policy pass |
 | `migrations/20261031112000_rls_final.sql` | Authoritative policy set |
+| `migrations/20261031113000_currency_alignment.sql` | Widens currency contract to KES/USD/NGN |
 | `seed.sql` | Deterministic pilot tenants and records |
 | `tests/rls_isolation_test.sql` | Adversarial tenant-isolation proof |
 | `config.toml` | Local Supabase CLI configuration |
