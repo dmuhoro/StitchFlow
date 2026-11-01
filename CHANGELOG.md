@@ -20,6 +20,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - `scripts/verify-db.sh` and `scripts/db/supabase-shim.sql` for disposable Postgres verification.
 - Persistence for feedback resolution, lookbook publishing, and atelier settings.
 - Public read path for the published lookbook and atelier profile in Supabase mode.
+- `.github/workflows/ci.yml` with a quality job (types, docs links, both build modes, artifact
+  assertions) and a database job (migration chain + RLS suite on a Postgres service container).
 
 ### Changed
 

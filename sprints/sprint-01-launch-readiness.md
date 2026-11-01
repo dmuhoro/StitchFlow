@@ -17,7 +17,7 @@ versioned release, and honest documentation.
 | L2 | RLS isolation suite (10 scenarios) green | DONE | same evidence |
 | L3 | Local imagery imported through Vite, hashed in `dist/` | DONE | `docs/evidence/2026-11-01_build_artifacts.md` |
 | L4 | Persistence wired; demo PIN fails closed in production; currency and status drift fixed | DONE | `docs/evidence/2026-11-01_persistence.md` |
-| L5 | CI: lint, build, artifacts, docs, DB | PENDING | `.github/workflows/ci.yml` |
+| L5 | CI: lint, build, artifacts, docs, DB | DONE | `docs/evidence/2026-11-01_ci.md` |
 | L6 | Version 1.0.0, changelog, release notes, annotated tag | PENDING | `docs/evidence/2026-11-01_release.md` |
 | L7 | Cleanup: nested clone, obsolete script, lockfile, ignores | PENDING | clean tree |
 | L8 | README, CHANGELOG, sprints final | PENDING | release commit |
@@ -66,5 +66,15 @@ versioned release, and honest documentation.
   the action boundary, not only in the UI.
 - Proof: `npm run lint` clean; production-mode build and artifact assertions pass; recorded with
   `file:line` citations in `docs/evidence/2026-11-01_persistence.md`.
+
+### L5 — Continuous integration (DONE)
+
+- `.github/workflows/ci.yml` runs two required jobs on every push and pull request to `main`.
+- `quality`: install from the lockfile, type check, documentation link check, demo build with
+  artifact assertions, then a supabase-mode build with the same assertions plus runtime-guard checks.
+- `database`: a `postgres:16` service container, `npm run verify:db:host`, replaying migrations,
+  seed and the 10-scenario RLS suite.
+- Proof: the CI `host` branch was exercised locally against a published `postgres:16` container and
+  passed all 10 scenarios; quality commands are green; recorded in `docs/evidence/2026-11-01_ci.md`.
 
 Remaining layers are filled in as they close. Final sign-off is in `docs/release-readiness.md`.

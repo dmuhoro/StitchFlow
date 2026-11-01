@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Types, docs and bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Types
+        run: npm run lint
+
+      - name: Documentation links
+        run: npm run check:docs
+
+      - name: Build (demo)
+        run: npm run build
+
+      - name: Assert demo build artifacts
+        run: npm run verify:build
+
+      # Exercise the production mode branch without a real project. These are
+      # non-secret synthetic values; they are never deployed.
+      - name: Build (supabase mode branch)
+        env:
+          VITE_SUPABASE_URL: https://example-project.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_local_verification_only
+          VITE_DATA_MODE: supabase
+        run: npm run build
+
+      - name: Assert supabase-mode artifacts and runtime guards
+        env:
+          VITE_DATA_MODE: supabase
+        run: npm run verify:build
+
+  database:
+    name: Migration chain and RLS
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: stitchflow_verify
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d stitchflow_verify"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: stitchflow_verify
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure psql is available
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+
+      - name: Replay migrations, seed and RLS suite
+        run: npm run verify:db:host
