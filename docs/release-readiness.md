@@ -14,8 +14,8 @@
 | L4 | Persistence wired for every supported action | DONE | `docs/evidence/2026-11-01_persistence.md` |
 | L5 | CI runs lint, build, docs, DB verification | DONE | `docs/evidence/2026-11-01_ci.md` |
 | L6 | Release versioned, tagged, pushed | DONE | `docs/evidence/2026-11-01_release.md` (tag 6af1ba94, remote ref verified) |
-| L7 | Cleanup complete, lockfile committed, tree clean | PENDING | — |
-| L8 | README, CHANGELOG, sprints updated | PENDING | — |
+| L7 | Cleanup complete, lockfile committed, tree clean | DONE | tree clean; `npm ci` succeeded; no nested clone |
+| L8 | README, CHANGELOG, sprints updated | DONE | CHANGELOG # 1.0.0, sprints updated, docs/evidence index |
 | L9 | Deployment verified | PENDING | — |
 
 ## P0 definitions
