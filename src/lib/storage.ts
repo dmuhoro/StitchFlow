@@ -21,7 +21,12 @@ export function readStorageString(key: string, fallback: string): string {
     const raw = window.localStorage.getItem(`${STORAGE_NAMESPACE}${key}`);
     if (!raw) return fallback;
     try {
-      const parsed = JSON.parse(raw);
+      let parsed: unknown = raw;
+      for (let attempt = 0; attempt < 3 && typeof parsed === 'string'; attempt += 1) {
+        const next = JSON.parse(parsed);
+        if (typeof next !== 'string') return parsed;
+        parsed = next;
+      }
       return typeof parsed === 'string' ? parsed : raw;
     } catch {
       return raw;
