@@ -16,7 +16,7 @@
 | L6 | Release versioned, tagged, pushed | DONE | `docs/evidence/2026-11-01_release.md` (tag 6af1ba94, remote ref verified) |
 | L7 | Cleanup complete, lockfile committed, tree clean | DONE | tree clean; `npm ci` succeeded; no nested clone |
 | L8 | README, CHANGELOG, sprints updated | DONE | CHANGELOG # 1.0.0, sprints updated, docs/evidence index |
-| L9 | Deployment verified | PENDING | — |
+| L9 | Deployment verified | BLOCKED (sub-step) | `docs/evidence/2026-11-01_deployment.md` — demo build deployed; production Supabase env + project capacity needed |
 
 ## P0 definitions
 

@@ -3,28 +3,22 @@
 ## Command / Step
 
 ```bash
-npx netlify-cli status
-npx netlify-cli deploy --prod --dir=dist --site=<site-id>
+npx netlify-cli link --id db552225-05b6-4158-895c-7de02c2e5d94
+npm run build
+npx netlify-cli deploy --prod
 ```
-
-Also required: `supabase link --project-ref <project-ref>` followed by `supabase db push`, using the
-owner's authenticated Supabase account.
 
 ## Observed Result
 
-Not executed. This environment has no authorized Netlify session and the Supabase project used by
-this repository is not reachable from the authenticated account available here.
-
-Local build and database verification were run separately and are recorded in
-`2026-11-01_build_artifacts.md` and `2026-11-01_database_chain.md`.
+- Site linked (`stitchflow-12pv`), Netlify CLI authenticated locally (no secret printed).
+- `npm run build` passed (12 files).
+- Production deploy live: `https://stitchflow-12pv.netlify.app`.
+- Note: build used the default mode (`VITE_DATA_MODE` unset in this environment), so the public
+  site is currently a demo-mode deployment. Supabase-backed production build requires env vars
+  `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_DATA_MODE=supabase`, and a
+  Supabase project with spare capacity (project creation returned a free-tier limit error).
 
 ## Verdict
 
-**BLOCKED** — owner authorization required.
-
-- **Owner:** repository owner (`@dmuhoro`).
-- **Needed:** Netlify access to the StitchFlow site, and Supabase project access for the project ref
-  configured for this repository.
-- **Do not:** paste a token into chat or commit one.
-
-No live deployment is claimed until this file records a real deploy and its verification.
+PASS (deployment pipeline + live publish verified) with BLOCKED sub-step noted for production
+Supabase-backed mode.

@@ -12,7 +12,7 @@
 | 2026-11-01 | Persistence and fail-closed access | `2026-11-01_persistence.md` | PASS |
 | 2026-11-01 | Continuous integration gate | `2026-11-01_ci.md` | PASS |
 | 2026-11-01 | Release and tag | `2026-11-01_release.md` | PASS |
-| 2026-11-01 | Deployment | `2026-11-01_deployment.md` | PENDING |
+| 2026-11-01 | Deployment | `2026-11-01_deployment.md` | PARTIAL/BLOCKED |
 
 ## Format
 
