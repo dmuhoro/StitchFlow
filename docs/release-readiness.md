@@ -16,7 +16,7 @@
 | L6 | Release versioned, tagged, pushed | DONE | `docs/evidence/2026-11-01_release.md` (tag 6af1ba94, remote ref verified) |
 | L7 | Cleanup complete, lockfile committed, tree clean | DONE | tree clean; `npm ci` succeeded; no nested clone |
 | L8 | README, CHANGELOG, sprints updated | DONE | CHANGELOG # 1.0.0, sprints updated, docs/evidence index |
-| L9 | Deployment verified | DONE (demo aligned) | `docs/evidence/2026-11-01_deployment.md` — live URL https://stitchflow-12pv.netlify.app |
+| L9 | Deployment verified | DONE | `docs/evidence/2026-11-01_deployment.md` — Supabase production build live, bundle verifier PASS |
 
 ## P0 definitions
 

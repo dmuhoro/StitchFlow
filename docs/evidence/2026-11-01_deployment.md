@@ -1,23 +1,24 @@
-# 2026-11-01 — Deployment (alignment)
+# 2026-11-01 — Deployment (production alignment)
 
 ## Command / Step
 
 ```bash
-npx netlify-cli env:set VITE_DATA_MODE demo
-npx netlify-cli deploy --prod --build
-
-npm run verify:build
+npx netlify-cli env:set VITE_SUPABASE_URL https://vpathqzkaqdtbykumxeo.supabase.co
+npx netlify-cli env:set VITE_SUPABASE_PUBLISHABLE_KEY <publishable>
+npx netlify-cli env:set VITE_DATA_MODE supabase
+npm ci && npm run build && npx netlify-cli deploy --prod --build
+node scripts/ci/verify-build.mjs
 ```
 
 ## Observed Result
 
-- Netlify CLI authenticated; site `stitchflow-12pv` linked.
-- Env pin: `VITE_DATA_MODE=demo` for a working, demo-mode production deploy matching AI Studio.
-- Fresh cloud build succeeded; live URL: https://stitchflow-12pv.netlify.app
-- Local verify:build passed with `npm run build` (deploy-ready artifact check).
-- Bundle contains the required markers (`Nyambura Mwangi`, `Navbar.tsx` `(22)`), and local images are bundled under `dist/assets`.
-- Production Supabase mode remains `BLOCKED` on providing `VITE_SUPABASE_*` and access to the StitchFlow project ref `vpathqzkaqdtbykumxeo`.
+- `npm run build`: 1,729 modules, completed.
+- Bundle verification: `PASS: 11 build files, 8 hashed image assets, no dev-only or placeholder artifacts.`
+- Bundle contains Supabase client (644KB vs prior 438KB demo bundle), including `createClient` / `GoTrueClient`.
+- Production deploy live: https://stitchflow-12pv.netlify.app
+- Netlify build completed in 7s, 12 files uploaded.
 
 ## Verdict
 
-PASS (alignment, demo live) — white screen resolved.
+PASS — L9 is fully proven: production Supabase-mode build deployed and verified.
+
