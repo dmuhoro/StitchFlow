@@ -18,3 +18,16 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     X-Frame-Options = "SAMEORIGIN"
+
+# Always revalidate the HTML shell so a new deploy can select its current
+# hashed JavaScript and image assets. Vite asset filenames are content-hashed,
+# so those immutable files can safely receive a long cache lifetime.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
