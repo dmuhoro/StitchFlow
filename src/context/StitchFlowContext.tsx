@@ -210,7 +210,10 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Theme & Appearance State
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
-    return readStorageString('theme', 'system') as ThemeMode;
+    const saved = readStorageString('theme', 'system');
+    const validTheme: ThemeMode = saved === 'light' || saved === 'dark' || saved === 'system' ? saved : 'system';
+    if (saved !== validTheme) writeStorage('theme', validTheme);
+    return validTheme;
   });
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -232,7 +235,11 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [authTargetRole, setAuthTargetRole] = useState<UserRole | null>(null);
 
   const [currentRole, setCurrentRoleState] = useState<UserRole>(() => {
-    return dataMode === 'supabase' ? 'visitor' : readStorageString('role', 'visitor') as UserRole;
+    if (dataMode === 'supabase') return 'visitor';
+    const saved = readStorageString('role', 'visitor');
+    const validRole: UserRole = saved === 'owner' || saved === 'employee' || saved === 'client' || saved === 'visitor' ? saved : 'visitor';
+    if (saved !== validRole) writeStorage('role', validRole);
+    return validRole;
   });
 
   const [currency, setCurrencyState] = useState<'KES' | 'NGN' | 'USD'>(settings.currency || 'KES');
