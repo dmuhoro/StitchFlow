@@ -273,7 +273,16 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
 
   const [lookbook, setLookbook] = useState<LookbookItem[]>(() => {
-    return dataMode === 'supabase' ? [] : readStorage<LookbookItem[]>('lookbook', INITIAL_LOOKBOOK);
+    if (dataMode === 'supabase') return [];
+    const saved = readStorage<LookbookItem[]>('lookbook', INITIAL_LOOKBOOK);
+    const matchesCurrentCatalog = saved.length === INITIAL_LOOKBOOK.length && saved.every((item, index) => (
+      item.id === INITIAL_LOOKBOOK[index].id &&
+      item.title === INITIAL_LOOKBOOK[index].title &&
+      item.image_url === INITIAL_LOOKBOOK[index].image_url
+    ));
+    if (matchesCurrentCatalog) return saved;
+    writeStorage('lookbook', INITIAL_LOOKBOOK);
+    return INITIAL_LOOKBOOK;
   });
 
   // UI states
