@@ -12,7 +12,8 @@
 | 2026-11-01 | Persistence and fail-closed access | `2026-11-01_persistence.md` | PASS |
 | 2026-11-01 | Continuous integration gate | `2026-11-01_ci.md` | PASS |
 | 2026-11-01 | Release and tag | `2026-11-01_release.md` | PASS |
-| 2026-11-01 | Deployment | `2026-11-01_deployment.md` | PARTIAL/BLOCKED |
+| 2026-11-01 | Deployment | `2026-11-01_deployment.md` | PASS (deploy only; artifact content later found defective) |
+| 2026-11-05 | Sprint 0 eight-gate verification | `2026-11-05_sprint-0-verification.md` | 7 PASS / 1 FAIL |
 
 ## Format
 
