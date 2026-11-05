@@ -1,7 +1,7 @@
 # Supabase backend
 
 The connected Supabase project is the relational backend for StitchFlow. Its project ref is
-`vpathqzkaqdtbykumxeo` in `eu-central-1`.
+`qkhfjlxhulekjrfgrdbz` in `eu-central-1`.
 
 The migration chain under `supabase/migrations/` is the source of truth for the schema. It contains:
 
