@@ -351,7 +351,7 @@ export const ClientPortal: React.FC = () => {
             </h3>
           </div>
           <p className="text-xs text-[#6A5D52] dark:text-[#B8ABA0] mt-0.5">
-            Your review helps Director Wanjiku and our master cutters calibrate seam allowances and beadwork.
+            Your review helps the atelier director and our master cutters calibrate seam allowances and beadwork.
           </p>
         </div>
 

@@ -120,7 +120,7 @@ const AppContent: React.FC = () => {
                 Security & Appearance
               </h4>
               <p className="text-xs text-[#98897C] leading-relaxed">
-                Demo role gates for owner, artisan, and patron views, with System, Warm Linen Light, and Ebony Obsidian Dark appearances.
+                Production role gates for owner, artisan, and patron views, with System, Warm Linen Light, and Ebony Obsidian Dark appearances.
               </p>
             </div>
 

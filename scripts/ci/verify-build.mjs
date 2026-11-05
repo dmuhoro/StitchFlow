@@ -81,6 +81,9 @@ if (mode === 'supabase') {
   if (!corpus.includes('Reset is a demo-only action')) {
     fail('production build is missing the runtime guard that refuses demo-only reset.');
   }
+  for (const forbidden of ['Demo PIN: 1234', 'Authorized Credential Cards', 'Wanjiku Kamau', 'stitchflow-nairobi', 'asooke-lagos', 'Demo role gate']) {
+    if (corpus.includes(forbidden)) fail(`production build still contains demo-only artifact: ${forbidden}`);
+  }
 }
 
 if (failures.length > 0) {

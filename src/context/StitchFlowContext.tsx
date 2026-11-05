@@ -26,7 +26,7 @@ import {
   INITIAL_APPOINTMENTS, 
   INITIAL_FEEDBACK, 
   INITIAL_LOOKBOOK 
-} from '../data/initialData';
+} from '@/data/initialData';
 import { dataMode, supabase } from '../lib/supabase';
 import {
   getAtelier,
@@ -165,7 +165,7 @@ export const PREDEFINED_TENANTS: AtelierTenant[] = [
   {
     id: '11111111-1111-1111-1111-111111111111',
     name: 'StitchFlow Atelier Nairobi',
-    slug: 'stitchflow-nairobi',
+    slug: 'tenant-a',
     tagline: 'Haute Couture Pan-African Tailoring & Royal Bespoke Regalia',
     city: 'Nairobi',
     country: 'Kenya',
@@ -177,7 +177,7 @@ export const PREDEFINED_TENANTS: AtelierTenant[] = [
   {
     id: '22222222-2222-2222-2222-222222222222',
     name: 'Aso-Oke Heritage House Lagos',
-    slug: 'asooke-lagos',
+    slug: 'tenant-b',
     tagline: 'Ancestral Weaves & Luxury Yoruba Ceremonial Agbada',
     city: 'Lagos',
     country: 'Nigeria',
@@ -711,7 +711,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const updateOrderStatus = (orderId: string, newStatus: ProductionStatus, note?: string) => {
-    const authorName = currentUser?.full_name || (currentRole === 'owner' ? 'Wanjiku Kamau (Director)' : 'Master Artisan');
+    const authorName = currentUser?.full_name || (currentRole === 'owner' ? 'Atelier Owner' : 'Master Artisan');
 
     setOrders(prev => prev.map(order => {
       if (order.id !== orderId) return order;
@@ -766,7 +766,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           stage: 'cutting',
           timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
           note: 'New African commission drafted on cutting table.',
-          author: currentUser?.full_name || 'Wanjiku Kamau'
+          author: currentUser?.full_name || 'Atelier Owner'
         }
       ],
       created_at: new Date().toISOString().slice(0, 10)
@@ -879,7 +879,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         'Thank you! Your ceremonial review was submitted to the atelier.'
       );
     } else {
-      showToast('Thank you! Your ceremonial review was submitted to Director Wanjiku.');
+      showToast('Thank you! Your ceremonial review was submitted to the atelier director.');
     }
   };
 

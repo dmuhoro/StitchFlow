@@ -5,20 +5,31 @@ import path from 'node:path';
 import {defineConfig} from 'vite';
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
+const isProduction = process.env.VITE_DATA_MODE === 'supabase';
 
 export default defineConfig(() => {
+  const alias: Record<string, string> = {
+    '@': path.resolve(rootDir, 'src'),
+    './AuthModal': isProduction
+      ? path.resolve(rootDir, 'src/components/AuthModal.production.tsx')
+      : path.resolve(rootDir, 'src/components/AuthModal.demo.tsx'),
+  };
+
+  if (isProduction) {
+    alias['@/data/initialData'] = path.resolve(rootDir, 'src/data/initialData.production.ts');
+    alias['@/components/AuthModal'] = path.resolve(rootDir, 'src/components/AuthModal.production.tsx');
+  } else {
+    alias['@/data/initialData'] = path.resolve(rootDir, 'src/data/initialData.demo.ts');
+    alias['@/components/AuthModal'] = path.resolve(rootDir, 'src/components/AuthModal.demo.tsx');
+  }
+
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
-      alias: {
-        '@': path.resolve(rootDir, '.'),
-      },
+      alias,
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
   };
