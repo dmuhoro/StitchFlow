@@ -18,3 +18,4 @@
 | [00](sprint-00-operating-scaffold.md) | Operating scaffold | DONE |
 | [01](sprint-01-launch-readiness.md) | Launch readiness v1.0.0 | DONE — demo-first release |
 | [00a](sprint-00a-verify-and-decide.md) | Verify and decide (audit) | DONE — Sprint 1 BLOCKED on ADR approval |
+| [01a](sprint-01-real-data-real-auth.md) | Real data / real auth | IN PROGRESS |

@@ -1,3 +1,15 @@
+## [Unreleased] — Sprint 1 (Real Data, Real Auth)
+### Added
+- Dedicated StitchFlow Supabase project (`qkhfjlxhulekjrfgrdbz`) with forward-only migration push.
+- `audit_log` plus triggers on orders and measurements.
+- `invitations` ledger plus `lookup_invitation`/`accept_invitation` RPC.
+- Explicit “Create Atelier” onboarding screen + invite redemption route.
+### Changed
+- Build/dev adapters split demo-only seed data from production builds (`src/data/initialData.demo.ts` / `.production.ts`).
+- `verify:build` production mode now asserts absence of demo PII/artifacts.
+### Verified
+- lint/build/db/verify-build green on local disposable DB.
+
 # Changelog
 
 All notable changes to StitchFlow are documented here.
