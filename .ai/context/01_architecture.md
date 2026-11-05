@@ -6,7 +6,7 @@
 
 - **UI:** React 19 + TypeScript, single-page application.
 - **Build:** Vite 8 (`@vitejs/plugin-react`), Tailwind CSS 4 through `@tailwindcss/vite`.
-- **Icons/motion:** `lucide-react`, `motion`.
+- **Icons:** `lucide-react`.
 - **Backend:** Supabase Postgres + Auth + PostgREST, called from the browser with the publishable key.
 - **Data access:** raw `@supabase/supabase-js` queries in `src/lib/atelier-repository.ts`. No ORM.
 - **Hosting:** static build published to Netlify (`netlify.toml`).
@@ -52,12 +52,23 @@ persistence guarantee.
 - `npm run verify:db` → disposable `postgres:16` migration chain + RLS suite.
 - Netlify publishes `dist/` with an SPA fallback and security headers.
 
+## Proposed, not built
+
+[ADR-008](../../docs/adr/ADR-008-single-tanstack-start-app.md) proposes replacing this static SPA
+with one TanStack Start app (public SSR group + authenticated app group). It is **Proposed** and
+gated on owner approval. Do not describe SSR as shipped.
+
+[ADR-011](../../docs/adr/ADR-011-tenant-resolution.md) proposes server-side tenant resolution by
+verified domain, then subdomain, then slug. Today the client still chooses the tenant.
+
 ## Known architectural gaps
 
 | Gap | Severity | Owner layer |
 |-----|----------|-------------|
-| Context still writes demo arrays in some paths | P1 | Persistence |
-| `express` is declared but unused | P3 | Cleanup |
-| No server-side appointment capacity lock | P1 | Post-launch |
+| Demo code, PIN and demo identities ship in the Supabase-mode bundle | P0 | Sprint 1 |
+| No server-side appointment capacity, resource, hold or overlap constraint | P0 | Sprint 3 |
+| No owner/employee `INSERT` policy on `appointments` | P1 | Sprint 3 |
+| Tenant chosen client-side; public path defaults to Nairobi | P1 | Sprint 2 |
+| No SSR, per-tenant metadata, sitemap, robots or OG tags | P1 | Sprint 2 |
+| No audit log, payments ledger or webhook table | P1 | Sprint 1/4 |
 | No media storage; URLs are remote or bundled | P2 | Post-launch |
-| Auth UI demo PIN remains reachable | P0 in production | Security |

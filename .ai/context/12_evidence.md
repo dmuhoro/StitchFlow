@@ -29,11 +29,14 @@ PASS / FAIL / BLOCKED
 3. A BLOCKED verdict names the human owner and the exact authorization needed.
 4. Update the index in `docs/evidence/README.md` in the same commit.
 
-## Evidence required at v1.0.0
+## Current evidence set
 
-| Topic | File | Status |
-|-------|------|--------|
-| Database migration chain + RLS | `2026-11-01_database_chain.md` | PENDING |
-| Build artifacts and bundle assertions | `2026-11-01_build_artifacts.md` | PENDING |
-| Release tagging | `2026-11-01_release.md` | PENDING |
-| Deployment | `2026-11-01_deployment.md` | BLOCKED — owner authorization |
+| Topic | File | Verdict |
+|-------|------|---------|
+| Database migration chain + RLS | `2026-11-01_database_chain.md` | PASS (10 scenarios at the time) |
+| Build artifacts and bundle assertions | `2026-11-01_build_artifacts.md` | PASS for paths/assets; not a demo-code absence proof |
+| Persistence and fail-closed access | `2026-11-01_persistence.md` | PASS (runtime guards, not artifact cleanliness) |
+| CI gate | `2026-11-01_ci.md` | PASS |
+| Release and tag | `2026-11-01_release.md` | PASS |
+| Deployment | `2026-11-01_deployment.md` | PASS (deploy only; artifact later found to contain demo code) |
+| Sprint 0 eight-gate verification | `2026-11-05_sprint-0-verification.md` | 7 PASS / 1 FAIL |

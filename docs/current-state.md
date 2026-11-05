@@ -2,8 +2,9 @@
 
 > What is true today. Aspirational work is labelled **ASPIRATIONAL** and must not be assumed.
 
-Last verified: 2026-11-01. Sprint 01 (v1.0.0) is in progress; open gates are tracked in
-[`release-readiness.md`](release-readiness.md).
+Last verified: 2026-11-05 (Sprint 0a — Verify and Decide). `v1.0.0` is tagged and deployed, but the
+Sprint 0 audit found two P0 defects and did **not** certify it as production-ready for a real atelier.
+Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_sprint-0-audit.md).
 
 ## Shipped and usable
 
@@ -13,49 +14,69 @@ Last verified: 2026-11-01. Sprint 01 (v1.0.0) is in progress; open gates are tra
   alignment, Kanzu drape, posture notes, and ceremonial occasion are modelled in types, forms and
   seed data.
 - **Demo mode:** a seeded browser-local experience behind `VITE_DATA_MODE=demo` (the default).
-- **Backend foundation:** tenant tables and RLS exist in the migration chain, with an adversarial SQL
-  suite checked into `supabase/tests/`.
+- **Backend foundation:** nine tenant tables with RLS on every table. The tracked migration chain
+  replays from empty and the adversarial suite now proves **12 scenarios**.
+- **Persistence:** order, measurement, appointment, feedback, lookbook and settings writes go through
+  `src/lib/atelier-repository.ts` in Supabase mode; failures surface as explicit toasts.
 - **Design briefs:** measurement card, production stepper, lookbook and booking briefs under `design/`.
 
-## In progress — sprint 01
+## Verified on 2026-11-05
 
-These are being completed in the current release and are not yet signed off:
+| Gate | Verdict |
+|------|---------|
+| Owner reads only their atelier | PASS |
+| Employee cannot read another atelier | PASS |
+| Patron reads only own records | PASS |
+| Anonymous reads only published lookbook | PASS |
+| Patron cannot update order/balance/measurement | PASS |
+| Staff cannot change tenant IDs | PASS |
+| Deactivated members lose access | PASS |
+| Appointment capacity and double-booking | **FAIL** |
 
-| Item | Gate |
-|------|------|
-| Migration chain replays from an empty database | L1 |
-| RLS suite green | L2 |
-| Bundled local imagery | L3 |
-| Persistence wired for supported actions | L4 |
-| CI workflow | L5 |
-| Version and tag | L6 |
-| Cleanup | L7 |
-| Documentation final | L8 |
+Evidence: [`evidence/2026-11-05_sprint-0-verification.md`](evidence/2026-11-05_sprint-0-verification.md).
 
 ## Not shipped — do not assume
 
-- **ASPIRATIONAL** Payments, deposits, invoices, reconciliation.
-- **ASPIRATIONAL** Server-side appointment capacity or double-booking protection.
+- **ASPIRATIONAL** Server-side appointment capacity, resources, holds, or double-booking protection.
+- **ASPIRATIONAL** Owner/employee appointment creation (current RLS has no staff `INSERT` policy).
+- **ASPIRATIONAL** Server-resolved tenancy by domain, subdomain or slug; the client still chooses the
+  public tenant.
+- **ASPIRATIONAL** Payments, deposits, invoices, reconciliation, or an append-only ledger.
 - **ASPIRATIONAL** Transactional email, SMS, or WhatsApp Business API delivery.
 - **ASPIRATIONAL** Media storage with signed URLs; imagery is bundled or remote.
 - **ASPIRATIONAL** Multi-atelier membership per user.
 - **ASPIRATIONAL** Measurement version history and garment specification snapshots.
 - **ASPIRATIONAL** Audit log, monitoring, alerting, and automated backups.
-- **ASPIRATIONAL** End-to-end browser test with three real identities against a hosted project.
+- **ASPIRATIONAL** Sign-up, owner onboarding and staff/client invitations end to end.
+- **ASPIRATIONAL** SSR, per-tenant metadata, sitemap, robots, OG tags or structured data.
+- **ASPIRATIONAL** End-to-end browser tests against a hosted project.
 
 ## Known limitations
 
 | Limitation | Impact | Owner |
 |------------|--------|-------|
-| No hosted Supabase project access verified in this environment | Remote migration unproven | Repository owner |
-| Netlify deploy not authorized in this environment | Live URL unverified | Repository owner |
-| Demo PIN remains in demo builds | Acceptable only in demo mode | Engineering |
-| Anonymous booking is rate-limit-free | Abuse risk; post-launch | Engineering |
-| `express` dependency unused | Bundle hygiene only; not shipped | Engineering |
-| Order status `delivered` exists in the legacy check but not in the client stage type | Historical rows may carry it | Engineering |
+| Demo identities, PIN `1234`, credential cards and demo slugs ship in a Supabase-mode bundle while `verify:build` passes | P0 false confidence; violates the zero-demo production claim | Engineering — Sprint 1 |
+| Overlapping appointments are accepted; no exclusion constraint, resource, hold or idempotency key | P0 double-booking risk | Engineering — Sprint 3 |
+| No owner/employee `INSERT` policy on `appointments` | Staff cannot book for a patron | Engineering — Sprint 3 |
+| Tenant is chosen on the client; public path defaults to the Nairobi tenant | Any URL shows the default atelier; no slug/custom domain | Engineering — Sprint 2 |
+| Order writes locate rows by `order_code` alone | Same code in two tenants can be ambiguous | Engineering — Sprint 1 |
+| Owner onboarding is two non-transactional inserts; documented onboarding RPC is dropped | Orphan atelier on partial failure | Engineering — Sprint 1 |
+| Money display converts every amount from KES at hardcoded rates | NGN/USD balances display wrong values | Engineering — Sprint 4 |
+| No audit trail for orders, measurements, payments, settings or roles | Disputes cannot be investigated | Engineering — Sprint 1 |
+| Anonymous booking has no rate limit or bot challenge | Spam/resource exhaustion | Engineering — Sprint 3 |
+| No unit or browser test framework | Component, auth and booking regressions escape CI | Engineering — Sprint 1/3 |
+| Hosted Supabase state and remote migration apply were not verified in this environment | Remote schema parity unproven | Repository owner |
+| Netlify/DNS were not re-verified in this environment | Live URL and domain state not re-proven | Repository owner |
+
+## Decisions awaiting approval
+
+ADR-008 (TanStack Start SSR shell), ADR-009 (booking concurrency), ADR-010 (payments ledger) and
+ADR-011 (tenant resolution) are **Proposed**. Sprint 1 may not start until ADR-008 and ADR-011 are
+approved.
 
 ## How to tell what is real
 
 - Code: `src/` and `supabase/migrations/`.
 - Proof: `docs/evidence/` and `supabase/tests/`.
+- Findings and priorities: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_sprint-0-audit.md).
 - Gates: [`release-readiness.md`](release-readiness.md).

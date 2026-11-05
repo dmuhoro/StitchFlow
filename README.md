@@ -13,6 +13,13 @@ StitchFlow is a browser-based product prototype for African bespoke ateliers cre
 
 > **Migration boundary:** StitchFlow now has a Supabase relational foundation with tenant-scoped Row Level Security, but the deployed preview still runs in demo mode until the first owner account, atelier, and authenticated data flow are provisioned and verified.
 
+> **Verification status (2026-11-05):** the Sprint 0 audit passes seven of eight verification gates.
+> Gate 8 (appointment capacity and double-booking) **fails** — overlapping bookings are accepted.
+> The production bundle also still contains demo code and the demo PIN. StitchFlow `v1.0.0` is a
+> demo-first release, not a certified production atelier system. Read
+> [`docs/audit/2026-11-05_sprint-0-audit.md`](docs/audit/2026-11-05_sprint-0-audit.md) before
+> importing real data.
+
 ## What is included
 
 The demo includes a cultural lookbook, a four-step fitting-request flow, an atelier director view, an artisan workbench, a patron portal, namespaced browser persistence, system/light/dark themes, KES/USD display formatting, mobile-friendly touch targets, and WhatsApp click-to-chat handoffs. Garment-specific concepts such as Agbada wingspan, Fila cap circumference, Sokoto taper, Kitenge print alignment, Kanzu robe drop, textile provenance, and posture/drape notes remain explicit in the product language and design briefs.
@@ -27,13 +34,15 @@ Never use the demo PIN or client-side role gates as a security boundary in a liv
 
 The connected Supabase project contains tenant-aware tables for ateliers, members, lookbook items, orders, order progress notes, measurements, appointments, and feedback. Row Level Security is enabled on every table. Staff access is scoped to an atelier, patrons are scoped to their own records, and only published lookbook items are public. The browser integration lives in `src/lib/supabase.ts` and `src/lib/atelier-repository.ts`; backend notes and verification gates are documented in [supabase/README.md](supabase/README.md).
 
+The local suite now has 12 adversarial RLS scenarios and proves gates 1–7. It does not prove booking concurrency: `appointments` has no exclusion constraint, resource, hold, or idempotency key, and an owner/employee cannot insert an appointment at all. Those gaps are `S0-P0-02` and `S0-P1-03` in the [Sprint 0 audit](docs/audit/2026-11-05_sprint-0-audit.md).
+
 Copy `.env.example` to `.env.local` and provide `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Keep `VITE_DATA_MODE=demo` until Supabase Auth and the first owner onboarding flow have been tested. Never place a service-role key in Vite environment variables or browser code.
 
 ## Current scope and limitations
 
-StitchFlow is still intentionally a staged production migration. The Supabase schema and security boundary exist, but the React context still defaults to seeded browser-local demo data. Authentication UI, repository-backed loading states, server-side appointment locking, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, audit history, and operational monitoring remain to be integrated and verified.
+StitchFlow is still intentionally a staged production migration. The Supabase schema and security boundary exist, but the React context still defaults to seeded browser-local demo data. Two P0 defects are open: demo code and the demo PIN ship in the Supabase-mode bundle, and double-booking is not prevented. Tenant resolution is still client-side, order writes locate rows by `order_code` alone, owner onboarding is not atomic, and there is no audit trail. Authentication UI, invitations, server-side appointment locking, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, and operational monitoring remain to be integrated and verified.
 
-Do not import live customer data yet. Before a real atelier rollout, finish the authenticated repository migration, test tenant isolation with separate users, add transactional scheduling, payment reconciliation, consent and retention controls, secure media storage, notifications, backups, and monitoring.
+Do not import live customer data yet. Before a real atelier rollout, close the P0/P1 items in the [Sprint 0 audit](docs/audit/2026-11-05_sprint-0-audit.md), finish the authenticated repository migration, test tenant isolation with separate users, add transactional scheduling, payment reconciliation, consent and retention controls, secure media storage, notifications, backups, and monitoring.
 
 ## Quickstart
 
@@ -51,11 +60,17 @@ Open [http://localhost:3000](http://localhost:3000). The repository includes an 
 ### Quality checks
 
 ```bash
-npm run lint       # TypeScript validation
-npm run build      # Production bundle
-npm run preview    # Serve the production bundle locally
-npm run audit      # Dependency vulnerability check
+npm ci                 # Reproducible install from package-lock.json
+npm run lint           # TypeScript validation
+npm run check:docs     # Relative Markdown link check
+npm run build          # Production bundle
+npm run verify:build   # Artifact assertions (paths and placeholders)
+npm run verify:db      # Disposable postgres:16 + 12-scenario RLS suite
+npm run preview        # Serve the production bundle locally
+npm run audit          # Dependency vulnerability check
 ```
+
+`verify:build` does **not** prove that demo code is absent; that is the open `S0-P0-01` defect.
 
 ### Production deployment
 
@@ -85,7 +100,7 @@ StitchFlow is designed around the working language of African bespoke tailoring 
 
 ## Roadmap to a real business product
 
-The next business-critical milestones are to complete the Supabase Auth and repository migration; add server-side appointment capacity and double-booking protection; version measurement cards and garment specifications; add customer CRM, fabric inventory, QC/rework, delivery, and alteration history; implement quotes, invoices, payment webhooks, tax and currency rules; add secure media storage, privacy and consent workflows, backups with restore drills, and operational monitoring.
+Sprint 1 is blocked until the repository owner approves ADR-008 (SSR shell) and ADR-011 (tenant resolution); ADR-009 (booking concurrency) and ADR-010 (payments ledger) are also proposed. The next business-critical milestones are to remove demo code from the production artifact; make onboarding atomic; enforce tenant-correct order writes; add an audit trail and staff appointment creation; add server-side appointment capacity and double-booking protection; version measurement cards and garment specifications; add customer CRM, fabric inventory, QC/rework, delivery, and alteration history; implement quotes, invoices, payment webhooks, tax and currency rules; and add secure media storage, privacy and consent workflows, backups with restore drills, and operational monitoring. See [`docs/roadmap.md`](docs/roadmap.md).
 
 ## Contributing
 
