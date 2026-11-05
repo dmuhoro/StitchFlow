@@ -35,6 +35,7 @@ import {
   loadAtelierSnapshot,
   loadPublicAtelierSnapshot,
   createAtelierForCurrentUser,
+  acceptInvitation as acceptInvitationRepository,
   persistAppointment,
   persistAppointmentStatus,
   persistAtelierSettings,
@@ -80,6 +81,7 @@ interface StitchFlowContextType {
   authError: string | null;
   needsOnboarding: boolean;
   completeOnboarding: (input: { name: string; slug: string; tagline?: string; whatsappNumber?: string }) => Promise<void>;
+  acceptInvitation: (code: string) => Promise<{ success: boolean; atelier_id?: string; role?: string; error?: string }>;
   hasPermission: (requiredRole: UserRole) => boolean;
   authModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
@@ -358,6 +360,15 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setActiveTailorIdState(member.role === 'employee' ? member.id : mappedProfiles.find(p => p.role === 'employee')?.id || '');
     setActiveClientIdState(member.role === 'client' ? member.id : mappedProfiles.find(p => p.role === 'client')?.id || '');
     setCurrentRoleState(member.role);
+  };
+
+  const acceptInvitation = async (code: string) => {
+    const result = await acceptInvitationRepository(code);
+    if (result.error) throw new Error(result.error);
+    setNeedsOnboarding(false);
+    await applyAuthenticatedMember();
+    if (result.atelier_id) showToast('Invitation accepted. Welcome to the atelier.');
+    return result;
   };
 
   const completeOnboarding = async (input: { name: string; slug: string; tagline?: string; whatsappNumber?: string }) => {
@@ -941,6 +952,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       authError,
       needsOnboarding,
       completeOnboarding,
+      acceptInvitation,
       hasPermission,
       authModalOpen,
       setAuthModalOpen,

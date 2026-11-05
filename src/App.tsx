@@ -15,10 +15,15 @@ import { BookingModal } from './components/BookingModal';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { Scissors, ShieldCheck } from 'lucide-react';
 import CreateAtelierScreen from "./components/CreateAtelierScreen";
+import AcceptInvitationScreen from "./components/AcceptInvitationScreen";
 
 const AppContent: React.FC = () => {
   const { currentRole, setCurrentRole, toastMessage, isProductionMode, needsOnboarding } = useStitchFlow();
 
+  const inviteCode = new URLSearchParams(window.location.search).get('invite');
+  if (isProductionMode && inviteCode) {
+    return <AcceptInvitationScreen code={inviteCode} />;
+  }
   if (isProductionMode && needsOnboarding) {
     return <CreateAtelierScreen />;
   }

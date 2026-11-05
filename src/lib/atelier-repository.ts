@@ -99,6 +99,13 @@ export async function createAtelierForCurrentUser(input: {
   return atelier.id;
 }
 
+export async function acceptInvitation(invitationCode: string): Promise<{ success: boolean; atelier_id?: string; role?: string; error?: string }> {
+  const client = requireSupabase();
+  const { data, error } = await client.rpc('accept_invitation', { p_code: invitationCode });
+  if (error) throw error;
+  return (data ?? {}) as { success: boolean; atelier_id?: string; role?: string; error?: string };
+}
+
 export async function signOut(): Promise<void> {
   const client = requireSupabase();
   const { error } = await client.auth.signOut();
