@@ -18,7 +18,7 @@ except `order_progress_notes`, which derives tenancy from `orders`.
 | `order_financials` | `order_id` | `atelier_id` | owner; own patron | owner |
 | `order_progress_notes` | `id` | via `order_id` | owner; assigned employee; own patron | owner; assigned employee |
 | `measurements` | `id` | `atelier_id` | owner; assigned employee; own patron | owner; assigned employee |
-| `appointments` | `id` | `atelier_id` | owner; assigned employee; own patron | anon pending; own patron; owner; assigned employee |
+| `appointments` | `id` | `atelier_id` | owner; assigned employee; own patron | anon pending insert; own patron insert; owner/assigned employee **update only** — no staff `INSERT` policy |
 | `feedback` | `id` | `atelier_id` | owner; own patron | own patron insert; owner update |
 
 ## Invariants
@@ -43,10 +43,14 @@ except `order_progress_notes`, which derives tenancy from `orders`.
 | `appointments` | `persistAppointment`, `persistAppointmentStatus` |
 | `feedback` | `persistFeedback`, `persistFeedbackStatus` |
 | `lookbook_items` | `persistLookbookItem` |
-| `ateliers`, `members` | `createAtelierForCurrentUser`, `persistAtelierSettings` |
+| `ateliers`, `members` | `createAtelierForCurrentUser` (two client inserts, not atomic), `persistAtelierSettings` |
 
 Anonymous fitting requests are written by `persistAppointment` with `client_id = null`, `status =
 'pending'`, and the guest's name/phone. A member booking carries their auth uid.
+
+`create_atelier_for_current_user(...)` is **not** in the current schema: created in
+`20261031110000_baseline_reconciliation.sql`, dropped at `20261031111500_direct_uid_rls.sql:160`.
+Do not document or call it as if it exists.
 
 ## Coupling risks
 
@@ -59,5 +63,9 @@ Anonymous fitting requests are written by `persistAppointment` with `client_id =
 
 ## Verification
 
-`npm run verify:db` applies the whole chain to an empty database and runs
+`npm run verify:db` applies the whole chain to an empty database and runs the 12-scenario
 `supabase/tests/rls_isolation_test.sql`. A contract change without a scenario is unproven.
+
+The suite proves gates 1–7. It does **not** prove booking concurrency: `appointments` has no
+exclusion constraint, resource, hold or idempotency key, and overlapping rows are accepted. Gate 8
+is FAIL and belongs to Sprint 3 / ADR-009. See `docs/audit/2026-11-05_sprint-0-audit.md`.

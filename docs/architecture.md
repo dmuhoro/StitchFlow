@@ -1,6 +1,8 @@
 # Architecture
 
 > Canonical architecture for StitchFlow. Agent summary: `.ai/context/01_architecture.md`.
+> The SSR shell in [ADR-008](adr/ADR-008-single-tanstack-start-app.md) is **Proposed, not built**.
+> Everything in §1–§5 describes the code that exists today.
 
 ## 1. Shape
 
@@ -61,6 +63,13 @@ The tracked chain under `supabase/migrations/` rebuilds the schema the client qu
 database. `supabase/seed.sql` provisions two pilot tenants. RLS is enabled on all nine tenant tables.
 The authoritative policy set is `20261031112000_rls_final.sql`.
 
+Verified limits of this layer (2026-11-05 audit):
+
+- 52 policies across 9 tables; 8 `SECURITY DEFINER` functions; 0 exclusion constraints.
+- No audit/ledger/webhook tables and no `create_atelier_for_current_user` RPC.
+- `appointments` has no resource, duration, hold, idempotency key, or overlap constraint, and no
+  owner/employee `INSERT` policy.
+
 See [`db-contracts.md`](db-contracts.md) for table contracts and
 [`security.md`](security.md) for the invariant list.
 
@@ -70,9 +79,9 @@ See [`db-contracts.md`](db-contracts.md) for table contracts and
 |-------|---------|----------------|
 | Types | `npm run lint` | `tsc --noEmit` is clean |
 | Bundle | `npm run build` | Production build succeeds |
-| Artifacts | `npm run verify:build` | No literal source paths; no secret in output |
+| Artifacts | `npm run verify:build` | No literal source paths; no secret in output. **It does not prove demo code is absent** — see the P0 in `docs/audit/2026-11-05_sprint-0-audit.md` |
 | Docs | `npm run check:docs` | Every relative Markdown link resolves |
-| Database | `npm run verify:db` | Chain applies to empty DB; RLS suite passes |
+| Database | `npm run verify:db` | Chain applies to empty DB; 12-scenario RLS suite passes |
 | CI | `.github/workflows/ci.yml` | All of the above on every push |
 
 ## 7. Deployment
@@ -86,3 +95,7 @@ repository owner; the agent must never request a token in chat. See
 
 No server framework, no ORM, no server-side rendering, no payments in v1.0.0, and no multi-atelier
 membership per user. These are recorded so a future change does not assume they exist.
+
+Two of these are now proposed changes, not permanent non-goals: ADR-008 proposes a single TanStack
+Start app for SSR, and ADR-010 proposes an append-only payments ledger. Neither is implemented.
+Until the owner approves those ADRs, the non-goals above remain the shipped truth.

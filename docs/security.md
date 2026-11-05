@@ -65,12 +65,13 @@ to expose an RPC surface.
 
 ## Residual risks
 
-| Risk | Severity | Mitigation |
-|------|----------|------------|
+| Risk | Severity | Status / mitigation |
+|------|----------|--------------------|
+| Demo identities, PIN `1234` and credential cards ship in the Supabase-mode bundle | **P0** | Refused at the runtime action boundary, but present in the artifact; `verify:build` does not assert absence. Sprint 1. |
+| Overlapping appointments are accepted; no exclusion constraint, resource or hold | **P0** | Gate 8 FAIL. ADR-009 / Sprint 3. |
+| No owner/employee `INSERT` policy on `appointments` | P1 | Staff cannot create a fitting. Sprint 3. |
 | Anonymous booking has no rate limit | Medium | PostgREST/edge rate limit post-launch |
-| No appointment capacity lock | Medium | Server-side function post-launch |
-| Demo PIN reachable in demo builds | Low in demo, P0 in prod | Refused at the action boundary in `supabase` mode (`StitchFlowContext.tsx:576`, `AuthModal.tsx:81`) |
-| No audit trail for owner money edits | Medium | Add audit table post-launch |
+| No audit trail for owner money edits | Medium | Add audit table in Sprint 1 |
 | Hosted project access unverified | Blocker for deploy | Owner authorization |
 
 ## How to verify

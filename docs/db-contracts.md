@@ -171,12 +171,17 @@ all; assigned employee read/update.
 | `current_member_atelier_id()` | security definer, stable | caller's tenant |
 | `current_member_role()` | security definer, stable | caller's role |
 | `client_owns_order(uuid)` | security definer, stable | patron own-order predicate |
-| `create_atelier_for_current_user(...)` | security definer | onboarding RPC |
 | `guard_member_mutation()` | trigger | blocks role/tenant escalation |
 | `prevent_atelier_creator_reassignment()` | trigger | immutable creator |
 | `set_updated_at()` | trigger | UTC timestamp |
 
 All definer functions set `search_path = ''`; `PUBLIC` and `anon` execute is revoked.
+
+`create_atelier_for_current_user(...)` is **not** part of the current schema. It was created in
+`20261031110000_baseline_reconciliation.sql` and dropped in
+`20261031111500_direct_uid_rls.sql:160`, and no later migration recreates it. Owner onboarding is
+currently two client-side inserts in `src/lib/atelier-repository.ts`, not an atomic RPC. See
+`docs/audit/2026-11-05_sprint-0-audit.md` `S0-P1-02`.
 
 ## Migration order
 
@@ -198,5 +203,10 @@ are historical layers kept so the chain replays.
 
 ## Verification
 
-`npm run verify:db` applies the chain to an empty `postgres:16`, loads `supabase/seed.sql`, runs
-`supabase/tests/rls_isolation_test.sql`, and asserts RLS on every public table.
+`npm run verify:db` applies the chain to an empty `postgres:16`, loads `supabase/seed.sql`, runs the
+12-scenario `supabase/tests/rls_isolation_test.sql`, and asserts RLS on every public table.
+
+The suite proves gates 1–7. It does **not** prove appointment concurrency: there is no exclusion
+constraint on `appointments`, and two overlapping rows are accepted. Gate 8 is intentionally FAIL
+and is owned by Sprint 3 / [ADR-009](adr/ADR-009-booking-concurrency.md). Evidence:
+[`evidence/2026-11-05_sprint-0-verification.md`](evidence/2026-11-05_sprint-0-verification.md).
