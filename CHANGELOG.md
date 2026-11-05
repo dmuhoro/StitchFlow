@@ -5,6 +5,43 @@ All notable changes to StitchFlow are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] — 2026-11-05
+
+Audit-only patch. No feature code and no schema change.
+
+### Added
+
+- Sprint 0 audit: `docs/audit/2026-11-05_sprint-0-audit.md` with a prioritized P0–P3 defect list,
+  the eight-gate verdict, and the owner-blocked work list.
+- Proposed ADR-008 (TanStack Start SSR shell), ADR-009 (booking concurrency), ADR-010 (payments
+  ledger), and ADR-011 (tenant resolution). All remain **Proposed**, not Accepted.
+- RLS scenarios 11 (patron write denial) and 12 (tenant-id mutation guards); expanded scenario 3
+  (other-tenant measurements) and scenario 4 (patron appointments). Suite is now 12 scenarios.
+- Evidence record and index entry: `docs/evidence/2026-11-05_sprint-0-verification.md`.
+- Sprint record `sprints/sprint-00a-verify-and-decide.md`.
+
+### Changed
+
+- `docs/current-state.md`, `docs/architecture.md`, `docs/db-contracts.md`, `docs/roadmap.md`,
+  `docs/release-readiness.md`, `supabase/README.md` and the `.ai/context` briefs now state the
+  verified result instead of the prior narrative.
+- Release readiness distinguishes "deployed" from "artifact clean"; L9 is deploy-only evidence.
+
+### Removed
+
+- Unused dependencies: `express`, `@types/express`, `dotenv`, `@google/genai`, `autoprefixer`,
+  `esbuild`, `motion`, `tsx`.
+- Stale `bun.lock`; npm with `package-lock.json` is the single package manager contract.
+- Stale AI Studio environment entries from `.env.example`.
+- The false `create_atelier_for_current_user(...)` contract row; the function is dropped and absent.
+
+### Known defects recorded, not fixed
+
+- `S0-P0-01` demo identities, PIN `1234`, credential cards and demo slugs still ship in the
+  Supabase-mode bundle while `verify:build` passes.
+- `S0-P0-02` overlapping appointments are accepted; no exclusion constraint exists (gate 8 FAIL).
+- `S0-P1-03` no owner/employee `INSERT` policy on `appointments`.
+
 ## [1.0.0] — 2026-11-01
 
 ### Added
