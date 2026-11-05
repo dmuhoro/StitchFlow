@@ -6,7 +6,8 @@
 
 | Release | Date | Status | Notes |
 |---------|------|--------|-------|
-| v1.0.0 | 2026-11-01 | Launch readiness | Reproducible schema, proven RLS, wired persistence, CI, release |
+| v1.0.1 | 2026-11-05 | Sprint 0 audit | Audit, 12-scenario RLS, proposed ADRs, dependency cleanup; no feature code |
+| v1.0.0 | 2026-11-01 | Launch readiness (demo-first) | Reproducible schema, proven RLS, wired persistence, CI, release; P0s found later |
 
 ## Convention
 

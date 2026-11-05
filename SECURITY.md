@@ -28,7 +28,7 @@ data, or a working exploit against a live atelier in the report.
 - **Authorization:** Postgres Row Level Security on every tenant table. Direct `auth.uid()`
   predicates with narrowly scoped `SECURITY DEFINER` helpers whose `search_path` is pinned.
 - **Tenant boundary:** `atelier_id` on every tenant row. Cross-tenant access is denied by policy and
-  proven by `supabase/tests/rls_isolation_test.sql`.
+  proven by the 12-scenario `supabase/tests/rls_isolation_test.sql` (gates 1–7).
 - **Money:** balances live in `order_financials`. Owners manage them; a patron may read the balance
   on their own order only; artisans never read the table.
 - **Anonymous surface:** public atelier profile and published lookbook are readable. Anonymous
