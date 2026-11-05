@@ -79,6 +79,7 @@ DO $$
 DECLARE
   v_assigned INT;
   v_other_tenant INT;
+  v_other_measurements INT;
   v_financials INT;
   v_members INT;
 BEGIN
@@ -88,6 +89,9 @@ BEGIN
   SELECT count(*) INTO v_other_tenant FROM public.orders
   WHERE atelier_id = '22222222-2222-2222-2222-222222222222';
 
+  SELECT count(*) INTO v_other_measurements FROM public.measurements
+  WHERE atelier_id = '22222222-2222-2222-2222-222222222222';
+
   SELECT count(*) INTO v_financials FROM public.order_financials;
 
   SELECT count(*) INTO v_members FROM public.members
@@ -95,10 +99,11 @@ BEGIN
 
   ASSERT v_assigned >= 3, 'Artisan should see their assigned orders';
   ASSERT v_other_tenant = 0, 'Artisan intercepted another atelier';
+  ASSERT v_other_measurements = 0, 'CRITICAL: Artisan intercepted another atelier''s measurements';
   ASSERT v_financials = 0, 'CRITICAL: Artisan can read order financials';
   ASSERT v_members >= 4, 'Artisan should resolve patron/artisan names in their atelier';
-  RAISE NOTICE 'PASS [3] artisan scope: assigned=%, other=%, financials=%, members=%',
-    v_assigned, v_other_tenant, v_financials, v_members;
+  RAISE NOTICE 'PASS [3] artisan scope: assigned=%, otherOrders=%, otherMeasurements=%, financials=%, members=%',
+    v_assigned, v_other_tenant, v_other_measurements, v_financials, v_members;
 END $$;
 
 -- ----------------------------------------------------------------------------
@@ -112,6 +117,8 @@ DECLARE
   v_other_client_measurement INT;
   v_own_orders INT;
   v_other_client_orders INT;
+  v_own_appointments INT;
+  v_other_client_appointments INT;
   v_own_financials INT;
   v_other_tenant_financials INT;
   v_client_rows INT;
@@ -128,6 +135,12 @@ BEGIN
   WHERE client_id = 'a3333333-3333-3333-3333-333333333333';
 
   SELECT count(*) INTO v_other_client_orders FROM public.orders
+  WHERE client_id = 'a4444444-4444-4444-4444-444444444444';
+
+  SELECT count(*) INTO v_own_appointments FROM public.appointments
+  WHERE client_id = 'a3333333-3333-3333-3333-333333333333';
+
+  SELECT count(*) INTO v_other_client_appointments FROM public.appointments
   WHERE client_id = 'a4444444-4444-4444-4444-444444444444';
 
   SELECT count(*) INTO v_own_financials FROM public.order_financials
@@ -151,14 +164,16 @@ BEGIN
   ASSERT v_other_client_measurement = 0, 'CRITICAL: Patron saw another patron measurement';
   ASSERT v_own_orders = 2, 'Patron must see their own orders';
   ASSERT v_other_client_orders = 0, 'CRITICAL: Patron saw another patron order';
+  ASSERT v_own_appointments >= 1, 'Patron must see their own appointments';
+  ASSERT v_other_client_appointments = 0, 'CRITICAL: Patron saw another patron appointment';
   ASSERT v_own_financials >= 2, 'Patron must see the balance on their own orders';
   ASSERT v_other_tenant_financials = 0, 'CRITICAL: Patron saw another tenant financials';
   -- A patron sees exactly one client row: their own. Never another patron.
   ASSERT v_client_rows = 1, 'CRITICAL: Patron client-directory visibility must be self only';
   ASSERT v_other_patron_row = 0, 'CRITICAL: Patron saw another patron member row';
   ASSERT v_staff_rows >= 2, 'Patron must resolve owner/employee names';
-  RAISE NOTICE 'PASS [4] patron scope: measurements=%, orders=%, balances=%, clients=%, staff=%',
-    v_own_measurement, v_own_orders, v_own_financials, v_client_rows, v_staff_rows;
+  RAISE NOTICE 'PASS [4] patron scope: measurements=%, orders=%, appointments=%, balances=%, clients=%, staff=%',
+    v_own_measurement, v_own_orders, v_own_appointments, v_own_financials, v_client_rows, v_staff_rows;
 END $$;
 
 -- ----------------------------------------------------------------------------
@@ -328,6 +343,99 @@ BEGIN
   ASSERT v_measurements = 0, 'CRITICAL: Deactivated artisan still reads measurements';
   RAISE NOTICE 'PASS [10] deactivated member access revoked: orders=%, measurements=%',
     v_orders, v_measurements;
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- TEST 11: A PATRON CANNOT WRITE AN ORDER, A BALANCE, OR A MEASUREMENT
+-- Verification gate 5 from supabase/README.md. Client policies are read-only;
+-- every attempted write must affect zero rows rather than silently succeed.
+-- ----------------------------------------------------------------------------
+SET LOCAL "request.jwt.claims" = '{"sub": "a3333333-3333-3333-3333-333333333333", "role": "authenticated"}';
+
+DO $$
+DECLARE
+  v_orders INT;
+  v_financials INT;
+  v_measurements INT;
+BEGIN
+  UPDATE public.orders SET status = 'ready'
+  WHERE atelier_id = '11111111-1111-1111-1111-111111111111';
+  GET DIAGNOSTICS v_orders = ROW_COUNT;
+
+  UPDATE public.order_financials SET balance_due = 0
+  WHERE atelier_id = '11111111-1111-1111-1111-111111111111';
+  GET DIAGNOSTICS v_financials = ROW_COUNT;
+
+  UPDATE public.measurements SET chest = 1
+  WHERE client_id = 'a3333333-3333-3333-3333-333333333333';
+  GET DIAGNOSTICS v_measurements = ROW_COUNT;
+
+  ASSERT v_orders = 0, 'CRITICAL: Patron updated an order';
+  ASSERT v_financials = 0, 'CRITICAL: Patron wrote a balance';
+  ASSERT v_measurements = 0, 'CRITICAL: Patron wrote a measurement card';
+  RAISE NOTICE 'PASS [11] patron write denial: orders=%, financials=%, measurements=%',
+    v_orders, v_financials, v_measurements;
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- TEST 12: A TENANT ID CANNOT BE CHANGED THROUGH AN UPDATE PAYLOAD
+-- Verification gate 6 from supabase/README.md. Tenant moves must be stopped by
+-- a trigger or a WITH CHECK, never by trusting the client to omit the column.
+-- ----------------------------------------------------------------------------
+SET LOCAL "request.jwt.claims" = '{"sub": "a1111111-1111-1111-1111-111111111111", "role": "authenticated"}';
+
+DO $$
+DECLARE
+  v_blocked INT := 0;
+  v_rows INT;
+BEGIN
+  BEGIN
+    UPDATE public.orders
+    SET atelier_id = '22222222-2222-2222-2222-222222222222'
+    WHERE id = 'a1000001-1111-1111-1111-111111111111';
+    RAISE EXCEPTION 'expected order tenant reassignment denial';
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLERRM LIKE '%expected order tenant reassignment denial%' THEN
+        RAISE;
+      END IF;
+      v_blocked := v_blocked + 1;
+  END;
+
+  BEGIN
+    UPDATE public.members
+    SET atelier_id = '22222222-2222-2222-2222-222222222222'
+    WHERE id = 'a3333333-3333-3333-3333-333333333333';
+    RAISE EXCEPTION 'expected member tenant reassignment denial';
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLERRM LIKE '%expected member tenant reassignment denial%' THEN
+        RAISE;
+      END IF;
+      v_blocked := v_blocked + 1;
+  END;
+
+  BEGIN
+    UPDATE public.measurements
+    SET atelier_id = '22222222-2222-2222-2222-222222222222'
+    WHERE id = 'a0000001-1111-1111-1111-111111111111';
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    IF v_rows <> 0 THEN
+      RAISE EXCEPTION 'expected measurement tenant reassignment denial';
+    END IF;
+    v_blocked := v_blocked + 1;
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      v_blocked := v_blocked + 1;
+    WHEN OTHERS THEN
+      IF SQLERRM LIKE '%expected measurement tenant reassignment denial%' THEN
+        RAISE;
+      END IF;
+      v_blocked := v_blocked + 1;
+  END;
+
+  ASSERT v_blocked = 3, 'CRITICAL: A tenant_id mutation was not blocked';
+  RAISE NOTICE 'PASS [12] tenant-id mutation guards: blocked=%', v_blocked;
 END $$;
 
 ROLLBACK;
