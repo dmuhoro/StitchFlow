@@ -14,9 +14,14 @@ import { OrderTrackerModal } from './components/OrderTrackerModal';
 import { BookingModal } from './components/BookingModal';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { Scissors, ShieldCheck } from 'lucide-react';
+import CreateAtelierScreen from "./components/CreateAtelierScreen";
 
 const AppContent: React.FC = () => {
-  const { currentRole, setCurrentRole, toastMessage } = useStitchFlow();
+  const { currentRole, setCurrentRole, toastMessage, isProductionMode, needsOnboarding } = useStitchFlow();
+
+  if (isProductionMode && needsOnboarding) {
+    return <CreateAtelierScreen />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAF6F0] dark:bg-[#12100E] text-[#1A1715] dark:text-[#F5EFE6] transition-colors">

@@ -34,6 +34,7 @@ import {
   listAtelierMembers,
   loadAtelierSnapshot,
   loadPublicAtelierSnapshot,
+  createAtelierForCurrentUser,
   persistAppointment,
   persistAppointmentStatus,
   persistAtelierSettings,
@@ -77,6 +78,8 @@ interface StitchFlowContextType {
   isProductionMode: boolean;
   authLoading: boolean;
   authError: string | null;
+  needsOnboarding: boolean;
+  completeOnboarding: (input: { name: string; slug: string; tagline?: string; whatsappNumber?: string }) => Promise<void>;
   hasPermission: (requiredRole: UserRole) => boolean;
   authModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
@@ -293,6 +296,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [selectedLookbookForBooking, setSelectedLookbookForBooking] = useState<LookbookItem | null>(null);
 
   const isProductionMode = dataMode === 'supabase';
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   const memberToProfile = (member: AtelierMember): Profile => ({
     id: member.id,
@@ -311,8 +315,10 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setCurrentUser(null);
       setCurrentRoleState('visitor');
       setProfiles([]);
+      setNeedsOnboarding(isProductionMode);
       return;
     }
+    setNeedsOnboarding(false);
 
     const atelierMembers = await listAtelierMembers(member.atelier_id);
     const mappedProfiles = atelierMembers.map(memberToProfile);
@@ -352,6 +358,15 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setActiveTailorIdState(member.role === 'employee' ? member.id : mappedProfiles.find(p => p.role === 'employee')?.id || '');
     setActiveClientIdState(member.role === 'client' ? member.id : mappedProfiles.find(p => p.role === 'client')?.id || '');
     setCurrentRoleState(member.role);
+  };
+
+  const completeOnboarding = async (input: { name: string; slug: string; tagline?: string; whatsappNumber?: string }) => {
+    const atelierId = await createAtelierForCurrentUser(input);
+    setNeedsOnboarding(false);
+    await applyAuthenticatedMember();
+    if (atelierId) {
+      showToast('Atelier created. Welcome to StitchFlow.');
+    }
   };
 
   useEffect(() => {
@@ -924,6 +939,8 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       isProductionMode,
       authLoading,
       authError,
+      needsOnboarding,
+      completeOnboarding,
       hasPermission,
       authModalOpen,
       setAuthModalOpen,
