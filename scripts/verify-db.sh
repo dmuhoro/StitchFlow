@@ -93,14 +93,15 @@ begin
   where table_schema = 'public'
     and table_name in (
       'ateliers', 'members', 'lookbook_items', 'orders', 'order_financials',
-      'order_progress_notes', 'measurements', 'appointments', 'feedback'
+      'order_progress_notes', 'measurements', 'appointments', 'feedback',
+      'audit_log'
     );
 
-  if missing <> 9 then
+  if missing <> 10 then
     raise exception 'Expected 9 tenant tables, found %', missing;
   end if;
 
-  raise notice 'RLS enabled on every public table; 9 tenant tables present.';
+  raise notice 'RLS enabled on every public table; 10 tenant tables present.';
 end $$;
 SQL
 
