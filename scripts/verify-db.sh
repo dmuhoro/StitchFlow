@@ -94,14 +94,15 @@ begin
     and table_name in (
       'ateliers', 'members', 'lookbook_items', 'orders', 'order_financials',
       'order_progress_notes', 'measurements', 'appointments', 'feedback',
-      'audit_log'
+      'audit_log',
+      'invitations'
     );
 
-  if missing <> 10 then
+  if missing <> 11 then
     raise exception 'Expected 9 tenant tables, found %', missing;
   end if;
 
-  raise notice 'RLS enabled on every public table; 10 tenant tables present.';
+  raise notice 'RLS enabled on every public table; 11 tenant tables present.';
 end $$;
 SQL
 
