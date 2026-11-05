@@ -1,6 +1,7 @@
 # Sprint 01 — Launch Readiness v1.0.0
 
-**Status:** IN PROGRESS
+**Status:** DONE — demo-first release. Production certification was **not** given; the 2026-11-05
+audit reopened two P0 defects in `sprint-00a-verify-and-decide.md`.
 **Date:** 2026-11-01
 
 ## Objective
@@ -18,10 +19,10 @@ versioned release, and honest documentation.
 | L3 | Local imagery imported through Vite, hashed in `dist/` | DONE | `docs/evidence/2026-11-01_build_artifacts.md` |
 | L4 | Persistence wired; demo PIN fails closed in production; currency and status drift fixed | DONE | `docs/evidence/2026-11-01_persistence.md` |
 | L5 | CI: lint, build, artifacts, docs, DB | DONE | `docs/evidence/2026-11-01_ci.md` |
-| L6 | Version 1.0.0, changelog, release notes, annotated tag | PENDING | `docs/evidence/2026-11-01_release.md` |
-| L7 | Cleanup: nested clone, obsolete script, lockfile, ignores | PENDING | clean tree |
-| L8 | README, CHANGELOG, sprints final | PENDING | release commit |
-| L9 | Deployment | BLOCKED | owner authorization |
+| L6 | Version 1.0.0, changelog, release notes, annotated tag | DONE | `docs/evidence/2026-11-01_release.md` |
+| L7 | Cleanup: nested clone, obsolete script, lockfile, ignores | DONE | clean tree at release; `npm ci` re-proven 2026-11-05 |
+| L8 | README, CHANGELOG, sprints final | DONE | `CHANGELOG.md` 1.0.0 |
+| L9 | Deployment | DONE (deploy only) | `docs/evidence/2026-11-01_deployment.md`; artifact content later found defective |
 
 ## Constraints
 
@@ -77,4 +78,17 @@ versioned release, and honest documentation.
 - Proof: the CI `host` branch was exercised locally against a published `postgres:16` container and
   passed all 10 scenarios; quality commands are green; recorded in `docs/evidence/2026-11-01_ci.md`.
 
-Remaining layers are filled in as they close. Final sign-off is in `docs/release-readiness.md`.
+### L6–L9 — Release, cleanup, docs, deployment (DONE, demo-first)
+
+- L6: `package.json` 1.0.0, annotated tag `v1.0.0` pushed; remote ref
+  `6af1ba94c39348079d42df59d69748ada5ebd66d` verified in `docs/evidence/2026-11-01_release.md`.
+- L7: lockfile committed, obsolete paths removed; `npm ci` exits `0` as re-proven on 2026-11-05.
+- L8: README, CHANGELOG and sprint records updated in the release commit.
+- L9: the Supabase-mode build deployed to Netlify and the live URL was recorded in
+  `docs/evidence/2026-11-01_deployment.md`.
+
+**Post-release audit correction (2026-11-05).** L9 proves that a deployment happened; it does not
+prove the deployed artifact is clean. Sprint 0a found demo code in the Supabase-mode bundle and no
+appointment concurrency control. Those are P0 defects tracked in
+[`sprint-00a-verify-and-decide.md`](sprint-00a-verify-and-decide.md), not retroactive passes for this
+sprint. Final status is in `docs/release-readiness.md`.
