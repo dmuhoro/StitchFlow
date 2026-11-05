@@ -1,6 +1,7 @@
 # ADR-008 — One TanStack Start application with a public SSR group and an authenticated app group
 
-**Status:** Proposed — awaiting owner approval
+**Status:** Approved by owner — 2026-11-05
+**Approved by:** daniel-muhoro (owner)
 **Date:** 2026-11-05
 **Supersedes:** ADR-005 (runtime demo switch) and ADR-007 (static-only deployment shape)
 

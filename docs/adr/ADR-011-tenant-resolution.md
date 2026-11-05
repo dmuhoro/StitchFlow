@@ -1,6 +1,7 @@
 # ADR-011 — Tenant resolution by verified custom domain, subdomain, then reserved slug path
 
-**Status:** Proposed — awaiting owner approval
+**Status:** Approved by owner — 2026-11-05
+**Approved by:** daniel-muhoro (owner)
 **Date:** 2026-11-05
 
 ## Context
