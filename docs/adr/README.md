@@ -12,10 +12,10 @@
 | [005](ADR-005-fail-closed-data-mode.md) | `VITE_DATA_MODE` fails closed | Accepted (runtime switch superseded by 008) |
 | [006](ADR-006-vite-local-asset-imports.md) | Local imagery is imported through Vite | Accepted |
 | [007](ADR-007-static-netlify-deployment.md) | Static SPA on Netlify with explicit environment | Accepted (hosting shape superseded by 008) |
-| [008](ADR-008-single-tanstack-start-app.md) | One TanStack Start app with public SSR and authenticated app groups | Proposed |
-| [009](ADR-009-booking-concurrency.md) | Booking concurrency: exclusion constraints plus expiring holds | Proposed |
-| [010](ADR-010-payments-and-ledger.md) | Payments: append-only ledger, idempotent webhooks, derived balances | Proposed |
-| [011](ADR-011-tenant-resolution.md) | Tenant resolution by verified domain, subdomain, then slug path | Proposed |
+| [008](ADR-008-single-tanstack-start-app.md) | One TanStack Start app with public SSR and authenticated app groups | Approved — onboarding boundary linked |
+| [009](ADR-009-booking-concurrency.md) | Booking concurrency: exclusion constraints plus expiring holds | Proposed — Sprint 3 |
+| [010](ADR-010-payments-and-ledger.md) | Payments: append-only ledger, idempotent webhooks, derived balances | Proposed — Sprint 4 |
+| [011](ADR-011-tenant-resolution.md) | Tenant resolution by verified domain, subdomain, then slug path | Approved — onboarding link only |
 
 ## Conventions
 

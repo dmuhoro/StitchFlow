@@ -177,11 +177,11 @@ all; assigned employee read/update.
 
 All definer functions set `search_path = ''`; `PUBLIC` and `anon` execute is revoked.
 
-`create_atelier_for_current_user(...)` is **not** part of the current schema. It was created in
-`20261031110000_baseline_reconciliation.sql` and dropped in
-`20261031111500_direct_uid_rls.sql:160`, and no later migration recreates it. Owner onboarding is
-currently two client-side inserts in `src/lib/atelier-repository.ts`, not an atomic RPC. See
-`docs/audit/2026-11-05_sprint-0-audit.md` `S0-P1-02`.
+`create_atelier_with_owner(text, text, text, text)` is the supported owner-onboarding boundary. It
+is created by `supabase/migrations/20261106160000_atomic_owner_onboarding.sql`, runs as one
+transaction, and is callable only by `authenticated`. The retired
+`create_atelier_for_current_user(...)` name is revoked and dropped. The browser calls the RPC via
+`src/lib/atelier-repository.ts`; it never performs separate atelier/member inserts.
 
 ## Migration order
 
@@ -195,6 +195,11 @@ currently two client-side inserts in `src/lib/atelier-repository.ts`, not an ato
 20261031111500_direct_uid_rls.sql
 20261031112000_rls_final.sql
 20261031113000_currency_alignment.sql
+20261106120000_sprint1_audit_log.sql
+20261106130000_sprint1_invitations.sql
+20261106140000_sprint1_invite_accept.sql
+20261106150000_sprint1_hardening.sql
+20261106160000_atomic_owner_onboarding.sql
 ```
 
 `rls_final` is authoritative for policies; `currency_alignment` widens the currency contract to

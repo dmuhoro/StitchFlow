@@ -7,6 +7,8 @@
 - Refactored data‑mode aliasing and demo‑tenants config.
 - Updated `AtelierLanding`, `TeamInvitesPanel`, `AcceptInvitationScreen`.
 - Added `scripts/verify-hosted.sh` and enhanced hosted DB verification.
+- Added atomic `create_atelier_with_owner` onboarding RPC and removed the legacy callable.
+- Added Playwright invitation acceptance coverage with server-confirmed membership-role assertion.
 - New docs: evidence/2026-11-06_sprint-1-verification.md, updated current‑state.
 
 ### Changed
@@ -15,10 +17,14 @@
 - Consolidated migration plan.
 
 ### Verified
-- `npm run lint`, `npm run build`, `npm run verify:db`, `npm run verify:hosted`, `npm run verify:build` green.
+- `npm run lint`, `npm run build`, `npm run verify:build`, and Playwright test collection pass locally.
+- The connected Supabase project contains `create_atelier_with_owner`; full hosted SQL execution still
+  requires the deliberate `STITCHFLOW_ALLOW_HOSTED_VERIFY=1` CLI gate.
 
-### Known defects
-- None.
+### Known limitations
+- `npm run verify:db` could not run in this sandbox because Docker is unavailable; CI remains the
+  disposable-Postgres proof environment.
+- The live Playwright flow requires an invited test account and code supplied through environment variables.
 
 ---
 
@@ -109,4 +115,3 @@ Audit-only patch. No feature code and no schema change.
 - Demo role sign-in, demo PIN, tenant switching, and destructive reset are refused in
   `VITE_DATA_MODE=supabase` at the action boundary.
 - Supabase mode no longer seeds demo orders, measurements, appointments, feedback, or lookbook.
-

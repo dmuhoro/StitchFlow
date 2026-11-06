@@ -79,3 +79,11 @@ authenticated surface live in one deployable application without sharing a runti
   adds an unproven server surface without SSR benefits.
 - **Prerender only the public pages at build time.** Rejected: atelier branding, lookbook, and
   availability are tenant data that change without a deploy.
+
+## Sprint 1 implementation link
+
+Owner onboarding and invitation redemption remain server-boundary operations. The deployed
+`create_atelier_with_owner` RPC and browser acceptance proof are tracked in
+[`supabase/migrations/20261106160000_atomic_owner_onboarding.sql`](../../supabase/migrations/20261106160000_atomic_owner_onboarding.sql),
+[`src/lib/atelier-repository.ts`](../../src/lib/atelier-repository.ts), and
+[`e2e/invite-flow.spec.ts`](../../e2e/invite-flow.spec.ts). The browser never receives a service-role key.
