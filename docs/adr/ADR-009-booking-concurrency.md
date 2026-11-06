@@ -106,3 +106,10 @@ database must make an overlap impossible, not merely unlikely.
   or cultural fitting sessions that run long.
 - **One booking per resource with no holds.** Rejected: payment and confirmation take time; without
   holds, two customers can pay for the same slot.
+
+## Sprint 1 boundary
+
+Owner onboarding and invitation acceptance do not create appointment rows and therefore do not
+change the booking invariant in this ADR. The current invite proof is
+[`supabase/tests/hosted_rls_e2e.sql`](../../supabase/tests/hosted_rls_e2e.sql); booking concurrency
+remains a Sprint 3 deliverable and is not claimed complete by the onboarding release.

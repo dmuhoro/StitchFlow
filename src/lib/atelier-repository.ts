@@ -85,7 +85,7 @@ export async function createAtelierForCurrentUser(input: {
   whatsappNumber?: string;
 }): Promise<string> {
   const client = requireSupabase();
-  const { data, error } = await client.rpc('create_atelier_for_current_user', {
+  const { data, error } = await client.rpc('create_atelier_with_owner', {
     p_name: input.name.trim(),
     p_slug: input.slug,
     p_tagline: input.tagline ?? null,

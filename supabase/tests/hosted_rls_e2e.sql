@@ -24,7 +24,9 @@ values
   ('e2e00004-0004-4004-8004-000000000004', 'owner-b@e2e.invalid',   now(), '{"full_name":"Owner B"}'::jsonb),
   ('e2e00005-0005-4005-8005-000000000005', 'client-b@e2e.invalid',   now(), '{"full_name":"Client B"}'::jsonb),
   ('e2e00006-0006-4006-8006-000000000006', 'invitee@e2e.invalid',   now(), '{"full_name":"Invited Patron"}'::jsonb),
-  ('e2e00007-0007-4007-8007-000000000007', 'wrong-invitee@e2e.invalid', now(), '{"full_name":"Wrong Invitee"}'::jsonb)
+  ('e2e00007-0007-4007-8007-000000000007', 'wrong-invitee@e2e.invalid', now(), '{"full_name":"Wrong Invitee"}'::jsonb),
+  ('e2e00008-0008-4008-8008-000000000008', 'artisan-invitee@e2e.invalid', now(), '{"full_name":"Invited Artisan"}'::jsonb),
+  ('e2e00009-0009-4009-8009-000000000009', 'patron-invitee@e2e.invalid', now(), '{"full_name":"Invited Patron Two"}'::jsonb)
 on conflict (id) do nothing;
 
 create temp table e2e_ids (k text primary key, id uuid) on commit drop;
@@ -37,7 +39,7 @@ set local role authenticated;
 set local "request.jwt.claims" = '{"sub": "e2e00001-0001-4001-8001-000000000001", "role": "authenticated"}';
 
 insert into e2e_ids (k, id)
-values ('atelier_a', public.create_atelier_for_current_user(
+values ('atelier_a', public.create_atelier_with_owner(
   'E2E Atelier A', 'e2e-atelier-a', 'Tenant A proof atelier', '+254700000001'
 ));
 
@@ -45,7 +47,7 @@ values ('atelier_a', public.create_atelier_for_current_user(
 DO $$
 BEGIN
   BEGIN
-    PERFORM public.create_atelier_for_current_user('E2E Atelier A duplicate', 'e2e-atelier-a-2', null, null);
+    PERFORM public.create_atelier_with_owner('E2E Atelier A duplicate', 'e2e-atelier-a-2', null, null);
     RAISE EXCEPTION 'expected already_member refusal';
   EXCEPTION
     WHEN OTHERS THEN
@@ -61,7 +63,7 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claims" = '{"sub": "e2e00004-0004-4004-8004-000000000004", "role": "authenticated"}';
 insert into e2e_ids (k, id)
-values ('atelier_b', public.create_atelier_for_current_user(
+values ('atelier_b', public.create_atelier_with_owner(
   'E2E Atelier B', 'e2e-atelier-b', 'Tenant B proof atelier', '+234800000002'
 ));
 reset role;
@@ -287,6 +289,20 @@ values (
   'client',
   'E2E-INVITE-0001',
   'e2e00001-0001-4001-8001-000000000001'
+),
+(
+  (select id from e2e_ids where k='atelier_a'),
+  'artisan-invitee@e2e.invalid',
+  'employee',
+  'E2E-INVITE-0002',
+  'e2e00001-0001-4001-8001-000000000001'
+),
+(
+  (select id from e2e_ids where k='atelier_a'),
+  'patron-invitee@e2e.invalid',
+  'client',
+  'E2E-INVITE-0003',
+  'e2e00001-0001-4001-8001-000000000001'
 );
 
 DO $$
@@ -349,6 +365,36 @@ BEGIN
   RAISE NOTICE 'PASS [E2E-12] redemption created a client membership in Tenant A and consumed the invite';
 END $$;
 
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub": "e2e00008-0008-4008-8008-000000000008", "role": "authenticated"}';
+DO $$
+DECLARE v_result jsonb;
+BEGIN
+  v_result := public.accept_invitation('E2E-INVITE-0002');
+  ASSERT (v_result ->> 'success')::boolean IS TRUE, 'employee invitation redemption failed';
+  ASSERT v_result ->> 'role' = 'employee', 'employee invitation role was not applied';
+END $$;
+
+set local "request.jwt.claims" = '{"sub": "e2e00009-0009-4009-8009-000000000009", "role": "authenticated"}';
+DO $$
+DECLARE v_result jsonb;
+BEGIN
+  v_result := public.accept_invitation('E2E-INVITE-0003');
+  ASSERT (v_result ->> 'success')::boolean IS TRUE, 'second client invitation redemption failed';
+  ASSERT v_result ->> 'role' = 'client', 'second client invitation role was not applied';
+END $$;
+
+reset role;
+DO $$
+DECLARE v_employee_role text; v_client_role text;
+BEGIN
+  SELECT role INTO v_employee_role FROM public.members WHERE id = 'e2e00008-0008-4008-8008-000000000008';
+  SELECT role INTO v_client_role FROM public.members WHERE id = 'e2e00009-0009-4009-8009-000000000009';
+  ASSERT v_employee_role = 'employee', 'accepted employee membership has the wrong role';
+  ASSERT v_client_role = 'client', 'accepted client membership has the wrong role';
+  RAISE NOTICE 'PASS [E2E-13] invitation redemption assigns employee and client roles correctly';
+END $$;
+
 -- ----------------------------------------------------------------------------
 -- 10. AUDIT TRAIL: settings and role changes are recorded
 -- ----------------------------------------------------------------------------
@@ -378,7 +424,7 @@ BEGIN
 
   ASSERT v_atelier_audit >= 2, 'settings create/update were not audited';
   ASSERT v_member_audit >= 2, 'membership insert/update was not audited';
-  RAISE NOTICE 'PASS [E2E-13] audit trail: atelierRows=%, memberRows=%', v_atelier_audit, v_member_audit;
+  RAISE NOTICE 'PASS [E2E-14] audit trail: atelierRows=%, memberRows=%', v_atelier_audit, v_member_audit;
 END $$;
 
 -- ----------------------------------------------------------------------------
@@ -400,7 +446,7 @@ BEGIN
         RAISE;
       END IF;
   END;
-  RAISE NOTICE 'PASS [E2E-14] order tenant reassignment blocked';
+  RAISE NOTICE 'PASS [E2E-15] order tenant reassignment blocked';
 END $$;
 
 reset role;

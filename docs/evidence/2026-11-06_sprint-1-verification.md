@@ -6,9 +6,10 @@
 
 | Step | Command | Result | Pass Count |
 |------|---------|--------|------------|
-| 1 | `npm run verify:db` | All built-in RLS and schema checks passed. | 14 passages (12 core + 2 E2E) |
-| 2 | `npm run verify:hosted` | Hosted Supabase instance remains clean and isolated. | 1 handshake confirmation |
-| 3 | `node scripts/ci/verify-build.mjs` | Production bundle contains no demo artifacts. | 4 checklist items |
+| 1 | `npm run verify:db` | **BLOCKED HERE**: Docker is unavailable; CI remains the disposable-Postgres proof. | Not run |
+| 2 | Supabase migration apply + RPC inventory query | PASS: live project has the new RPC and no legacy RPC. | 1 function contract |
+| 3 | `node scripts/ci/verify-build.mjs` | Production bundle contains no demo artifacts. | PASS |
+| 4 | `npm run test:e2e -- --list` | PASS: invitation browser test is collected; live run is fixture-gated. | 1 test |
 
 ## Summary
 
@@ -24,5 +25,13 @@
   - 14 E2E tests executed successfully, each PASS on all tenants.
 - `node scripts/ci/verify-build.mjs`:
   - PASS: 4 build files, 1 hashed image assets, no dev‑only or placeholder artifacts.
+- `supabase/migrations/20261106160000_atomic_owner_onboarding.sql`:
+  - Applied to project `qkhfjlxhulekjrfgrdbz`; `create_atelier_with_owner` is executable by
+    `authenticated` and the legacy function is absent.
+- `e2e/invite-flow.spec.ts`:
+  - Playwright collection PASS. Live execution is opt-in and requires an invited account, password,
+    and invitation code in environment variables.
 
-The repository is now **production‑ready** with fail‑closed guards enforced throughout the application.
+The onboarding layer is release-ready at source and schema level. The repository is **not** certified
+as fully production-ready until the hosted SQL proof and the configured live browser fixture are run,
+and the separate booking, payment, and SSR sprints are complete.

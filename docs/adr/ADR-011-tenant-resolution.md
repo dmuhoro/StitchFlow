@@ -86,3 +86,11 @@ before data is loaded, and must fail closed for an unknown host.
   atelier can share anything.
 - **Wildcard DNS with no verification.** Rejected: anyone could claim a slug or point a domain at the
   platform without proving control.
+
+## Sprint 1 implementation link
+
+`create_atelier_with_owner` establishes the first tenant identity and its owner membership
+atomically. It does not replace the server-side host/slug resolver described here; that remains a
+Sprint 2 boundary. See
+[`supabase/migrations/20261106160000_atomic_owner_onboarding.sql`](../../supabase/migrations/20261106160000_atomic_owner_onboarding.sql)
+and [`e2e/invite-flow.spec.ts`](../../e2e/invite-flow.spec.ts).

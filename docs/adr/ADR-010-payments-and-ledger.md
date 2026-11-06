@@ -109,3 +109,10 @@ visibility remain unchanged.
   without a correctness gain.
 - **Process webhooks in the browser or an unauthenticated edge function without an event store.**
   Rejected: replay and duplicate delivery are guaranteed, not hypothetical.
+
+## Sprint 1 boundary
+
+The atomic onboarding and invitation flow create only tenant and membership records; they do not
+write balances, payments, or ledger entries. Payment work remains a Sprint 4 deliverable. The
+membership and tenant isolation proof is recorded in
+[`supabase/tests/hosted_rls_e2e.sql`](../../supabase/tests/hosted_rls_e2e.sql).

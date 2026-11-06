@@ -15,6 +15,7 @@ const AcceptInvitationScreen: React.FC<{ code: string }> = ({ code }) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [acceptedRole, setAcceptedRole] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [usePassword, setUsePassword] = useState(false);
@@ -25,7 +26,8 @@ const AcceptInvitationScreen: React.FC<{ code: string }> = ({ code }) => {
     setBusy(true);
     setError(null);
     try {
-      await acceptInvitation(code);
+      const result = await acceptInvitation(code);
+      setAcceptedRole(result.role ?? null);
       window.history.replaceState({}, '', window.location.pathname);
       setDone(true);
     } catch (caught) {
@@ -71,6 +73,7 @@ const AcceptInvitationScreen: React.FC<{ code: string }> = ({ code }) => {
           </div>
           <h1 className="font-display text-2xl font-bold tracking-tight">Invitation accepted</h1>
           <p className="text-sm text-[#7B6F62] dark:text-[#A89B8C]">You are now a member of your atelier. Loading your workspace…</p>
+          {acceptedRole && <p className="text-xs font-semibold uppercase tracking-wider text-[#8C6D2D]">Membership role: {acceptedRole}</p>}
         </div>
       </div>
     );
