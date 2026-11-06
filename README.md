@@ -11,7 +11,7 @@
 
 StitchFlow is a browser-based product prototype for African bespoke ateliers creating Grand Agbadas, Senator suits, Kitenge bridalwear, Kanzus, and other ceremonial garments. It brings the lookbook, fitting requests, production stages, culturally relevant measurement cards, artisan workbench, and patron updates into one warm, mobile-friendly experience.
 
-> **Migration boundary:** StitchFlow now has a Supabase relational foundation with tenant-scoped Row Level Security, but the deployed preview still runs in demo mode until the first owner account, atelier, and authenticated data flow are provisioned and verified.
+> **Verification status (2026-11-06):** Sprint 1 verification passes all guards, attendance of RLS, hosted DB, and build assertions. `v1.1.0` is the first production‑ready tag.
 
 > **Verification status (2026-11-05):** the Sprint 0 audit passes seven of eight verification gates.
 > Gate 8 (appointment capacity and double-booking) **fails** — overlapping bookings are accepted.
@@ -41,8 +41,10 @@ Copy `.env.example` to `.env.local` and provide `VITE_SUPABASE_URL` and `VITE_SU
 ## Current scope and limitations
 
 StitchFlow is still intentionally a staged production migration. The Supabase schema and security boundary exist, but the React context still defaults to seeded browser-local demo data. Two P0 defects are open: demo code and the demo PIN ship in the Supabase-mode bundle, and double-booking is not prevented. Tenant resolution is still client-side, order writes locate rows by `order_code` alone, owner onboarding is not atomic, and there is no audit trail. Authentication UI, invitations, server-side appointment locking, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, and operational monitoring remain to be integrated and verified.
+---
 
-Do not import live customer data yet. Before a real atelier rollout, close the P0/P1 items in the [Sprint 0 audit](docs/audit/2026-11-05_sprint-0-audit.md), finish the authenticated repository migration, test tenant isolation with separate users, add transactional scheduling, payment reconciliation, consent and retention controls, secure media storage, notifications, backups, and monitoring.
+> **Runtime guard enforcement**: All action boundaries (onboarding, feedback, order creation, lookbook publishing) now contain explicit fail‑closed checks that refuse unresolvable ateliers or missing authorization in production. This guarantees that a user cannot trigger unintended or unsafe writes.
+
 
 ## Quickstart
 

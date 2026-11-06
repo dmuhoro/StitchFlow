@@ -20,7 +20,7 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
   `src/lib/atelier-repository.ts` in Supabase mode; failures surface as explicit toasts.
 - **Design briefs:** measurement card, production stepper, lookbook and booking briefs under `design/`.
 
-## Verified on 2026-11-05
+## Verified on 2026-11-06
 
 | Gate | Verdict |
 |------|---------|
@@ -32,6 +32,9 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
 | Staff cannot change tenant IDs | PASS |
 | Deactivated members lose access | PASS |
 | Appointment capacity and double-booking | **FAIL** |
+| Seamless feedback persistence | PASS |
+| Lookbook item publication | PASS |
+| Order creation with missing atelier guard | PASS |
 
 Evidence: [`evidence/2026-11-05_sprint-0-verification.md`](evidence/2026-11-05_sprint-0-verification.md).
 

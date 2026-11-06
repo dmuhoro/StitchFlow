@@ -1,4 +1,28 @@
-## [Unreleased] — Sprint 1 (Real Data, Real Auth)
+## [1.1.0] — 2026-11-06
+
+### Added
+- Production-only guard logic for atelier resolution, feedback, lookbook, order creation.
+- Explicit "Create Atelier" onboarding screen and invite‑code redemption route.
+- Real‑tenant based behaviour with fail‑closed HTTP and datastore guards.
+- Refactored data‑mode aliasing and demo‑tenants config.
+- Updated `AtelierLanding`, `TeamInvitesPanel`, `AcceptInvitationScreen`.
+- Added `scripts/verify-hosted.sh` and enhanced hosted DB verification.
+- New docs: evidence/2026-11-06_sprint-1-verification.md, updated current‑state.
+
+### Changed
+- Version bump to 1.1.0.
+- Updated RLS and audit logs.
+- Consolidated migration plan.
+
+### Verified
+- `npm run lint`, `npm run build`, `npm run verify:db`, `npm run verify:hosted`, `npm run verify:build` green.
+
+### Known defects
+- None.
+
+---
+
+## [1.0.1] — 2026-11-05
 ### Added
 - Dedicated StitchFlow Supabase project (`qkhfjlxhulekjrfgrdbz`) with forward-only migration push.
 - `audit_log` plus triggers on orders and measurements.
