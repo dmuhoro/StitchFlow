@@ -24,6 +24,7 @@ import {
 import { useStitchFlow } from '../context/StitchFlowContext';
 import { Order, ProductionStatus } from '../types';
 import { AccessGate } from './AccessGate';
+import { TeamInvitesPanel } from './TeamInvitesPanel';
 
 export const OwnerDashboard: React.FC = () => {
   const { 
@@ -40,10 +41,12 @@ export const OwnerDashboard: React.FC = () => {
     lookbook,
     addLookbookItem,
     formatCurrency,
-    currentUser
+    currentUser,
+    invitations,
+    showToast
   } = useStitchFlow();
 
-  const [activeTab, setActiveTab] = useState<'production' | 'appointments' | 'clients' | 'lookbook' | 'feedback'>('production');
+  const [activeTab, setActiveTab] = useState<'production' | 'appointments' | 'clients' | 'lookbook' | 'feedback' | 'team'>('production');
   const [newOrderModalOpen, setNewOrderModalOpen] = useState(false);
   const [newLookbookModalOpen, setNewLookbookModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | ProductionStatus>('all');
@@ -92,24 +95,35 @@ export const OwnerDashboard: React.FC = () => {
 
   const handleCreateOrder = (e: React.FormEvent) => {
     e.preventDefault();
-    const client = profiles.find(p => p.id === clientId);
+    const client = profiles.find(p => p.id === clientId) || clients[0];
     const tailor = profiles.find(p => p.id === tailorId);
 
-    addOrder({
-      client_id: clientId,
-      client_name: client?.full_name || 'Client',
-      client_phone: client?.phone || '+254 700 000 000',
-      assigned_tailor_id: tailorId,
-      assigned_tailor_name: tailor?.full_name || 'Artisan',
-      garment_type: garmentType,
-      description: description || `Bespoke African ${garmentType} commissioned.`,
-      fabric_details: fabricDetails || 'Original Guinea Brocade with metallic embroidery.',
-      estimated_delivery: estimatedDelivery,
-      deposit_amount: Number(depositAmount),
-      balance_due: Number(balanceDue),
-      photo_url: photoUrl,
-      status: 'cutting'
-    });
+    if (!client) {
+      showToast('Invite and confirm a patron before logging a commission.');
+      return;
+    }
+
+    try {
+      addOrder({
+        client_id: client.id,
+        client_name: client.full_name,
+        client_phone: client.phone || '',
+        assigned_tailor_id: tailor?.id ?? '',
+        assigned_tailor_name: tailor?.full_name ?? 'Unassigned',
+        garment_type: garmentType,
+        description: description || `Bespoke African ${garmentType} commissioned.`,
+        fabric_details: fabricDetails || 'Original Guinea Brocade with metallic embroidery.',
+        estimated_delivery: estimatedDelivery,
+        deposit_amount: Number(depositAmount),
+        balance_due: Number(balanceDue),
+        photo_url: photoUrl,
+        status: 'cutting'
+      });
+    } catch {
+      // addOrder already surfaced the reason; keep the form open so the owner
+      // can fix the missing patron or atelier link instead of losing input.
+      return;
+    }
 
     setNewOrderModalOpen(false);
     setDescription('');
@@ -120,18 +134,23 @@ export const OwnerDashboard: React.FC = () => {
     e.preventDefault();
     if (!lbTitle) return;
 
-    addLookbookItem({
-      title: lbTitle,
-      category: lbCategory,
-      description: lbDesc,
-      fabric: lbFabric,
-      price_range: lbPriceRange,
-      cultural_origin: lbOrigin,
-      turnaround_days: Number(lbDays),
-      image_url: lbImage,
-      tags: ['African Couture', lbCategory.split(' ')[0], 'Bespoke', 'Traditional'],
-      is_featured: true
-    });
+    try {
+      addLookbookItem({
+        title: lbTitle,
+        category: lbCategory,
+        description: lbDesc,
+        fabric: lbFabric,
+        price_range: lbPriceRange,
+        cultural_origin: lbOrigin,
+        turnaround_days: Number(lbDays),
+        image_url: lbImage,
+        tags: ['African Couture', lbCategory.split(' ')[0], 'Bespoke', 'Traditional'],
+        is_featured: true
+      });
+    } catch {
+      // addLookbookItem already surfaced the reason; keep the form open.
+      return;
+    }
 
     setNewLookbookModalOpen(false);
     setLbTitle('');
@@ -357,6 +376,18 @@ export const OwnerDashboard: React.FC = () => {
         >
           <MessageSquare className="w-4 h-4 text-[#D4A347] dark:text-[#161311]" />
           <span>Ceremonial Feedback ({feedbacks.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('team')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all ${
+            activeTab === 'team'
+              ? 'bg-[#161311] dark:bg-[#D4A347] text-[#FAF6F0] dark:text-[#161311]'
+              : 'text-[#6A5D52] dark:text-[#B8ABA0] hover:bg-[#F3ECE1] dark:hover:bg-[#24201D]'
+          }`}
+        >
+          <Users className="w-4 h-4 text-[#D4A347] dark:text-[#161311]" />
+          <span>Team &amp; Invites ({invitations.length})</span>
         </button>
       </div>
 
@@ -708,6 +739,8 @@ export const OwnerDashboard: React.FC = () => {
         </div>
       )}
 
+      {activeTab === 'team' && <TeamInvitesPanel />}
+
       {/* CREATE ORDER MODAL */}
       {newOrderModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -725,6 +758,9 @@ export const OwnerDashboard: React.FC = () => {
                   onChange={(e) => setClientId(e.target.value)}
                   className="w-full p-2.5 bg-white dark:bg-[#24201D] border border-[#C8B69F] dark:border-[#4A4039] rounded-xl"
                 >
+                  {clients.length === 0 && (
+                    <option value="">Invite a patron first (Team &amp; Invites)</option>
+                  )}
                   {clients.map(c => (
                     <option key={c.id} value={c.id}>{c.full_name} ({c.phone})</option>
                   ))}
@@ -738,6 +774,9 @@ export const OwnerDashboard: React.FC = () => {
                   onChange={(e) => setTailorId(e.target.value)}
                   className="w-full p-2.5 bg-white dark:bg-[#24201D] border border-[#C8B69F] dark:border-[#4A4039] rounded-xl"
                 >
+                  {tailors.length === 0 && (
+                    <option value="">Unassigned (invite an artisan later)</option>
+                  )}
                   {tailors.map(t => (
                     <option key={t.id} value={t.id}>{t.full_name} — {t.title}</option>
                   ))}

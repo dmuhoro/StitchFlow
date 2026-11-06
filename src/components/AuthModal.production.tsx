@@ -16,6 +16,8 @@ export const AuthModal: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [magic, setMagic] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   if (!authModalOpen) return null;
@@ -87,6 +89,41 @@ export const AuthModal: React.FC = () => {
         <button onClick={() => setMagic(prev => !prev)} className="mt-3 text-xs text-[#7B6F62] flex items-center gap-1">
           <Mail className="w-3.5 h-3.5" /> {magic ? 'Use password instead' : 'Use magic link instead'}
         </button>
+
+        <div className="mt-4 pt-4 border-t border-[#E5DACB] space-y-2">
+          <button
+            type="button"
+            onClick={() => setInviteOpen(previous => !previous)}
+            className="text-xs font-semibold text-[#8C6D2D] flex items-center gap-1"
+          >
+            <KeyRound className="w-3.5 h-3.5" /> {inviteOpen ? 'Hide invitation code' : 'I have an invitation code'}
+          </button>
+          {inviteOpen && (
+            <form
+              onSubmit={event => {
+                event.preventDefault();
+                const trimmed = inviteCode.trim();
+                if (!trimmed) return;
+                window.location.assign(`/?invite=${encodeURIComponent(trimmed)}`);
+              }}
+              className="flex gap-2"
+            >
+              <input
+                value={inviteCode}
+                onChange={event => setInviteCode(event.target.value)}
+                placeholder="Invitation code"
+                className="flex-1 rounded-xl border border-[#D9CFC2] px-3 py-2 text-sm"
+              />
+              <button
+                type="submit"
+                disabled={!inviteCode.trim()}
+                className="rounded-xl bg-[#161311] text-[#FAF6F0] px-3 text-xs font-semibold disabled:opacity-50"
+              >
+                Redeem
+              </button>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

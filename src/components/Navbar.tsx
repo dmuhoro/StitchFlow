@@ -161,9 +161,8 @@ export const Navbar: React.FC = () => {
                 </button>
               </div>
 
-              {/* Atelier Settings Button */}
-              {/* Multi-Tenant Atelier Switcher (Tenant A: Nairobi vs Tenant B: Lagos) */}
-              {currentAtelier && (
+              {/* Multi-Tenant Atelier Switcher (demo only: production derives the tenant from the account) */}
+              {!isSupabaseMode && currentAtelier && (
                 <div className="relative hidden lg:block">
                   <button
                     onClick={() => {
@@ -194,16 +193,18 @@ export const Navbar: React.FC = () => {
                 <Settings className="w-4 h-4" />
               </button>
 
-              {/* Deliverables Commit Manager Button */}
-              <button
-                onClick={() => setDeliverablesModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-[#D4A347]/50 bg-[#FAF6F0] dark:bg-[#24201D] text-[#161311] dark:text-[#F5EFE6] hover:bg-[#D4A347]/10 transition-colors shadow-sm"
-                title="Review and commit deliverables individually"
-              >
-                <GitCommit className="w-3.5 h-3.5 text-[#D4A347]" />
-                <span className="hidden lg:inline">Deliverables</span>
-                <span>(22)</span>
-              </button>
+              {/* Deliverables Commit Manager Button (demo artifact only) */}
+              {!isSupabaseMode && (
+                <button
+                  onClick={() => setDeliverablesModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-[#D4A347]/50 bg-[#FAF6F0] dark:bg-[#24201D] text-[#161311] dark:text-[#F5EFE6] hover:bg-[#D4A347]/10 transition-colors shadow-sm"
+                  title="Review and commit deliverables individually"
+                >
+                  <GitCommit className="w-3.5 h-3.5 text-[#D4A347]" />
+                  <span className="hidden lg:inline">Deliverables</span>
+                  <span>(22)</span>
+                </button>
+              )}
 
               {/* Authentication Status / Profile Switcher */}
               {currentUser ? (
@@ -273,14 +274,16 @@ export const Navbar: React.FC = () => {
                 </button>
               )}
 
-              {/* Reset Data Pill */}
-              <button
-                onClick={resetToDefaults}
-                className="p-2 text-[#98897C] hover:text-[#161311] dark:hover:text-white hover:bg-[#F3ECE1] dark:hover:bg-[#24201D] rounded-xl transition-colors"
-                title="Reset showcase data"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-              </button>
+              {/* Reset Data Pill (demo only) */}
+              {!isSupabaseMode && (
+                <button
+                  onClick={resetToDefaults}
+                  className="p-2 text-[#98897C] hover:text-[#161311] dark:hover:text-white hover:bg-[#F3ECE1] dark:hover:bg-[#24201D] rounded-xl transition-colors"
+                  title="Reset showcase data"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             {/* Mobile Actions */}

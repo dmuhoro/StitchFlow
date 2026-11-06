@@ -49,6 +49,7 @@ export const BookingModal: React.FC = () => {
   const [notes, setNotes] = useState<string>('');
   const [bookingSuccess, setBookingSuccess] = useState<boolean>(false);
   const [confirmedBookingId, setConfirmedBookingId] = useState<string>('');
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   if (!bookingModalOpen) return null;
 
@@ -139,20 +140,25 @@ export const BookingModal: React.FC = () => {
       notes
     ].filter(Boolean).join(' | ');
 
-    const newApt = bookAppointment({
-      client_id: currentUser?.id ?? null,
-      client_name: fullName,
-      client_phone: phone,
-      client_email: email || undefined,
-      assigned_tailor_id: effectiveTailorId,
-      service_type: selectedService,
-      slot_datetime: `${selectedDate}T${selectedTime}:00`,
-      cultural_occasion: occasion,
-      notes: combinedNotes
-    });
+    try {
+      const newApt = bookAppointment({
+        client_id: currentUser?.id ?? null,
+        client_name: fullName,
+        client_phone: phone,
+        client_email: email || undefined,
+        assigned_tailor_id: effectiveTailorId,
+        service_type: selectedService,
+        slot_datetime: `${selectedDate}T${selectedTime}:00`,
+        cultural_occasion: occasion,
+        notes: combinedNotes
+      });
 
-    setConfirmedBookingId(newApt.id);
-    setBookingSuccess(true);
+      setBookingError(null);
+      setConfirmedBookingId(newApt.id);
+      setBookingSuccess(true);
+    } catch {
+      setBookingError('This atelier is not accepting fitting requests yet. Please try again later.');
+    }
   };
 
   const handleClose = () => {
@@ -477,6 +483,13 @@ export const BookingModal: React.FC = () => {
                       className="w-full text-xs p-3 bg-white border border-[#C8B69F] rounded-xl focus:ring-1 focus:ring-[#D4A347]"
                     />
                   </div>
+
+                  {bookingError && (
+                    <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{bookingError}</span>
+                    </div>
+                  )}
 
                   <div className="flex justify-between pt-2">
                     <button

@@ -8,20 +8,20 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.VITE_DATA_MODE === 'supabase';
 
 export default defineConfig(() => {
+  // Order matters: Rollup's alias plugin uses the first matching entry, so the
+  // specific data/adapter specifiers must precede the generic '@' root alias.
   const alias: Record<string, string> = {
-    '@': path.resolve(rootDir, 'src'),
     './AuthModal': isProduction
       ? path.resolve(rootDir, 'src/components/AuthModal.production.tsx')
       : path.resolve(rootDir, 'src/components/AuthModal.demo.tsx'),
+    '@/data/initialData': isProduction
+      ? path.resolve(rootDir, 'src/data/initialData.production.ts')
+      : path.resolve(rootDir, 'src/data/initialData.demo.ts'),
+    '@/data/demoTenants': isProduction
+      ? path.resolve(rootDir, 'src/data/demoTenants.production.ts')
+      : path.resolve(rootDir, 'src/data/demoTenants.demo.ts'),
+    '@': path.resolve(rootDir, 'src'),
   };
-
-  if (isProduction) {
-    alias['@/data/initialData'] = path.resolve(rootDir, 'src/data/initialData.production.ts');
-    alias['@/components/AuthModal'] = path.resolve(rootDir, 'src/components/AuthModal.production.tsx');
-  } else {
-    alias['@/data/initialData'] = path.resolve(rootDir, 'src/data/initialData.demo.ts');
-    alias['@/components/AuthModal'] = path.resolve(rootDir, 'src/components/AuthModal.demo.tsx');
-  }
 
   return {
     plugins: [react(), tailwindcss()],

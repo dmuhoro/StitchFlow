@@ -1,7 +1,7 @@
 {
   "name": "stitchflow",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -13,7 +13,8 @@
     "check:docs": "node scripts/ci/check-doc-links.mjs",
     "verify:build": "node scripts/ci/verify-build.mjs",
     "verify:db": "bash scripts/verify-db.sh docker",
-    "verify:db:host": "bash scripts/verify-db.sh host"
+    "verify:db:host": "bash scripts/verify-db.sh host",
+    "verify:hosted": "bash scripts/verify-hosted.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

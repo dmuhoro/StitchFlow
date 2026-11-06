@@ -16,9 +16,19 @@ import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { Scissors, ShieldCheck } from 'lucide-react';
 import CreateAtelierScreen from "./components/CreateAtelierScreen";
 import AcceptInvitationScreen from "./components/AcceptInvitationScreen";
+import AtelierLanding from "./components/AtelierLanding";
 
 const AppContent: React.FC = () => {
-  const { currentRole, setCurrentRole, toastMessage, isProductionMode, needsOnboarding } = useStitchFlow();
+  const {
+    currentRole,
+    setCurrentRole,
+    toastMessage,
+    isProductionMode,
+    needsOnboarding,
+    currentAtelier,
+    atelierNotFound,
+    publicAtelierLoading,
+  } = useStitchFlow();
 
   const inviteCode = new URLSearchParams(window.location.search).get('invite');
   if (isProductionMode && inviteCode) {
@@ -27,6 +37,15 @@ const AppContent: React.FC = () => {
   if (isProductionMode && needsOnboarding) {
     return <CreateAtelierScreen />;
   }
+
+  const showPublicLanding = isProductionMode
+    && currentRole === 'visitor'
+    && (publicAtelierLoading || atelierNotFound || !currentAtelier.id);
+
+  const showWhatsApp = Boolean(currentAtelier.whatsapp || !isProductionMode);
+  const whatsappHref = currentAtelier.whatsapp
+    ? `https://wa.me/${currentAtelier.whatsapp.replace(/[^0-9]/g, '')}`
+    : 'https://wa.me/254712345678';
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAF6F0] dark:bg-[#12100E] text-[#1A1715] dark:text-[#F5EFE6] transition-colors">
@@ -43,7 +62,7 @@ const AppContent: React.FC = () => {
 
       {/* Main Role-Based Content Area */}
       <main className="flex-1">
-        {currentRole === 'visitor' && <PublicPortfolio />}
+        {currentRole === 'visitor' && (showPublicLanding ? <AtelierLanding /> : <PublicPortfolio />)}
         {currentRole === 'owner' && <OwnerDashboard />}
         {currentRole === 'employee' && <TailorDashboard />}
         {currentRole === 'client' && <ClientPortal />}
@@ -54,7 +73,14 @@ const AppContent: React.FC = () => {
       <BookingModal />
 
       {/* Floating WhatsApp Action Anchor */}
-      <FloatingWhatsApp />
+      {showWhatsApp && (
+        <FloatingWhatsApp
+          phoneNumber={currentAtelier.whatsapp || undefined}
+          atelierName={currentAtelier.name || undefined}
+          location={[currentAtelier.city, currentAtelier.country].filter(Boolean).join(', ') || undefined}
+          live={isProductionMode}
+        />
+      )}
 
       {/* Atelier Footer */}
       <footer className="bg-[#161311] dark:bg-[#0D0B0A] text-[#FAF6F0] border-t border-[#2C241E] mt-auto">
@@ -67,11 +93,13 @@ const AppContent: React.FC = () => {
                   <Scissors className="w-4 h-4 -rotate-45" />
                 </div>
                 <span className="font-display text-xl font-bold tracking-wider uppercase text-white">
-                  StitchFlow
+                  {isProductionMode && currentAtelier.name ? currentAtelier.name : 'StitchFlow'}
                 </span>
               </div>
               <p className="text-xs text-[#98897C] leading-relaxed">
-                A Pan-African atelier workflow prototype for bespoke fashion houses, Grand Agbada master cutters, and Kitenge bridal ateliers.
+                {isProductionMode
+                  ? (currentAtelier.tagline || 'Bespoke Pan-African tailoring & ceremonial regalia.')
+                  : 'A Pan-African atelier workflow prototype for bespoke fashion houses, Grand Agbada master cutters, and Kitenge bridal ateliers.'}
               </p>
             </div>
 
@@ -107,12 +135,22 @@ const AppContent: React.FC = () => {
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#D4A347] mb-3">
                 Atelier Location
               </h4>
-              <p className="text-xs text-[#C8B69F] leading-relaxed">
-                Acacia Heights, Suite 402<br />
-                Kilimani, Nairobi, Kenya<br />
-                WhatsApp: +254 712 345 678<br />
-                Direct fittings by appointment.
-              </p>
+              {isProductionMode ? (
+                <p className="text-xs text-[#C8B69F] leading-relaxed">
+                  {currentAtelier.city || currentAtelier.country
+                    ? <>{currentAtelier.city}{currentAtelier.city && currentAtelier.country ? ', ' : ''}{currentAtelier.country}<br /></>
+                    : <>Address published by your atelier.<br /></>}
+                  {currentAtelier.whatsapp ? <>WhatsApp: {currentAtelier.whatsapp}<br /></> : null}
+                  Direct fittings by appointment.
+                </p>
+              ) : (
+                <p className="text-xs text-[#C8B69F] leading-relaxed">
+                  Acacia Heights, Suite 402<br />
+                  Kilimani, Nairobi, Kenya<br />
+                  WhatsApp: +254 712 345 678<br />
+                  Direct fittings by appointment.
+                </p>
+              )}
             </div>
 
             <div>
@@ -120,20 +158,22 @@ const AppContent: React.FC = () => {
                 Security & Appearance
               </h4>
               <p className="text-xs text-[#98897C] leading-relaxed">
-                Production role gates for owner, artisan, and patron views, with System, Warm Linen Light, and Ebony Obsidian Dark appearances.
+                {isProductionMode
+                  ? 'Authenticated role gates bound to this atelier, with System, Warm Linen Light, and Ebony Obsidian Dark appearances.'
+                  : 'Production role gates for owner, artisan, and patron views, with System, Warm Linen Light, and Ebony Obsidian Dark appearances.'}
               </p>
             </div>
 
           </div>
 
           <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between text-xs text-[#98897C] gap-4">
-            <p>© {new Date().getFullYear()} StitchFlow Atelier. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} {isProductionMode && currentAtelier.name ? currentAtelier.name : 'StitchFlow Atelier'}. All rights reserved.</p>
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1 text-[#D4A347]">
                 <ShieldCheck className="w-3.5 h-3.5" /> Accessibility-minded design
               </span>
               <span>•</span>
-              <span>Browser-local demo</span>
+              <span>{isProductionMode ? 'Live atelier' : 'Browser-local demo'}</span>
             </div>
           </div>
         </div>

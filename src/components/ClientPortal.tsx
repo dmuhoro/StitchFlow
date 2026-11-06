@@ -94,14 +94,19 @@ export const ClientPortal: React.FC = () => {
     e.preventDefault();
     if (!feedbackComment.trim()) return;
 
-    submitFeedback({
-      order_id: selectedOrderForFeedback,
-      client_id: currentClient.id,
-      client_name: currentClient.full_name,
-      rating: feedbackRating,
-      fit_rating: fitRating,
-      comments: feedbackComment.trim()
-    });
+    try {
+      submitFeedback({
+        order_id: selectedOrderForFeedback,
+        client_id: currentClient.id,
+        client_name: currentClient.full_name,
+        rating: feedbackRating,
+        fit_rating: fitRating,
+        comments: feedbackComment.trim()
+      });
+    } catch {
+      // submitFeedback already surfaced the reason; keep the text so it is not lost.
+      return;
+    }
 
     setFeedbackComment('');
   };

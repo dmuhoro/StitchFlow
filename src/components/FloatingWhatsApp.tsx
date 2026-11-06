@@ -9,11 +9,15 @@ import { MessageCircle, X, Send, Sparkles, Clock, MapPin } from 'lucide-react';
 interface FloatingWhatsAppProps {
   phoneNumber?: string;
   atelierName?: string;
+  location?: string;
+  live?: boolean;
 }
 
 export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({
   phoneNumber = '+254712345678',
-  atelierName = 'StitchFlow Pan-African Atelier'
+  atelierName = 'StitchFlow Pan-African Atelier',
+  location = 'Kilimani Atelier Salon, Nairobi, Kenya',
+  live = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [customMsg, setCustomMsg] = useState('');
@@ -72,7 +76,9 @@ export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({
                 <Sparkles className="w-3.5 h-3.5" /> Karibu / Welcome to our African Atelier
               </p>
               <p className="text-[#6A5D52] leading-relaxed">
-                Connect directly with Master Agbada Architect Amani Mutiso or Bridal Artisan Zari Odhiambo on WhatsApp for measurements, traditional wedding coordination, and rush ceremonial commissions.
+                {live
+                  ? 'Connect directly with the atelier team on WhatsApp for measurements, ceremonial coordination, and rush commissions.'
+                  : 'Connect directly with Master Agbada Architect Amani Mutiso or Bridal Artisan Zari Odhiambo on WhatsApp for measurements, traditional wedding coordination, and rush ceremonial commissions.'}
               </p>
             </div>
 
@@ -118,7 +124,7 @@ export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({
             </div>
 
             <div className="text-[10px] text-center text-[#98897C] flex items-center justify-center gap-1">
-              <MapPin className="w-3 h-3" /> Kilimani Atelier Salon, Nairobi, Kenya
+              <MapPin className="w-3 h-3" /> {location}
             </div>
           </div>
         </div>

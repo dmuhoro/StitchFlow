@@ -53,6 +53,18 @@ export async function getAtelier(atelierId: string): Promise<AtelierSummary | nu
   return data as AtelierSummary | null;
 }
 
+export async function getAtelierBySlug(slug: string): Promise<AtelierSummary | null> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('ateliers')
+    .select('id, name, slug, tagline, whatsapp_number, default_currency, default_unit')
+    .eq('slug', slug)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data as AtelierSummary | null;
+}
+
 export async function listAtelierMembers(atelierId: string): Promise<AtelierMember[]> {
   const client = requireSupabase();
   const { data, error } = await client
@@ -73,30 +85,73 @@ export async function createAtelierForCurrentUser(input: {
   whatsappNumber?: string;
 }): Promise<string> {
   const client = requireSupabase();
-  const { data: authData, error: authError } = await client.auth.getUser();
-  if (authError || !authData.user) throw authError ?? new Error('Authentication required.');
-  const { data: atelier, error: atelierError } = await client
-    .from('ateliers')
-    .insert({
-      name: input.name.trim(),
-      slug: input.slug,
-      tagline: input.tagline ?? null,
-      whatsapp_number: input.whatsappNumber ?? null,
-      created_by: authData.user.id,
-    })
-    .select('id')
-    .single();
-  if (atelierError) throw atelierError;
-
-  const { error: memberError } = await client.from('members').insert({
-    id: authData.user.id,
-    atelier_id: atelier.id,
-    role: 'owner',
-    full_name: authData.user.user_metadata?.full_name ?? authData.user.email?.split('@')[0] ?? 'Atelier Owner',
-    email: authData.user.email ?? null,
+  const { data, error } = await client.rpc('create_atelier_for_current_user', {
+    p_name: input.name.trim(),
+    p_slug: input.slug,
+    p_tagline: input.tagline ?? null,
+    p_whatsapp: input.whatsappNumber ?? null,
   });
-  if (memberError) throw memberError;
-  return atelier.id;
+  if (error) throw error;
+  if (!data) throw new Error('Atelier creation returned no atelier id.');
+  return data as string;
+}
+
+export interface Invitation {
+  id: string;
+  atelier_id: string;
+  email: string;
+  role: 'employee' | 'client';
+  invitation_code: string;
+  invited_by: string | null;
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
+}
+
+const INVITATION_COLUMNS = 'id, atelier_id, email, role, invitation_code, invited_by, expires_at, accepted_at, created_at';
+
+/**
+ * Create an invitation for the caller's own atelier. RLS only permits an active
+ * owner of that atelier, so the browser cannot mint cross-tenant invitations.
+ */
+export async function createInvitation(input: {
+  atelierId: string;
+  email: string;
+  role: 'employee' | 'client';
+  invitedBy: string;
+}): Promise<Invitation> {
+  const client = requireSupabase();
+  const code = crypto.randomUUID().replace(/-/g, '');
+  const { data, error } = await client
+    .from('invitations')
+    .insert({
+      atelier_id: input.atelierId,
+      email: input.email.trim().toLowerCase(),
+      role: input.role,
+      invitation_code: code,
+      invited_by: input.invitedBy,
+    })
+    .select(INVITATION_COLUMNS)
+    .single();
+  if (error) throw error;
+  return data as Invitation;
+}
+
+export async function listInvitations(atelierId: string): Promise<Invitation[]> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('invitations')
+    .select(INVITATION_COLUMNS)
+    .eq('atelier_id', atelierId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Invitation[];
+}
+
+export async function revokeInvitation(id: string): Promise<void> {
+  const client = requireSupabase();
+  const { error } = await client.from('invitations').delete().eq('id', id);
+  if (error) throw error;
 }
 
 export async function acceptInvitation(invitationCode: string): Promise<{ success: boolean; atelier_id?: string; role?: string; error?: string }> {
@@ -235,12 +290,17 @@ export async function loadPublicAtelierSnapshot(atelierId: string): Promise<Publ
   };
 }
 
-export async function persistOrderStatus(orderCode: string, status: ProductionStatus, note: string | undefined, authorId: string | null): Promise<void> {
+export async function persistOrderStatus(atelierId: string, orderCode: string, status: ProductionStatus, note: string | undefined, authorId: string | null): Promise<void> {
   const client = requireSupabase();
-  const { data: order, error: orderError } = await client.from('orders').select('id').eq('order_code', orderCode).maybeSingle();
+  const { data: order, error: orderError } = await client
+    .from('orders')
+    .select('id')
+    .eq('atelier_id', atelierId)
+    .eq('order_code', orderCode)
+    .maybeSingle();
   if (orderError) throw orderError;
   if (!order) throw new Error('Order not found or not accessible.');
-  const { error } = await client.from('orders').update({ status }).eq('id', order.id);
+  const { error } = await client.from('orders').update({ status }).eq('id', order.id).eq('atelier_id', atelierId);
   if (error) throw error;
   const { error: noteError } = await client.from('order_progress_notes').insert({ order_id: order.id, author_id: authorId, stage: status, note: note ?? `Phase advanced to ${status.toUpperCase()}` });
   if (noteError) throw noteError;
@@ -256,9 +316,13 @@ export async function persistOrder(atelierId: string, order: Order): Promise<voi
   if (noteError) throw noteError;
 }
 
-export async function persistTailorAssignment(orderCode: string, tailorId: string): Promise<void> {
+export async function persistTailorAssignment(atelierId: string, orderCode: string, tailorId: string): Promise<void> {
   const client = requireSupabase();
-  const { error } = await client.from('orders').update({ assigned_tailor_id: tailorId }).eq('order_code', orderCode);
+  const { error } = await client
+    .from('orders')
+    .update({ assigned_tailor_id: tailorId })
+    .eq('atelier_id', atelierId)
+    .eq('order_code', orderCode);
   if (error) throw error;
 }
 
@@ -297,7 +361,12 @@ export async function persistAppointmentStatus(id: string, status: AppointmentSt
 
 export async function persistFeedback(atelierId: string, feedback: Omit<Feedback, 'id' | 'created_at' | 'resolution_status'>): Promise<void> {
   const client = requireSupabase();
-  const { data: order, error: orderError } = await client.from('orders').select('id').eq('order_code', feedback.order_id).maybeSingle();
+  const { data: order, error: orderError } = await client
+    .from('orders')
+    .select('id')
+    .eq('atelier_id', atelierId)
+    .eq('order_code', feedback.order_id)
+    .maybeSingle();
   if (orderError) throw orderError;
   if (!order) throw new Error('Order not found or not accessible.');
   const { error } = await client.from('feedback').insert({ atelier_id: atelierId, order_id: order.id, client_id: feedback.client_id, rating: feedback.rating, fit_rating: feedback.fit_rating, comments: feedback.comments });

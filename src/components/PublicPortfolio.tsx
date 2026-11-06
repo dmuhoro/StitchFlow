@@ -35,7 +35,9 @@ export const PublicPortfolio: React.FC = () => {
     setBookingModalOpen, 
     setSelectedLookbookForBooking,
     setTrackingModalOpen,
-    setSelectedTrackOrderId
+    setSelectedTrackOrderId,
+    currentAtelier,
+    isProductionMode
   } = useStitchFlow();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -62,8 +64,10 @@ export const PublicPortfolio: React.FC = () => {
   };
 
   const handleInquireWhatsApp = (item: LookbookItem) => {
-    const text = `Hello StitchFlow African Atelier, I would like to commission "${item.title}" (${item.category}). Origin: ${item.cultural_origin}. Fabric: ${item.fabric}. Could we discuss measurements and ceremonial fitting?`;
-    window.open(`https://wa.me/254712345678?text=${encodeURIComponent(text)}`, '_blank');
+    const atelierName = currentAtelier.name || 'StitchFlow African Atelier';
+    const text = `Hello ${atelierName}, I would like to commission "${item.title}" (${item.category}). Origin: ${item.cultural_origin}. Fabric: ${item.fabric}. Could we discuss measurements and ceremonial fitting?`;
+    const number = (currentAtelier.whatsapp || '+254712345678').replace(/[^0-9]/g, '');
+    window.open(`https://wa.me/${number}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   const handleQuickTrack = (e: React.FormEvent) => {
@@ -88,7 +92,11 @@ export const PublicPortfolio: React.FC = () => {
             <div className="lg:col-span-7 space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FAF6F0]/10 border border-[#FAF6F0]/20 text-[#D4A347] text-xs font-semibold uppercase tracking-widest">
                 <Scissors className="w-3.5 h-3.5 -rotate-45" />
-                <span>Pan-African Haute Couture • Nairobi Atelier</span>
+                <span>
+                  {isProductionMode && currentAtelier.name
+                    ? currentAtelier.name
+                    : 'Pan-African Haute Couture • Nairobi Atelier'}
+                </span>
               </div>
 
               <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08] text-[#FAF6F0]">
@@ -98,7 +106,9 @@ export const PublicPortfolio: React.FC = () => {
               </h1>
 
               <p className="text-[#C8B69F] text-sm sm:text-base max-w-xl font-light leading-relaxed">
-                From 3-Piece Grand Royal Agbadas and tailored Senator Kaftans to hand-beaded Kenyan Ruracio Kitenge bridal gowns. Explore the lookbook, request a fitting, and follow the seeded showcase from cutting to ceremonial handover.
+                {isProductionMode && currentAtelier.tagline
+                  ? currentAtelier.tagline
+                  : 'From 3-Piece Grand Royal Agbadas and tailored Senator Kaftans to hand-beaded Kenyan Ruracio Kitenge bridal gowns. Explore the lookbook, request a fitting, and follow the journey from cutting to ceremonial handover.'}
               </p>
 
               {/* Action Buttons */}
@@ -550,40 +560,56 @@ export const PublicPortfolio: React.FC = () => {
                 Follow our cutting tables, chain-stitch machines, and ceremonial fittings
               </h2>
               <p className="text-xs sm:text-sm text-[#C8B69F] leading-relaxed max-w-lg">
-                Watch Master Agbada Architect Amani and Senior Tailor Kofi chalk patterns, steam lapels, and hand-embroider beadwork daily on social channels.
+                {isProductionMode
+                  ? 'Follow the atelier’s cutting tables, ceremonial fittings, and finished regalia. Reach the team directly on WhatsApp.'
+                  : 'Watch Master Agbada Architect Amani and Senior Tailor Kofi chalk patterns, steam lapels, and hand-embroider beadwork daily on social channels.'}
               </p>
 
               <div className="flex flex-wrap gap-3 pt-2">
-                <a
-                  href="https://instagram.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-xs font-semibold flex items-center gap-2 text-white transition-all"
-                >
-                  <Instagram className="w-4 h-4 text-[#D4A347]" />
-                  <span>@stitchflow_couture</span>
-                </a>
+                {!isProductionMode && (
+                  <a
+                    href="https://instagram.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-xs font-semibold flex items-center gap-2 text-white transition-all"
+                  >
+                    <Instagram className="w-4 h-4 text-[#D4A347]" />
+                    <span>@stitchflow_couture</span>
+                  </a>
+                )}
 
                 <a
-                  href="https://wa.me/254712345678"
+                  href={`https://wa.me/${(currentAtelier.whatsapp || '+254712345678').replace(/[^0-9]/g, '')}`}
                   target="_blank"
                   rel="noreferrer"
                   className="px-4 py-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
                 >
                   <MessageCircle className="w-4 h-4 fill-current" />
-                  <span>WhatsApp Atelier: +254 712 345 678</span>
+                  <span>WhatsApp Atelier: {currentAtelier.whatsapp || '+254 712 345 678'}</span>
                 </a>
               </div>
             </div>
 
             <div className="lg:col-span-5 bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur-md space-y-4">
               <h3 className="font-display text-lg font-bold text-[#D4A347]">
-                Nairobi Atelier Salon & Fitting Rooms
+                {isProductionMode
+                  ? `${currentAtelier.name || 'Atelier'} Fittings`
+                  : 'Nairobi Atelier Salon & Fitting Rooms'}
               </h3>
               <div className="text-xs text-[#C8B69F] space-y-2">
-                <p><strong>Studio:</strong> Suite 402, Acacia Heights, Kilimani, Nairobi, Kenya</p>
-                <p><strong>Fittings:</strong> Tuesday – Saturday, 9:30 AM – 6:30 PM (By Appointment)</p>
-                <p><strong>Private Ceremonial Calls:</strong> VIP home & traditional wedding fitting calls available across Nairobi, Mombasa, and regional capitals.</p>
+                {isProductionMode ? (
+                  <>
+                    <p><strong>Location:</strong> {[currentAtelier.city, currentAtelier.country].filter(Boolean).join(', ') || 'Shared when your fitting is confirmed'}</p>
+                    <p><strong>Fittings:</strong> By appointment, confirmed by the atelier.</p>
+                    <p><strong>Private Ceremonial Calls:</strong> Arrange in-atelier or remote ceremonial fittings directly with the team.</p>
+                  </>
+                ) : (
+                  <>
+                    <p><strong>Studio:</strong> Suite 402, Acacia Heights, Kilimani, Nairobi, Kenya</p>
+                    <p><strong>Fittings:</strong> Tuesday – Saturday, 9:30 AM – 6:30 PM (By Appointment)</p>
+                    <p><strong>Private Ceremonial Calls:</strong> VIP home &amp; traditional wedding fitting calls available across Nairobi, Mombasa, and regional capitals.</p>
+                  </>
+                )}
               </div>
               <button
                 onClick={() => setBookingModalOpen(true)}

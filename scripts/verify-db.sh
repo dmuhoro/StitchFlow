@@ -71,6 +71,7 @@ done < <(find "$ROOT/supabase/migrations" -maxdepth 1 -name '*.sql' | sort)
 
 run_file "$ROOT/supabase/seed.sql"
 run_file "$ROOT/supabase/tests/rls_isolation_test.sql"
+run_file "$ROOT/supabase/tests/hosted_rls_e2e.sql"
 
 echo "==> structural assertions"
 "${PSQL[@]}" <<'SQL'
