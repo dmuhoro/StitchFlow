@@ -57,6 +57,18 @@ else
   exit 1
 fi
 
+# Consumed by scripts/db/booking_concurrency_test.sh so the 200-attempt proof
+# targets the same database in both docker and host mode.
+export VERIFY_DB_MODE="$MODE"
+export VERIFY_DB_USER="$DB_USER"
+export VERIFY_DB_NAME="$DB_NAME"
+export VERIFY_DB_PASSWORD="$DB_PASSWORD"
+export VERIFY_PGUSER="${PGUSER:-postgres}"
+export VERIFY_PGDATABASE="${PGDATABASE:-$DB_NAME}"
+if [[ "$MODE" == "docker" ]]; then
+  export VERIFY_DB_CONTAINER="$CONTAINER"
+fi
+
 run_file() {
   local file="$1"
   printf '==> %s\n' "${file#"$ROOT"/}"
@@ -72,6 +84,8 @@ done < <(find "$ROOT/supabase/migrations" -maxdepth 1 -name '*.sql' | sort)
 run_file "$ROOT/supabase/seed.sql"
 run_file "$ROOT/supabase/tests/rls_isolation_test.sql"
 run_file "$ROOT/supabase/tests/hosted_rls_e2e.sql"
+run_file "$ROOT/supabase/tests/booking_engine_test.sql"
+bash "$ROOT/scripts/db/booking_concurrency_test.sh"
 
 echo "==> structural assertions"
 "${PSQL[@]}" <<'SQL'
@@ -96,14 +110,16 @@ begin
       'ateliers', 'members', 'lookbook_items', 'orders', 'order_financials',
       'order_progress_notes', 'measurements', 'appointments', 'feedback',
       'audit_log',
-      'invitations'
+      'invitations',
+      'booking_resources', 'resource_availability_rules', 'blackout_dates',
+      'bookings', 'idempotency_keys'
     );
 
-  if missing <> 11 then
-    raise exception 'Expected 9 tenant tables, found %', missing;
+  if missing <> 16 then
+    raise exception 'Expected 16 public tables, found %', missing;
   end if;
 
-  raise notice 'RLS enabled on every public table; 11 tenant tables present.';
+  raise notice 'RLS enabled on every public table; 16 public tables present.';
 end $$;
 SQL
 
