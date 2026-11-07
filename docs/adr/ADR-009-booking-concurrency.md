@@ -3,6 +3,27 @@
 **Status:** Proposed — awaiting owner approval
 **Date:** 2026-11-05
 
+> **Implementation note (2026-11-07).** The database layer described below has been implemented on
+> `sprint-3/booking-engine-db` in `supabase/migrations/20261107120000_booking_engine.sql`, with
+> proof in `supabase/tests/booking_engine_test.sql` and
+> `scripts/db/booking_concurrency_test.sh`. This note records what shipped; it does **not** approve
+> this ADR, which remains **Proposed** pending owner sign-off. Deliberate differences from the text
+> below:
+>
+> - The delivery brief names the hold RPC `hold_slot` and the conflict token `slot_unavailable`,
+>   where this ADR says `book_slot` and `SLOT_TAKEN`. The shipped names win until the ADR is
+>   ratified.
+> - `capacity > 1` and `booking_slots` (§3) are **not** implemented. `booking_resources.capacity`
+>   is constrained to `1` so the schema cannot advertise capacity it does not enforce.
+> - A scheduled expiry sweeper (§6) is **not** implemented. Expiry runs inside the hold, confirm,
+>   and reschedule transactions.
+> - The guest edge-function boundary and retirement of `appointments_public_insert` (§8) are **not**
+>   implemented. Anonymous callers are denied execute on every booking RPC, and the legacy
+>   `appointments` table is untouched. It remains a second, unguarded booking store.
+> - Reschedule (§7) moves the existing row atomically; it does not create a replacement hold.
+>
+> Frontend wiring, guest booking, capacity, the sweeper, and the legacy-store migration remain open.
+
 ## Context
 
 `appointments` currently accepts any number of rows at the same `slot_datetime`. There is no

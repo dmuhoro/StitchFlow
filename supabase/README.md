@@ -10,11 +10,16 @@ The migration chain under `supabase/migrations/` is the source of truth for the 
 - `lookbook_items` for published and private atelier catalog entries
 - `orders` and `order_progress_notes` for garment production
 - `measurements` for standard and African garment-specific dimensions
-- `appointments` for fitting requests and scheduled slots
+- `appointments` for legacy fitting requests and scheduled slots
 - `feedback` for patron fit reviews and resolution state
+- `booking_resources`, `resource_availability_rules`, `blackout_dates`, `bookings`, and
+  `idempotency_keys` for the Sprint 3 booking engine (database layer only)
+- `audit_log` and `invitations` for the append-only audit trail and invitation ledger
 
-All 9 tables have Row Level Security enabled. Staff access is tenant-scoped. Patrons can access only
-records tied to their own member ID. Public lookbook access is limited to published entries.
+All 16 public tables have Row Level Security enabled. Staff access is tenant-scoped. Patrons can
+access only records tied to their own member ID. Public lookbook access is limited to published
+entries. The booking store is stricter: `bookings` is read-only through RLS and every write goes
+through a `SECURITY DEFINER` RPC.
 
 **Not verified by the 2026-11-05 audit:** the hosted project's current schema, whether the latest
 migrations are applied remotely, and the live Auth configuration. The local replay proves the chain;
@@ -28,7 +33,7 @@ Keep `VITE_DATA_MODE=demo` until the first owner account and atelier have been p
 
 Never put a service-role key in Vite environment variables or browser code.
 
-## Verification gates — result on 2026-11-05
+## Verification gates — result on 2026-11-07
 
 Run locally on a disposable `postgres:16` via `npm run verify:db`:
 
@@ -41,16 +46,17 @@ Run locally on a disposable `postgres:16` via `npm run verify:db`:
 | 5 | A patron cannot update an order, balance, or measurement | PASS |
 | 6 | A staff member cannot change tenant IDs through an update payload | PASS |
 | 7 | Deleted or inactive members lose access immediately | PASS |
-| 8 | Appointment capacity and double-booking protection are enforced server-side | **FAIL** |
+| 8 | Appointment capacity and double-booking protection on the legacy `appointments` table | **FAIL** — table unchanged by this layer; see ADR-009 §8 |
+| 8B | Booking-store overlap exclusion, holds, expiry, and idempotency | **PASS locally** — RPC suite B1–B23 plus 200 attempts / 50 concurrent: 1 success, 199 `slot_unavailable`, 0 duplicates |
 
-Gate 8 has no database enforcement: `exclusion_constraints=0`, and two overlapping pending rows for
-the same tailor and instant are accepted. There is also no owner/employee `INSERT` policy on
-`appointments`. The fix is scoped by [ADR-009](../docs/adr/ADR-009-booking-concurrency.md) and
-belongs to Sprint 3. Full output:
-[`docs/evidence/2026-11-05_sprint-0-verification.md`](../docs/evidence/2026-11-05_sprint-0-verification.md).
+Gate 8 remains open for `appointments`: it still has no resource, duration, hold, idempotency key, or
+overlap constraint, no owner/employee `INSERT` policy, and has no resource model. Its
+`appointments_public_insert` policy is retained. Gate 8B closes only for the new `bookings` store,
+which the browser does not call yet. Evidence:
+[`docs/evidence/2026-11-07-booking-engine.md`](../docs/evidence/2026-11-07-booking-engine.md).
 
 ## Next step
 
-Sprint 0 is an audit, not an implementation. The next code layer is gated on owner approval of
-ADR-008 and ADR-011. The prioritized defect list is in
+Frontend wiring of the booking RPCs, retirement/backfill of `appointments` (ADR-009 §8), and the
+guest edge-function boundary with rate limits and a bot challenge. The prioritized defect list is in
 [`docs/audit/2026-11-05_sprint-0-audit.md`](../docs/audit/2026-11-05_sprint-0-audit.md).

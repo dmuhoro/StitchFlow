@@ -19,6 +19,11 @@ except `order_progress_notes`, which derives tenancy from `orders`.
 | `order_progress_notes` | `id` | via `order_id` | owner; assigned employee; own patron | owner; assigned employee |
 | `measurements` | `id` | `atelier_id` | owner; assigned employee; own patron | owner; assigned employee |
 | `appointments` | `id` | `atelier_id` | owner; assigned employee; own patron | anon pending insert; own patron insert; owner/assigned employee **update only** — no staff `INSERT` policy |
+| `booking_resources` | `id` | `atelier_id` | member read active; owner all | owner |
+| `resource_availability_rules` | `id` | `atelier_id` | member read | owner |
+| `blackout_dates` | `id` | `atelier_id` | member read | owner |
+| `bookings` | `id` | `atelier_id` | staff all; patron own | **RPC only** — no direct write policy |
+| `idempotency_keys` | `(atelier_id, scope, key)` | `atelier_id` | none | **RPC only** — RLS with no policies |
 | `feedback` | `id` | `atelier_id` | owner; own patron | own patron insert; owner update |
 
 ## Invariants
@@ -33,6 +38,13 @@ except `order_progress_notes`, which derives tenancy from `orders`.
 5. Anonymous inserts into `appointments` must be `status = 'pending'` and `client_id is null`.
 6. `active = false` revokes access on the next query, not at the next login.
 7. Country and city are nullable only until onboarding completes; a live atelier must set both.
+8. `bookings_no_overlap` is `EXCLUDE USING gist (resource_id WITH =, during WITH &&) WHERE status IN
+   ('held', 'confirmed')`. Two live reservations for one resource cannot overlap; the database is the
+   authority.
+9. A booking mutation that does not go through `hold_slot`, `confirm_booking`, `cancel_booking`, or
+   `reschedule_booking` is not supported. `bookings` has no direct write policy.
+10. `booking_resources.capacity` is constrained to `1`; group capacity needs `booking_slots`, which
+    does not exist yet. A resource with no availability rule is not bookable (fail closed).
 
 ## Writers
 
@@ -41,6 +53,7 @@ except `order_progress_notes`, which derives tenancy from `orders`.
 | `orders`, `order_financials`, `order_progress_notes` | `persistOrder`, `persistOrderStatus`, `persistTailorAssignment` |
 | `measurements` | `persistMeasurement` |
 | `appointments` | `persistAppointment`, `persistAppointmentStatus` |
+| `bookings` | `hold_slot`, `confirm_booking`, `cancel_booking`, `reschedule_booking` (RPCs; no direct client write) |
 | `feedback` | `persistFeedback`, `persistFeedbackStatus` |
 | `lookbook_items` | `persistLookbookItem` |
 | `ateliers`, `members` | `createAtelierForCurrentUser` (two client inserts, not atomic), `persistAtelierSettings` |
@@ -64,8 +77,11 @@ Do not document or call it as if it exists.
 ## Verification
 
 `npm run verify:db` applies the whole chain to an empty database and runs the 12-scenario
-`supabase/tests/rls_isolation_test.sql`. A contract change without a scenario is unproven.
+`supabase/tests/rls_isolation_test.sql`, the 15-scenario hosted E2E suite, the booking RPC suite
+(B1–B23), and a 200-attempt / 50-concurrent exclusion proof from
+`scripts/db/booking_concurrency_test.sh`. A contract change without a scenario is unproven.
 
-The suite proves gates 1–7. It does **not** prove booking concurrency: `appointments` has no
-exclusion constraint, resource, hold or idempotency key, and overlapping rows are accepted. Gate 8
-is FAIL and belongs to Sprint 3 / ADR-009. See `docs/audit/2026-11-05_sprint-0-audit.md`.
+The legacy `appointments` table is still unguarded: it has no exclusion constraint, resource, hold,
+or idempotency key, and overlapping rows are accepted. Gate 8 remains **FAIL** for that store and
+belongs to ADR-009 §8. The new `bookings` store passes Gate 8B; see
+`docs/evidence/2026-11-07-booking-engine.md`.
