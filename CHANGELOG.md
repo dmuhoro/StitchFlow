@@ -1,45 +1,3 @@
-## [1.1.0] — 2026-11-06
-
-### Added
-- Production-only guard logic for atelier resolution, feedback, lookbook, order creation.
-- Explicit "Create Atelier" onboarding screen and invite‑code redemption route.
-- Real‑tenant based behaviour with fail‑closed HTTP and datastore guards.
-- Refactored data‑mode aliasing and demo‑tenants config.
-- Updated `AtelierLanding`, `TeamInvitesPanel`, `AcceptInvitationScreen`.
-- Added `scripts/verify-hosted.sh` and enhanced hosted DB verification.
-- Added atomic `create_atelier_with_owner` onboarding RPC and removed the legacy callable.
-- Added Playwright invitation acceptance coverage with server-confirmed membership-role assertion.
-- New docs: evidence/2026-11-06_sprint-1-verification.md, updated current‑state.
-
-### Changed
-- Version bump to 1.1.0.
-- Updated RLS and audit logs.
-- Consolidated migration plan.
-
-### Verified
-- `npm run lint`, `npm run build`, `npm run verify:build`, and Playwright test collection pass locally.
-- The connected Supabase project contains `create_atelier_with_owner`; full hosted SQL execution still
-  requires the deliberate `STITCHFLOW_ALLOW_HOSTED_VERIFY=1` CLI gate.
-
-### Known limitations
-- `npm run verify:db` could not run in this sandbox because Docker is unavailable; CI remains the
-  disposable-Postgres proof environment.
-- The live Playwright flow requires an invited test account and code supplied through environment variables.
-
----
-
-## [1.0.1] — 2026-11-05
-### Added
-- Dedicated StitchFlow Supabase project (`qkhfjlxhulekjrfgrdbz`) with forward-only migration push.
-- `audit_log` plus triggers on orders and measurements.
-- `invitations` ledger plus `lookup_invitation`/`accept_invitation` RPC.
-- Explicit “Create Atelier” onboarding screen + invite redemption route.
-### Changed
-- Build/dev adapters split demo-only seed data from production builds (`src/data/initialData.demo.ts` / `.production.ts`).
-- `verify:build` production mode now asserts absence of demo PII/artifacts.
-### Verified
-- lint/build/db/verify-build green on local disposable DB.
-
 # Changelog
 
 All notable changes to StitchFlow are documented here.
@@ -47,12 +5,113 @@ All notable changes to StitchFlow are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.1] — 2026-11-05
+## [1.2.0] — 2026-11-07
 
-Audit-only patch. No feature code and no schema change.
+Booking-engine **database layer** only. No frontend change and no change to `appointments`.
 
 ### Added
 
+- `supabase/migrations/20261107120000_booking_engine.sql` (expand-only):
+  - `btree_gist` for the mixed GiST exclusion index.
+  - `booking_resources`, `resource_availability_rules`, `blackout_dates`, `bookings`, and
+    `idempotency_keys`, all with tenant-scoped RLS.
+  - `bookings_no_overlap`:
+    `EXCLUDE USING gist (resource_id WITH =, during WITH &&) WHERE status IN ('held', 'confirmed')`.
+  - `hold_slot`, `confirm_booking`, `cancel_booking`, and `reschedule_booking` as `SECURITY DEFINER`
+    RPCs with `SET search_path = ''`, in-function tenant checks, availability/blackout validation,
+    in-transaction stale-hold expiry, and idempotent replay.
+  - Internal `expire_stale_holds` and `booking_window_error` helpers; no client grant.
+  - Audit trigger on booking inserts, updates, and deletes.
+- `supabase/tests/booking_engine_test.sql`: B1–B23 covering RLS perimeter, cross-tenant denial,
+  role limits, availability, blackouts, expiry, confirm/cancel/reschedule, and idempotency.
+- `scripts/db/booking_concurrency_test.sh`: 200 simultaneous attempts, `xargs -P 50`, exactly one
+  winner, 199 `slot_unavailable`, zero duplicates.
+- `scripts/verify-db.sh` now runs the booking RPC suite and the concurrency proof and asserts 16
+  public tables with RLS.
+- Evidence: `docs/evidence/2026-11-07-booking-engine.md`. Sprint record:
+  `sprints/sprint-03-booking-engine-db.md`.
+
+### Changed
+
+- Version bump to `1.2.0`.
+- `docs/current-state.md`, `docs/architecture.md`, `docs/db-contracts.md`, `docs/security.md`,
+  `docs/release-readiness.md`, `docs/roadmap.md`, `docs/adr/ADR-009-booking-concurrency.md`,
+  `supabase/README.md`, `scripts/README.md`, the root `README.md`, and the `.ai/context` briefs now
+  distinguish the protected `bookings` store from the still-unguarded legacy `appointments` table.
+- `CHANGELOG.md` structure repaired: the document header is back at the top and the two duplicate
+  `1.0.1` blocks are merged into one section. Historical entries are preserved.
+
+### Verified
+
+- `npm run lint` — PASS.
+- `npm run check:docs` — PASS.
+- `npm run build` — PASS.
+- `npm run verify:build` — PASS.
+- `npm run audit` — PASS (0 vulnerabilities).
+- `npm run test:e2e -- --list` — PASS (1 test collected).
+- `npm run verify:db` — PASS: 12 RLS scenarios, 15 E2E scenarios, booking suite B1–B23,
+  `attempts=200 success=1 slot_unavailable=199 other=0`, `live_rows=1 duplicates=0`, 16 public
+  tables with RLS.
+- GitHub Actions run [42371377892](https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892)
+  — both jobs PASS. Run URL also recorded in `docs/evidence/2026-11-07-booking-engine.md`.
+
+### Known limitations
+
+- The legacy `appointments` table is unchanged. It still accepts overlapping rows and anonymous
+  pending inserts; `appointments_public_insert` is retained. Gate 8 remains open for it
+  (ADR-009 §8).
+- The frontend does not call any booking RPC yet; the live UI still uses the legacy path.
+- `booking_resources.capacity` is constrained to `1`. `booking_slots` and group capacity are not
+  implemented.
+- No scheduled hold-expiry sweeper. Expiry runs only inside booking transactions.
+- Guest booking, per-IP/phone/tenant rate limits, and a bot challenge are not implemented.
+  Anonymous callers are denied execute on every booking RPC.
+- `idempotency_keys` retains the original hold token for replay; booking rows retain only its hash.
+
+## [1.1.0] — 2026-11-06
+
+### Added
+
+- Production-only guard logic for atelier resolution, feedback, lookbook, and order creation.
+- Explicit "Create Atelier" onboarding screen and invite-code redemption route.
+- Real-tenant-based behaviour with fail-closed HTTP and datastore guards.
+- Refactored data-mode aliasing and demo-tenants config.
+- Updated `AtelierLanding`, `TeamInvitesPanel`, and `AcceptInvitationScreen`.
+- `scripts/verify-hosted.sh` and enhanced hosted DB verification.
+- Atomic `create_atelier_with_owner` onboarding RPC; the legacy callable is removed.
+- Playwright invitation acceptance coverage with a server-confirmed membership-role assertion.
+- Evidence `docs/evidence/2026-11-06_sprint-1-verification.md`; updated current state.
+
+### Changed
+
+- Version bump to 1.1.0.
+- Updated RLS and audit logs.
+- Consolidated migration plan.
+
+### Verified
+
+- `npm run lint`, `npm run build`, `npm run verify:build`, and Playwright test collection pass
+  locally.
+- The connected Supabase project contains `create_atelier_with_owner`; full hosted SQL execution
+  still requires the deliberate `STITCHFLOW_ALLOW_HOSTED_VERIFY=1` CLI gate.
+
+### Known limitations
+
+- `npm run verify:db` could not run in that sandbox because Docker was unavailable; CI remains the
+  disposable-Postgres proof environment.
+- The live Playwright flow requires an invited test account and code supplied through environment
+  variables.
+
+## [1.0.1] — 2026-11-05
+
+Audit and hardening patch. No feature UI change in the audit half.
+
+### Added
+
+- Dedicated StitchFlow Supabase project (`qkhfjlxhulekjrfgrdbz`) with forward-only migration push.
+- `audit_log` plus triggers on orders and measurements.
+- `invitations` ledger plus `lookup_invitation`/`accept_invitation` RPC.
+- Explicit "Create Atelier" onboarding screen and invite redemption route.
 - Sprint 0 audit: `docs/audit/2026-11-05_sprint-0-audit.md` with a prioritized P0–P3 defect list,
   the eight-gate verdict, and the owner-blocked work list.
 - Proposed ADR-008 (TanStack Start SSR shell), ADR-009 (booking concurrency), ADR-010 (payments
@@ -64,8 +123,11 @@ Audit-only patch. No feature code and no schema change.
 
 ### Changed
 
+- Build/dev adapters split demo-only seed data from production builds
+  (`src/data/initialData.demo.ts` / `.production.ts`).
+- Production `verify:build` asserts absence of demo PII and artifacts.
 - `docs/current-state.md`, `docs/architecture.md`, `docs/db-contracts.md`, `docs/roadmap.md`,
-  `docs/release-readiness.md`, `supabase/README.md` and the `.ai/context` briefs now state the
+  `docs/release-readiness.md`, `supabase/README.md`, and the `.ai/context` briefs now state the
   verified result instead of the prior narrative.
 - Release readiness distinguishes "deployed" from "artifact clean"; L9 is deploy-only evidence.
 
@@ -73,13 +135,13 @@ Audit-only patch. No feature code and no schema change.
 
 - Unused dependencies: `express`, `@types/express`, `dotenv`, `@google/genai`, `autoprefixer`,
   `esbuild`, `motion`, `tsx`.
-- Stale `bun.lock`; npm with `package-lock.json` is the single package manager contract.
+- Stale `bun.lock`; npm with `package-lock.json` is the single package-manager contract.
 - Stale AI Studio environment entries from `.env.example`.
 - The false `create_atelier_for_current_user(...)` contract row; the function is dropped and absent.
 
 ### Known defects recorded, not fixed
 
-- `S0-P0-01` demo identities, PIN `1234`, credential cards and demo slugs still ship in the
+- `S0-P0-01` demo identities, PIN `1234`, credential cards, and demo slugs still ship in the
   Supabase-mode bundle while `verify:build` passes.
 - `S0-P0-02` overlapping appointments are accepted; no exclusion constraint exists (gate 8 FAIL).
 - `S0-P1-03` no owner/employee `INSERT` policy on `appointments`.

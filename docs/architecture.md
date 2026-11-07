@@ -60,15 +60,25 @@ deliberate: a misconfigured production build must fail loudly, not silently serv
 ## 5. Database
 
 The tracked chain under `supabase/migrations/` rebuilds the schema the client queries from an empty
-database. `supabase/seed.sql` provisions two pilot tenants. RLS is enabled on all nine tenant tables.
-The authoritative policy set is `20261031112000_rls_final.sql`.
+database. `supabase/seed.sql` provisions two pilot tenants. RLS is enabled on all 16 public tables.
+The authoritative policy set is `20261031112000_rls_final.sql`; the Sprint 3 booking engine is
+`20261107120000_booking_engine.sql`.
 
-Verified limits of this layer (2026-11-05 audit):
+Verified state of this layer (2026-11-07 booking-engine run):
 
-- 52 policies across 9 tables; 8 `SECURITY DEFINER` functions; 0 exclusion constraints.
-- No audit/ledger/webhook tables and no `create_atelier_for_current_user` RPC.
-- `appointments` has no resource, duration, hold, idempotency key, or overlap constraint, and no
-  owner/employee `INSERT` policy.
+- 69 policies across 15 tables; 16 non-trigger `SECURITY DEFINER` functions (6 added by the booking
+  engine); 1 exclusion constraint.
+- `bookings` carries
+  `EXCLUDE USING gist (resource_id WITH =, during WITH &&) WHERE status IN ('held', 'confirmed')`.
+  The database, not the client, is the authority on overlap.
+- Every booking write goes through `hold_slot`, `confirm_booking`, `cancel_booking`, or
+  `reschedule_booking`. `bookings` has no `INSERT`/`UPDATE`/`DELETE` RLS policy, so a direct
+  PostgREST write cannot bypass the tenant check, expiry sweep, idempotency ledger, or exclusion.
+- Guest contact details can be stored only by staff in this layer; anonymous callers cannot execute
+  any booking RPC.
+- `appointments` is deliberately unchanged: it still has no resource, duration, hold, idempotency
+  key, or overlap constraint, and no owner/employee `INSERT` policy. It remains a second booking
+  store until ADR-009 §8 retires it.
 
 See [`db-contracts.md`](db-contracts.md) for table contracts and
 [`security.md`](security.md) for the invariant list.
@@ -81,7 +91,7 @@ See [`db-contracts.md`](db-contracts.md) for table contracts and
 | Bundle | `npm run build` | Production build succeeds |
 | Artifacts | `npm run verify:build` | No literal source paths; no secret in output. **It does not prove demo code is absent** — see the P0 in `docs/audit/2026-11-05_sprint-0-audit.md` |
 | Docs | `npm run check:docs` | Every relative Markdown link resolves |
-| Database | `npm run verify:db` | Chain applies to empty DB; 12-scenario RLS suite passes |
+| Database | `npm run verify:db` | Chain applies to empty DB; 12-scenario RLS suite, 15 E2E scenarios, booking RPC suite, and a 200-attempt / 50-concurrent exclusion proof pass |
 | CI | `.github/workflows/ci.yml` | All of the above on every push |
 
 ## 7. Deployment

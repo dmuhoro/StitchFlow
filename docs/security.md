@@ -49,6 +49,18 @@ to expose an RPC surface.
 11. `anon` reads `lookbook_items` only where `is_published = true`.
 12. `anon` inserts `appointments` only with `status = 'pending'` and `client_id is null`.
 13. `anon` cannot read orders, members, measurements, feedback, or financials.
+14. `anon` cannot execute any booking RPC or read any booking table.
+
+### Booking store
+
+15. `bookings` has no direct write policy. Every mutation goes through `hold_slot`,
+    `confirm_booking`, `cancel_booking`, or `reschedule_booking`.
+16. The four RPCs are `SECURITY DEFINER`, `SET search_path = ''`, check tenant membership inside the
+    function, and are granted only to `authenticated` and `service_role`.
+17. `bookings_no_overlap` (`EXCLUDE USING gist (resource_id WITH =, during WITH &&)` for `held` and
+    `confirmed`) is the final authority on overlap.
+18. `idempotency_keys` has RLS enabled with no policies; only the definer RPCs can read or write it.
+    It retains the original hold token so a lost response can be replayed within the hold window.
 
 ### Role integrity
 
@@ -68,10 +80,12 @@ to expose an RPC surface.
 | Risk | Severity | Status / mitigation |
 |------|----------|--------------------|
 | Demo identities, PIN `1234` and credential cards ship in the Supabase-mode bundle | **P0** | Refused at the runtime action boundary, but present in the artifact; `verify:build` does not assert absence. Sprint 1. |
-| Overlapping appointments are accepted; no exclusion constraint, resource or hold | **P0** | Gate 8 FAIL. ADR-009 / Sprint 3. |
-| No owner/employee `INSERT` policy on `appointments` | P1 | Staff cannot create a fitting. Sprint 3. |
-| Anonymous booking has no rate limit | Medium | PostgREST/edge rate limit post-launch |
-| No audit trail for owner money edits | Medium | Add audit table in Sprint 1 |
+| Overlapping appointments are accepted on the legacy `appointments` table; it has no exclusion constraint, resource or hold | **P0** | Gate 8 FAIL. The new `bookings` store is protected (Gate 8B PASS locally). Retiring `appointments` is ADR-009 §8. |
+| The browser still writes the legacy `appointments` path; no frontend calls the booking RPCs | **P1** | The protected path exists but is unused by the UI. Sprint 3 follow-up. |
+| `idempotency_keys` retains the original hold token for replay | Medium | Client roles are denied by RLS; only definer RPCs read it. Short hold window. |
+| No owner/employee `INSERT` policy on `appointments` | P1 | Staff cannot create a legacy fitting. Staff booking belongs to `hold_slot`. |
+| Anonymous booking has no rate limit | Medium | PostgREST/edge rate limit post-launch; `anon` cannot reach booking RPCs |
+| No audit trail for owner money edits | Medium | Booking transitions are audited; money edits still are not. Sprint 1 |
 | Hosted project access unverified | Blocker for deploy | Owner authorization |
 
 ## How to verify

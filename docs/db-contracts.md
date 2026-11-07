@@ -145,6 +145,97 @@ resolved from `members`; they are not stored here.
 **Access:** `anon` insert only when `status = 'pending'` and `client_id is null`; patron own; owner
 all; assigned employee read/update.
 
+**Legacy status (2026-11-07):** this table is unchanged by the Sprint 3 booking engine. It still has
+no resource, duration, hold, idempotency key, or overlap constraint, and
+`appointments_public_insert` is retained. It is a second booking store until ADR-009 §8 retires it.
+
+### `booking_resources`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid pk | |
+| `atelier_id` | uuid | tenant |
+| `kind` | text | `cutter`, `fitter`, `fitting_room`, `workshop` |
+| `display_name` | text | required |
+| `capacity` | integer | default 1; constrained to `= 1` in this layer |
+| `timezone` | text | IANA timezone used by availability rules |
+| `active` | boolean | inactive resources are not bookable |
+| `created_at`, `updated_at` | timestamptz | |
+
+**Access:** members read active resources in their tenant; owners read and manage all resources.
+
+**Limit:** `capacity > 1` needs explicit `booking_slots` and is not implemented. The check rejects a
+capacity the exclusion constraint cannot honour.
+
+### `resource_availability_rules`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid pk | |
+| `atelier_id` | uuid | tenant |
+| `resource_id` | uuid | composite FK with `atelier_id` |
+| `weekday` | smallint | `0` Sunday … `6` Saturday (`extract(dow)`) |
+| `starts_at`, `ends_at` | time | local wall-clock window; `ends_at > starts_at` |
+| `valid_from`, `valid_to` | date | optional validity bounds |
+| `created_at`, `updated_at` | timestamptz | |
+
+**Access:** members read their tenant's rules; owners write. No rule means the resource is not
+bookable — availability fails closed.
+
+### `blackout_dates`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid pk | |
+| `atelier_id` | uuid | tenant |
+| `resource_id` | uuid | nullable; null closes the whole tenant |
+| `during` | tstzrange | finite, non-empty |
+| `reason` | text | |
+| `created_at`, `updated_at` | timestamptz | |
+
+**Access:** members read their tenant's blackouts; owners write.
+
+### `bookings`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid pk | |
+| `atelier_id` | uuid | tenant |
+| `resource_id` | uuid | composite FK with `atelier_id` |
+| `during` | tstzrange | finite, non-empty; normalised to `[)` |
+| `status` | text | `held`, `confirmed`, `cancelled`, `expired` |
+| `client_id` | uuid | nullable for a guest booking |
+| `guest_name`, `guest_phone`, `guest_email` | text | contact snapshots |
+| `service_type` | text | required |
+| `cultural_occasion`, `notes` | text | |
+| `idempotency_key` | text | original hold key, unique per atelier where present |
+| `hold_token_hash` | text | only the hash of the hold token is stored here |
+| `hold_expires_at` | timestamptz | required while `status = 'held'` |
+| `created_at`, `updated_at` | timestamptz | |
+
+**Constraint:** `bookings_no_overlap` is
+`EXCLUDE USING gist (resource_id WITH =, during WITH &&) WHERE status IN ('held', 'confirmed')`.
+Two live reservations for one resource can never overlap; the database is the authority.
+
+**Access:** staff read all bookings in their tenant; a patron reads their own. There is deliberately
+no `INSERT`, `UPDATE`, or `DELETE` policy — every mutation goes through an RPC.
+
+### `idempotency_keys`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `atelier_id` | uuid | tenant; part of the primary key |
+| `scope` | text | `hold_slot` or `reschedule_booking` |
+| `idempotency_key` | text | 1–200 characters; part of the primary key |
+| `payload_hash` | text | canonical payload hash |
+| `result` | jsonb | original result returned on replay |
+| `booking_id` | uuid | affected booking |
+| `created_at` | timestamptz | |
+
+**Access:** RLS enabled with **no policies**. Client roles cannot read or write the ledger; only the
+`SECURITY DEFINER` RPCs can. The original result retains the hold token so a lost response can be
+replayed; booking rows retain only the token hash.
+
 ### `feedback`
 
 | Column | Type | Notes |
@@ -174,8 +265,21 @@ all; assigned employee read/update.
 | `guard_member_mutation()` | trigger | blocks role/tenant escalation |
 | `prevent_atelier_creator_reassignment()` | trigger | immutable creator |
 | `set_updated_at()` | trigger | UTC timestamp |
+| `hold_slot(...)` | security definer, RPC | tenant check, availability/blackout, expiry sweep, exclusion-backed hold, idempotent replay |
+| `confirm_booking(text)` | security definer, RPC | token hash lookup, tenant check, `held` → `confirmed` |
+| `cancel_booking(uuid)` | security definer, RPC | tenant/role check, idempotent `cancelled` |
+| `reschedule_booking(uuid, tstzrange, text)` | security definer, RPC | atomic range move with idempotent replay |
+| `expire_stale_holds(uuid, uuid)` | security definer, internal | marks expired holds for one resource |
+| `booking_window_error(uuid, uuid, text, tstzrange)` | security definer, internal | availability/blackout predicate |
 
-All definer functions set `search_path = ''`; `PUBLIC` and `anon` execute is revoked.
+All definer functions set `search_path = ''`; `PUBLIC` and `anon` execute is revoked. The four public
+RPCs are granted to `authenticated` and `service_role`; the two internal helpers are granted to no
+client role.
+
+`hold_slot` error tokens include `forbidden`, `resource_unavailable`, `outside_availability`,
+`blackout`, `slot_in_past`, `slot_unavailable`, and `idempotency_key_conflict`. The delivery brief
+names the RPC `hold_slot` and the conflict `slot_unavailable`; ADR-009 uses `book_slot` and
+`SLOT_TAKEN` for the same concepts.
 
 `create_atelier_with_owner(text, text, text, text)` is the supported owner-onboarding boundary. It
 is created by `supabase/migrations/20261106160000_atomic_owner_onboarding.sql`, runs as one
@@ -200,18 +304,22 @@ transaction, and is callable only by `authenticated`. The retired
 20261106140000_sprint1_invite_accept.sql
 20261106150000_sprint1_hardening.sql
 20261106160000_atomic_owner_onboarding.sql
+20261107120000_booking_engine.sql
 ```
 
 `rls_final` is authoritative for policies; `currency_alignment` widens the currency contract to
 `KES`/`USD`/`NGN` for both `order_financials.currency` and `ateliers.default_currency`. Earlier files
-are historical layers kept so the chain replays.
+are historical layers kept so the chain replays. `booking_engine` is expand-only: it adds the
+resource/booking tables and RPCs and does not alter `appointments`.
 
 ## Verification
 
 `npm run verify:db` applies the chain to an empty `postgres:16`, loads `supabase/seed.sql`, runs the
-12-scenario `supabase/tests/rls_isolation_test.sql`, and asserts RLS on every public table.
+12-scenario `supabase/tests/rls_isolation_test.sql`, the hosted/local E2E suite, the booking-engine
+RLS/RPC suite, and a 200-attempt / 50-concurrent exclusion proof, then asserts RLS on every public
+table.
 
-The suite proves gates 1–7. It does **not** prove appointment concurrency: there is no exclusion
-constraint on `appointments`, and two overlapping rows are accepted. Gate 8 is intentionally FAIL
-and is owned by Sprint 3 / [ADR-009](adr/ADR-009-booking-concurrency.md). Evidence:
-[`evidence/2026-11-05_sprint-0-verification.md`](evidence/2026-11-05_sprint-0-verification.md).
+The booking suite proves the new `bookings` store. It does **not** make `appointments` safe: that
+legacy table still accepts overlapping rows and its anonymous insert policy is retained. Gate 8
+closure for the legacy table is ADR-009 §8 work, not part of this layer. Evidence:
+[`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-engine.md).

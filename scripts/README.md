@@ -6,7 +6,8 @@ Operational scripts. Every script fails closed: a non-zero exit means the check 
 
 | Script | Purpose |
 |--------|---------|
-| `verify-db.sh` | Apply migrations + seed + RLS suite to a disposable Postgres |
+| `verify-db.sh` | Apply migrations + seed + RLS suite + booking RPC suite + concurrency proof to a disposable Postgres |
+| `db/booking_concurrency_test.sh` | 200 simultaneous hold attempts on one slot via `xargs -P 50`; asserts exactly one winner |
 | `db/supabase-shim.sql` | Minimal `auth` schema and roles for plain Postgres |
 
 ```bash
