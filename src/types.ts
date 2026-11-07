@@ -162,3 +162,6 @@ export interface ReferralData {
   successful_conversions: number;
   rewards_earned_kes: number;
 }
+
+// Booking engine domain types (Sprint 3)
+export * from "./types/booking";
