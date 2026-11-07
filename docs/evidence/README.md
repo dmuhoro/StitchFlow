@@ -15,6 +15,7 @@
 | 2026-11-01 | Deployment | `2026-11-01_deployment.md` | PASS (deploy only; artifact content later found defective) |
 | 2026-11-05 | Sprint 0 eight-gate verification | `2026-11-05_sprint-0-verification.md` | 7 PASS / 1 FAIL |
 | 2026-11-07 | Sprint 3 booking-engine baseline | `2026-11-07-baseline.md` | PASS |
+| 2026-11-07 | Sprint 3 booking-engine database layer | `2026-11-07-booking-engine.md` | PASS (local); CI tracked in file |
 
 ## Format
 
