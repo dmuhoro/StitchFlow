@@ -11,12 +11,16 @@
 
 StitchFlow is a browser-based product prototype for African bespoke ateliers creating Grand Agbadas, Senator suits, Kitenge bridalwear, Kanzus, and other ceremonial garments. It brings the lookbook, fitting requests, production stages, culturally relevant measurement cards, artisan workbench, and patron updates into one warm, mobile-friendly experience.
 
-> **Verification status (2026-11-06):** Sprint 1 verification passes all guards, attendance of RLS, hosted DB, and build assertions. `v1.1.0` is the first production‑ready tag.
-
-> **Verification status (2026-11-05):** the Sprint 0 audit passes seven of eight verification gates.
-> Gate 8 (appointment capacity and double-booking) **fails** — overlapping bookings are accepted.
-> The production bundle also still contains demo code and the demo PIN. StitchFlow `v1.0.0` is a
-> demo-first release, not a certified production atelier system. Read
+> **Verification status (2026-11-07):** `v1.2.0` adds the booking-engine **database layer**: a GiST
+> exclusion constraint on `bookings`, four tenant-scoped RPCs, in-transaction hold expiry, and an
+> idempotency ledger. `npm run verify:db` passes the 12-scenario RLS suite, the 15-scenario E2E
+> suite, the booking RPC suite (B1–B23), and a 200-attempt / 50-concurrent proof (1 success, 199
+> `slot_unavailable`, 0 duplicates).
+>
+> The browser does **not** call the new booking RPCs yet, and the legacy `appointments` table still
+> accepts overlapping rows. Gate 8 remains open for that table (ADR-009 §8). The production bundle
+> still contains demo code and the demo PIN, so StitchFlow is a demo-first release, not a certified
+> production atelier system. Read
 > [`docs/audit/2026-11-05_sprint-0-audit.md`](docs/audit/2026-11-05_sprint-0-audit.md) before
 > importing real data.
 
@@ -32,15 +36,15 @@ Never use the demo PIN or client-side role gates as a security boundary in a liv
 
 ## Supabase backend foundation
 
-The connected Supabase project contains tenant-aware tables for ateliers, members, lookbook items, orders, order progress notes, measurements, appointments, and feedback. Row Level Security is enabled on every table. Staff access is scoped to an atelier, patrons are scoped to their own records, and only published lookbook items are public. The browser integration lives in `src/lib/supabase.ts` and `src/lib/atelier-repository.ts`; backend notes and verification gates are documented in [supabase/README.md](supabase/README.md).
+The connected Supabase project contains tenant-aware tables for ateliers, members, lookbook items, orders, order progress notes, measurements, appointments, feedback, the booking engine (`booking_resources`, `resource_availability_rules`, `blackout_dates`, `bookings`, `idempotency_keys`), `audit_log`, and `invitations`. Row Level Security is enabled on every public table. Staff access is scoped to an atelier, patrons are scoped to their own records, and only published lookbook items are public. The browser integration lives in `src/lib/supabase.ts` and `src/lib/atelier-repository.ts`; backend notes and verification gates are documented in [supabase/README.md](supabase/README.md).
 
-The local suite now has 12 adversarial RLS scenarios and proves gates 1–7. It does not prove booking concurrency: `appointments` has no exclusion constraint, resource, hold, or idempotency key, and an owner/employee cannot insert an appointment at all. Those gaps are `S0-P0-02` and `S0-P1-03` in the [Sprint 0 audit](docs/audit/2026-11-05_sprint-0-audit.md).
+The local suite has 12 adversarial RLS scenarios, 15 hosted/local E2E scenarios, and a booking RPC suite (B1–B23). The new `bookings` store is protected by a GiST exclusion constraint and four RPC-only write paths. The legacy `appointments` table is still unguarded: it has no exclusion constraint, resource, hold, or idempotency key, and an owner/employee cannot insert an appointment there. Those gaps are `S0-P0-02` and `S0-P1-03` in the [Sprint 0 audit](docs/audit/2026-11-05_sprint-0-audit.md), and retiring `appointments` is ADR-009 §8.
 
 Copy `.env.example` to `.env.local` and provide `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Keep `VITE_DATA_MODE=demo` until Supabase Auth and the first owner onboarding flow have been tested. Never place a service-role key in Vite environment variables or browser code.
 
 ## Current scope and limitations
 
-StitchFlow is still intentionally a staged production migration. The Supabase schema and security boundary exist, but the React context still defaults to seeded browser-local demo data. Two P0 defects are open: demo code and the demo PIN ship in the Supabase-mode bundle, and double-booking is not prevented. Tenant resolution is still client-side, order writes locate rows by `order_code` alone, owner onboarding is not atomic, and there is no audit trail. Authentication UI, invitations, server-side appointment locking, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, and operational monitoring remain to be integrated and verified.
+StitchFlow is still intentionally a staged production migration. The Supabase schema and security boundary exist, but the React context still defaults to seeded browser-local demo data. Two P0 defects remain open: demo code and the demo PIN ship in the Supabase-mode bundle, and the legacy `appointments` path still accepts double-booking (the new `bookings` store is protected but not yet called by the UI). Tenant resolution is still client-side, order writes locate rows by `order_code` alone, and owner money-edit audit coverage is incomplete. Authentication UI, invitations, guest booking rate limits, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, and operational monitoring remain to be integrated and verified.
 ---
 
 > **Runtime guard enforcement**: All action boundaries (onboarding, feedback, order creation, lookbook publishing) now contain explicit fail‑closed checks that refuse unresolvable ateliers or missing authorization in production. This guarantees that a user cannot trigger unintended or unsafe writes.
@@ -67,7 +71,7 @@ npm run lint           # TypeScript validation
 npm run check:docs     # Relative Markdown link check
 npm run build          # Production bundle
 npm run verify:build   # Artifact assertions (paths and placeholders)
-npm run verify:db      # Disposable postgres:16 + 12-scenario RLS suite
+npm run verify:db      # Disposable postgres:16 + RLS, E2E, booking RPC and concurrency suites
 npm run preview        # Serve the production bundle locally
 npm run audit          # Dependency vulnerability check
 ```
@@ -102,7 +106,7 @@ StitchFlow is designed around the working language of African bespoke tailoring 
 
 ## Roadmap to a real business product
 
-Sprint 1 is blocked until the repository owner approves ADR-008 (SSR shell) and ADR-011 (tenant resolution); ADR-009 (booking concurrency) and ADR-010 (payments ledger) are also proposed. The next business-critical milestones are to remove demo code from the production artifact; make onboarding atomic; enforce tenant-correct order writes; add an audit trail and staff appointment creation; add server-side appointment capacity and double-booking protection; version measurement cards and garment specifications; add customer CRM, fabric inventory, QC/rework, delivery, and alteration history; implement quotes, invoices, payment webhooks, tax and currency rules; and add secure media storage, privacy and consent workflows, backups with restore drills, and operational monitoring. See [`docs/roadmap.md`](docs/roadmap.md).
+Sprint 1 is partially shipped (atomic owner onboarding, invitations, audit trail). ADR-009's database layer is now implemented; its UI wiring, guest boundary, capacity, and legacy-store retirement remain open. ADR-008 (SSR shell), ADR-010 (payments ledger), and ADR-011 (tenant resolution) remain **Proposed**. The next business-critical milestones are to remove demo code from the production artifact; enforce tenant-correct order writes; wire the booking RPCs into the UI and retire the legacy `appointments` path; add guest rate limits and a bot challenge; version measurement cards and garment specifications; add customer CRM, fabric inventory, QC/rework, delivery, and alteration history; implement quotes, invoices, payment webhooks, tax and currency rules; and add secure media storage, privacy and consent workflows, backups with restore drills, and operational monitoring. See [`docs/roadmap.md`](docs/roadmap.md).
 
 ## Contributing
 

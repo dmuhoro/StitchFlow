@@ -19,20 +19,38 @@ defects, so it is not certified for a live atelier. See
 Audit and decisions only. ADR-008 through ADR-011 are **Proposed**. Sprint 1 is blocked until
 ADR-008 and ADR-011 are approved.
 
-## v1.1.0 — First pilot atelier (blocked on ADR approval)
+## v1.1.0 — First pilot atelier (partially shipped)
+
+Shipped: atomic owner onboarding (`create_atelier_with_owner`), invitation redemption, audit trail
+for orders/measurements/settings/roles. Remaining:
 
 - Remove demo code from the production artifact and make `verify:build` assert its absence.
-- Atomic owner onboarding with a real onboarding RPC.
 - Tenant-correct order writes (`atelier_id` + `order_code`).
-- Audit trail for orders, measurements, settings and role changes.
-- Owner/employee appointment creation and server-side booking concurrency (ADR-009).
-- Owner onboarding: invite staff, publish first lookbook.
 - Three-identity end-to-end verification against a hosted project.
 - Media storage with signed URLs for garment photography.
 - Email/WhatsApp transactional notifications.
-- Anonymous booking rate limiting.
 
-## v1.2.0 — Money and operations
+## v1.2.0 — Booking engine, database layer (released)
+
+Shipped:
+
+- `booking_resources`, `resource_availability_rules`, `blackout_dates`, `bookings`,
+  `idempotency_keys`.
+- GiST exclusion constraint on live bookings per resource.
+- `hold_slot`, `confirm_booking`, `cancel_booking`, `reschedule_booking` RPCs with tenant checks,
+  availability/blackout validation, in-transaction expiry, and idempotent replay.
+- 200-attempt / 50-concurrent exclusion proof wired into `npm run verify:db`.
+- Audited booking transitions.
+
+Remaining for the booking engine:
+
+- Frontend/UI wiring of the RPCs.
+- Retire/backfill `appointments` (ADR-009 §8).
+- Guest edge-function boundary with per-IP/phone/tenant rate limits and a bot challenge.
+- `booking_slots` and capacity greater than one.
+- Scheduled expiry sweeper and its operational alert.
+
+## v1.3.0 — Money and operations
 
 - Quotes, invoices, deposits, and payment reconciliation (M-Pesa, card) under ADR-010.
 - Fabric inventory and supplier records.
@@ -40,7 +58,7 @@ ADR-008 and ADR-011 are approved.
 - Owner money-edit audit trail.
 - Backups with a documented restore drill.
 
-## v1.3.0 — Scale and trust
+## v1.4.0 — Scale and trust
 
 - Measurement version history and garment specification snapshots.
 - Consent, retention, export, and deletion workflows.
