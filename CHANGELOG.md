@@ -5,6 +5,20 @@ All notable changes to StitchFlow are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] — 2026-11-07
+
+Booking staff slice database layer verified and frontend types wired.
+
+### Fixed
+
+- Repaired broken `audit_log`, owner invitation permission, and availability migrations.
+- Corrected hold_slot test argument ordering for task 2.
+
+### Added
+
+- Central re-export of booking domain types.
+- Evidence record: `docs/evidence/2026-11-07-booking-staff-slice.md`.
+
 ## [1.2.0] — 2026-11-07
 
 Booking-engine **database layer** only. No frontend change and no change to `appointments`.
