@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "Blocked: never push to main. Push a branch and open a PR." >&2; exit 1
+  fi
+done
+npm run lint
+npm run build
+VITE_DATA_MODE=supabase npm run build
+VITE_DATA_MODE=supabase npm run verify:build

@@ -1,15 +1,9 @@
 [build]
   command = "npm run build"
-  publish = "dist"
+  publish = "dist/client"
 
 [build.environment]
   NODE_VERSION = "20"
-
-# Keep future client-side routes working on a static host.
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
 
 [[headers]]
   for = "/*"
@@ -19,14 +13,7 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     X-Frame-Options = "SAMEORIGIN"
 
-# Always revalidate the HTML shell so a new deploy can select its current
-# hashed JavaScript and image assets. Vite asset filenames are content-hashed,
-# so those immutable files can safely receive a long cache lifetime.
-[[headers]]
-  for = "/index.html"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
-
+# Vite asset filenames are content-hashed, so they can be cached forever.
 [[headers]]
   for = "/assets/*"
   [headers.values]
