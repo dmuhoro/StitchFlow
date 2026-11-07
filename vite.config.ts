@@ -9,7 +9,7 @@ import {defineConfig} from 'vite';
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.VITE_DATA_MODE === 'supabase';
 
-export default defineConfig(() => {
+export default defineConfig(({ command }) => {
   // Order matters: specific data/adapter specifiers must precede the generic '@' alias.
   const alias: Record<string, string> = {
     './AuthModal': isProduction
@@ -25,8 +25,15 @@ export default defineConfig(() => {
   };
 
   return {
-    // tanstackStart() must precede the React plugin; netlify() follows tanstackStart().
-    plugins: [tanstackStart(), netlify(), viteReact(), tailwindcss()],
+    plugins: [
+      // tanstackStart() must precede the React plugin.
+      tanstackStart(),
+      // The Netlify plugin writes the SSR function at build time. Its dev emulator
+      // needs Deno (edge functions), which we don't use, so keep it out of `vite dev`.
+      ...(command === 'build' ? [netlify()] : []),
+      viteReact(),
+      tailwindcss(),
+    ],
     resolve: { alias },
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
