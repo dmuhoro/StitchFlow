@@ -1,8 +1,8 @@
 # Sprint 03 — Booking Engine, Database Layer
 
-**Status:** IN PROGRESS — local verification green; CI confirmation and tag pending.
+**Status:** DONE — local and CI green; released as `v1.2.0`.
 **Date:** 2026-11-07
-**Branch:** `sprint-3/booking-engine-db` (from `main` at `098328d`)
+**Branch:** `sprint-3/booking-engine-db` (from `main` at `098328d`), merged through PR #2.
 
 ## Planned
 
@@ -43,6 +43,8 @@ Implement the ADR-009 database layer without touching `appointments` or the fron
   `npm run test:e2e -- --list` PASS locally.
 - Exclusion constraint definition observed:
   `EXCLUDE USING gist (resource_id WITH =, during WITH &&) WHERE status IN ('held','confirmed')`.
+- GitHub Actions run [42371377892](https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892)
+  — both jobs PASS (`Types, docs and bundle`; `Migration chain and RLS`).
 
 ## Deliberate boundaries
 
@@ -60,9 +62,8 @@ Implement the ADR-009 database layer without touching `appointments` or the fron
 
 ## Remaining
 
-- CI must prove `npm run verify:db:host` on the pull request.
-- Annotated tag and remote ref verification.
 - Frontend wiring of the four RPCs.
 - Backfill/retire `appointments` (ADR-009 §8).
 - Guest edge-function boundary with rate limits and a bot challenge.
 - `booking_slots`, capacity greater than one, and a scheduled expiry sweeper.
+- ADR-009 ratification by the repository owner (status is still **Proposed**).

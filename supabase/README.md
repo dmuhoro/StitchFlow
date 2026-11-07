@@ -47,7 +47,7 @@ Run locally on a disposable `postgres:16` via `npm run verify:db`:
 | 6 | A staff member cannot change tenant IDs through an update payload | PASS |
 | 7 | Deleted or inactive members lose access immediately | PASS |
 | 8 | Appointment capacity and double-booking protection on the legacy `appointments` table | **FAIL** — table unchanged by this layer; see ADR-009 §8 |
-| 8B | Booking-store overlap exclusion, holds, expiry, and idempotency | **PASS locally** — RPC suite B1–B23 plus 200 attempts / 50 concurrent: 1 success, 199 `slot_unavailable`, 0 duplicates |
+| 8B | Booking-store overlap exclusion, holds, expiry, and idempotency | **PASS** — RPC suite B1–B23 plus 200 attempts / 50 concurrent: 1 success, 199 `slot_unavailable`, 0 duplicates (local and CI run [42371377892](https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892)) |
 
 Gate 8 remains open for `appointments`: it still has no resource, duration, hold, idempotency key, or
 overlap constraint, no owner/employee `INSERT` policy, and has no resource model. Its

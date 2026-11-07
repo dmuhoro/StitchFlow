@@ -43,7 +43,7 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
 | Staff cannot change tenant IDs | PASS |
 | Deactivated members lose access | PASS |
 | Appointment capacity and double-booking (legacy `appointments`) | **FAIL** |
-| Booking-store overlap exclusion and holds (new `bookings`) | **PENDING CI** — local `verify:db` PASS |
+| Booking-store overlap exclusion and holds (new `bookings`) | **PASS** — local `verify:db` and CI run [42371377892](https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892) |
 | Seamless feedback persistence | PASS |
 | Lookbook item publication | PASS |
 | Order creation with missing atelier guard | PASS |

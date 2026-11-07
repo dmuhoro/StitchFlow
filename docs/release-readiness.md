@@ -39,7 +39,7 @@
 | B2 | GiST exclusion constraint covers `held` and `confirmed` per resource | DONE | RPC suite B23; `verify:db` |
 | B3 | Booking writes are RPC-only; tenant, role, availability, and blackout checks hold | DONE | RPC suite B1–B12, B21–B22 |
 | B4 | Expiry sweep and idempotent replay/conflict semantics | DONE | RPC suite B13, B16–B20 |
-| B5 | 200 attempts / 50 concurrent on one slot: 1 success, 199 `slot_unavailable`, 0 duplicates | DONE (local), CI pending | `scripts/db/booking_concurrency_test.sh` output in `docs/evidence/2026-11-07-booking-engine.md` |
+| B5 | 200 attempts / 50 concurrent on one slot: 1 success, 199 `slot_unavailable`, 0 duplicates | DONE — local and CI | `docs/evidence/2026-11-07-booking-engine.md`; CI run [42371377892](https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892) |
 | B6 | Legacy `appointments` double-booking protection | **FAIL — open** | ADR-009 §8; table intentionally untouched |
 | B7 | Frontend calls the booking RPCs | **NOT STARTED** | no `src/` caller yet |
 | B8 | Guest rate limits and bot challenge | **NOT STARTED** | ADR-009 §8 |

@@ -140,15 +140,24 @@ expiry sweep and gives a stable error.
 
 ## CI
 
-The branch is pushed and a pull request is opened; the required GitHub Actions database job runs
-`npm run verify:db:host` against `postgres:16`. This section is updated with the run URL and verdict
-when the run completes.
+Pull request: <https://github.com/dmuhoro/StitchFlow/pull/2>
+Workflow run: <https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892>
+Commit under test: `1e00ed464598fb3579df098a54bdefd71412002b`
 
-**CI verdict:** PENDING at the time this file was committed.
+| Job | Result | URL |
+|-----|--------|-----|
+| Types, docs and bundle | PASS (17s) | <https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892/job/128400040879> |
+| Migration chain and RLS | PASS (25s) | <https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892/job/128400040682> |
+
+The database job runs `npm run verify:db:host` against `postgres:16`, which applies the migration
+chain, the seed, the 12-scenario RLS suite, the 15-scenario E2E suite, the booking RPC suite, and
+the 200-attempt concurrency proof. **CI verdict: PASS.** Gate 8B is closed for the new `bookings`
+store. Gate 8 remains open for the legacy `appointments` table (ADR-009 §8).
 
 ## Verdict
 
-**PASS (local database layer).** The new `bookings` store refuses overlap under 200 concurrent
-attempts, enforces tenant isolation through RPCs, expires stale holds in-transaction, and replays
-idempotent requests without creating a duplicate. CI confirmation is tracked above. Gate 8 remains
-open for the legacy `appointments` table.
+**PASS (local and CI database layer).** The new `bookings` store refuses overlap under 200
+concurrent attempts, enforces tenant isolation through RPCs, expires stale holds in-transaction,
+and replays idempotent requests without creating a duplicate. Gate 8B is closed by CI run
+[42371377892](https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892). Gate 8 remains open
+for the legacy `appointments` table.

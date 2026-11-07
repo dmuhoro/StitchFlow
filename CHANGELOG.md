@@ -52,7 +52,8 @@ Booking-engine **database layer** only. No frontend change and no change to `app
 - `npm run verify:db` — PASS: 12 RLS scenarios, 15 E2E scenarios, booking suite B1–B23,
   `attempts=200 success=1 slot_unavailable=199 other=0`, `live_rows=1 duplicates=0`, 16 public
   tables with RLS.
-- GitHub Actions run URL is recorded in `docs/evidence/2026-11-07-booking-engine.md`.
+- GitHub Actions run [42371377892](https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892)
+  — both jobs PASS. Run URL also recorded in `docs/evidence/2026-11-07-booking-engine.md`.
 
 ### Known limitations
 
