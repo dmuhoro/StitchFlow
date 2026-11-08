@@ -45,4 +45,5 @@ PASS / FAIL / BLOCKED
 | v1.4.0-rc.2 hosted repair | `2026-11-08_v1.4.0-rc.2-hosted-repair.md` | Hosted schema parity PASS; artifact gate PASS; live publish BLOCKED on Netlify credits; browser journeys BLOCKED on identities |
 | Milestone 1 pilot hardening | `2026-11-08_milestone-1-pilot-hardening.md` | Local tenant/database/unit checks and fresh-artifact hosted journeys PASS; live publish and restore rehearsal BLOCKED |
 | Vercel pilot readiness | `2026-11-08_vercel-pilot-readiness.md` | Static Vercel config, local financial audit/RLS proof, build and browser smoke PASS; new migration apply, live deployment, live journeys, and restore rehearsal BLOCKED |
-| v1.4.0-rc.3 hosted recovery attempt | `2026-11-08_v1.4.0-rc.3-hosted-recovery.md` | One local smoke PASS, five hosted journeys skipped; remote audit found missing migration; backup/restore and live booking BLOCKED |
+| v1.4.0-rc.3 hosted recovery attempt | `2026-11-08_v1.4.0-rc.3-hosted-recovery.md` | Migration applied and hosted rollback proof PASS; remote E2E 1/6; backup/restore and release BLOCKED |
+| Live booking attempt | `booking-flow.md` | BLOCKED; remote UI mismatch prevented booking; no screenshot or confirmation |

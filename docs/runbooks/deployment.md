@@ -51,9 +51,12 @@ Reconciliation performed on 2026-11-08: remote `20261106122030` (`atomic_owner_o
 proven equivalent to local `20261106160000_atomic_owner_onboarding.sql` and recorded under the local
 version; the seven pending migrations were then applied. Evidence:
 [`../evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md`](../evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md).
-Since that reconciliation, `20261108173000_audit_order_financials.sql` was added. It is not yet
-applied remotely. Review it, apply it using the forward-only procedure above, and verify the hosted
-RLS/audit boundary before pilot use.
+Since that reconciliation, `20261108173000_audit_order_financials.sql` was added and applied
+remotely on 2026-11-08. `CI=1 supabase migration list --remote` showed the local and remote version
+at `20261108173000`, and `CI=1 supabase db push --dry-run --remote` returned `upToDate: true`.
+`STITCHFLOW_ALLOW_HOSTED_VERIFY=1 npm run verify:hosted` passed its rollback-only hosted RLS proof.
+The financial trigger's actor/before/after behavior is asserted by local `npm run verify:db`.
+See [`../evidence/2026-11-08_v1.4.0-rc.3-hosted-recovery.md`](../evidence/2026-11-08_v1.4.0-rc.3-hosted-recovery.md).
 
 ## 2. Configure Vercel
 

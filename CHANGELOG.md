@@ -7,9 +7,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased] — Milestone 1 pilot hardening (in progress)
 
-This is an untagged engineering checkpoint, not a production release. Local build and hosted backend
-journeys pass; Vercel project setup, live publishing, live browser verification, and backup/restore
-rehearsal remain incomplete.
+This is an untagged engineering checkpoint, not a production release. Local build and hosted
+database checks pass; the configured Vercel site fails the latest live browser suite and the
+backup/restore rehearsal remains incomplete.
 
 ### Added
 
@@ -27,7 +27,8 @@ rehearsal remain incomplete.
 - Production artifact verification rejects retired or mismatched Supabase project references.
 - The unused root Vite config no longer imports the uninstalled TanStack Start and Netlify plugins.
 - Owner order-financial edits now produce actor-attributed before/after audit records; only owners can
-  read financial audit snapshots. The forward-only migration is pending production application.
+  read financial audit snapshots. Migration `20261108173000` was applied to production and remote
+  parity verified on 2026-11-08.
 - Landing-page sign-in E2E selectors now target the exact public button label; the header action
   remains separately named "Enter Atelier".
 
@@ -37,9 +38,13 @@ rehearsal remain incomplete.
   artifact assertions pass using the supported static pilot Vite config.
 - Hosted publishable-key proof passed 30/30; owner, employee, and patron browser journeys passed
   3/3; protected booking confirmation passed 1/1 against the fresh local artifact and hosted
-  Supabase. Vercel is selected, but no production deployment or live verification is recorded. The
-  former Netlify artifact still targets the retired project. See
+  Supabase. These are earlier local-artifact results; they do not represent the current Vercel
+  deployment. The former Netlify artifact still targets the retired project. See
   `docs/evidence/2026-11-08_milestone-1-pilot-hardening.md`.
+- Latest live verification supersedes earlier hosted E2E evidence: the six-test run against the
+  configured Vercel URL returned 1 pass and 5 failures. A rollback-only hosted RLS proof passed;
+  the local Supabase backup/restore rehearsal did not run because Docker image pulls timed out.
+  Release remains blocked; see `docs/evidence/2026-11-08_v1.4.0-rc.3-hosted-recovery.md`.
 
 ## [1.4.0-rc.2] — 2026-11-08
 

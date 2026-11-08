@@ -11,13 +11,13 @@
 
 StitchFlow is a browser-based product prototype for African bespoke ateliers creating Grand Agbadas, Senator suits, Kitenge bridalwear, Kanzus, and other ceremonial garments. It brings the lookbook, fitting requests, production stages, culturally relevant measurement cards, artisan workbench, and patron updates into one warm, mobile-friendly experience.
 
-> **Verification status (2026-11-08):** The production schema is reconciled, local build and
-> database suites pass, hosted publishable-key verification passes 30/30, owner/staff/patron browser
-> journeys pass 3/3, and protected booking confirmation passes 1/1 against the fresh local artifact
-> connected to hosted Supabase. Vercel is the selected pilot host but no production Vercel deployment
-> has been verified; the former Netlify artifact is stale. See the
-> [pilot evidence](docs/evidence/2026-11-08_milestone-1-pilot-hardening.md)
-> and [release gates](docs/release-readiness.md).
+> **Verification status (2026-11-08):** Production migration history is current through
+> `20261108173000`; local build/database checks, a Vercel production-environment build, and a
+> rollback-only hosted RLS proof pass. The
+> latest six-test run against the configured Vercel URL returned 1 pass and 5 failures, including a
+> duplicate header sign-in label that differs from current source. Pilot launch remains blocked;
+> see the [recovery evidence](docs/evidence/2026-11-08_v1.4.0-rc.3-hosted-recovery.md) and
+> [release gates](docs/release-readiness.md).
 
 ## What is included
 
@@ -39,7 +39,7 @@ Copy `.env.example` to `.env.local` and provide `VITE_SUPABASE_URL` and `VITE_SU
 
 ## Current scope and limitations
 
-StitchFlow is still a staged production migration. Demo mode remains the default local surface. The Supabase-mode bundle excludes demo identities and the demo PIN, and production builds fail closed unless Supabase mode and valid project settings are configured. The booking UI uses protected booking RPCs, client appointment inserts are limited to own-tenant pending requests, and production schema parity was verified through `20261107220000`. Repository writes fail closed without an atelier; human-key mutations include tenant scope. Owner financial edits are audited locally by a new forward-only migration, whose production application remains pending. Tenant resolution remains client-side. Pilot identities and fitting fixtures exist; hosted role and protected booking journeys pass against the fresh local build, but no production Vercel deployment has been verified and the former Netlify artifact remains stale. Guest booking rate limits, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, and operational monitoring remain out of scope for the supervised pilot. See the [pilot operations runbook](docs/runbooks/pilot-operations.md), [deployment runbook](docs/runbooks/deployment.md), and [release gates](docs/release-readiness.md).
+StitchFlow is still a staged production migration. Demo mode remains the default local surface. The Supabase-mode bundle excludes demo identities and the demo PIN, and production builds fail closed unless Supabase mode and valid project settings are configured. The booking UI uses protected booking RPCs, client appointment inserts are limited to own-tenant pending requests, and production schema parity is current through `20261108173000`. Repository writes fail closed without an atelier; human-key mutations include tenant scope. Owner financial edits are audited by the applied forward-only migration. Tenant resolution remains client-side. Pilot identities and fitting fixtures exist; the configured Vercel URL currently fails hosted browser verification (1 pass/5 failures), the backup/restore rehearsal remains incomplete, and no live booking has been confirmed. Guest booking rate limits, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, and operational monitoring remain out of scope for the supervised pilot. See the [pilot operations runbook](docs/runbooks/pilot-operations.md), [deployment runbook](docs/runbooks/deployment.md), and [release gates](docs/release-readiness.md).
 ---
 
 > **Runtime guard enforcement**: All action boundaries (onboarding, feedback, order creation, lookbook publishing) now contain explicit fail‑closed checks that refuse unresolvable ateliers or missing authorization in production. This guarantees that a user cannot trigger unintended or unsafe writes.
@@ -81,29 +81,31 @@ scripts explicitly select the pilot configuration.
 
 ## Pilot Launch
 
-**Status: BLOCKED — not yet cleared for real pilot users.** A verified production deployment URL is
-not available. Do not use the former Netlify deployment; it points to a retired Supabase project.
-The repository owner must configure and publish the Vercel production project, apply and verify the
-pending financial-audit migration, run live role and booking checks, and complete the backup/restore
-rehearsal. See [`OWNER_ACTIONS.md`](OWNER_ACTIONS.md) and
-[`docs/release-readiness.md`](docs/release-readiness.md).
+**Status: BLOCKED — not yet cleared for real pilot users.** The configured production URL is
+[stitchflow-coral.vercel.app](https://stitchflow-coral.vercel.app), but hosted E2E found the old
+duplicate header sign-in label and failed four other hosted flows. Do not use this deployment for
+pilot operations until [issue #6](https://github.com/dmuhoro/StitchFlow/issues/6) is resolved. The
+financial-audit migration is applied and remote schema parity is current; the disposable restore
+rehearsal, refreshed deployment, and live journey verification remain open. See
+[`OWNER_ACTIONS.md`](OWNER_ACTIONS.md) and [`docs/release-readiness.md`](docs/release-readiness.md).
 
 After those gates pass, the atelier owner signs in through **Atelier sign in**, opens the director
 workspace, then uses **Fitting Queue** to select a pending request, check resource availability,
 hold the selected slot, and confirm the fitting. Employee and patron accounts should be tested
-against their own authorized workspaces only. Do not accept non-synthetic pilot data until the
-restore rehearsal and live tenant-isolation checks are recorded.
+against their own authorized workspaces only. Credentials must be provisioned and shared through
+the approved secret manager; never put passwords in this README, issues, or evidence files. Do not
+accept non-synthetic pilot data until the restore rehearsal and live tenant-isolation checks are
+recorded.
 
 ### Production deployment
 
 The app is a static Vite build. `npm run build` uses `vite.pilot.config.ts`, publishes `dist/`, and
 the postbuild hook verifies the artifact. Vercel's Production environment must set
 `VITE_DATA_MODE=supabase`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_PUBLISHABLE_KEY`; preview
-deployments use `VITE_DATA_MODE=demo`. The Vercel production context fails the build if it is
-misconfigured. The connected production schema was reconciled on 2026-11-08; three role and booking
-journeys and the hosted publishable-key RLS proof pass against the fresh local build. Vercel project
-setup, publication, and live journeys remain unverified; see the
-[pilot hardening evidence](docs/evidence/2026-11-08_milestone-1-pilot-hardening.md) and
+deployments use `VITE_DATA_MODE=demo`. The Vercel production context fails the build if it is misconfigured. Production schema parity is
+current through `20261108173000`; the latest hosted Playwright run returned 1 pass and 5 failures,
+while the rollback-only hosted RLS proof passed. See the
+[current recovery evidence](docs/evidence/2026-11-08_v1.4.0-rc.3-hosted-recovery.md) and
 [deployment runbook](docs/runbooks/deployment.md).
 
 ## Project map

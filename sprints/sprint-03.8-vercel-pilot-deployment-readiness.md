@@ -2,8 +2,8 @@
 
 **Date:** 2026-11-08
 **Milestone:** 1 — managed pilot for one boutique atelier
-**Status:** BLOCKED — code-side Vercel configuration and local checks are in place; owner project
-setup, production publication, live browser verification, and the backup/restore rehearsal remain.
+**Status:** BLOCKED — Vercel is configured and the migration is applied, but hosted E2E is 1/6,
+backup/restore was not run, and the branch push is blocked by missing GitHub workflow scope.
 
 ## Delivered in source
 
@@ -19,6 +19,8 @@ setup, production publication, live browser verification, and the backup/restore
   deliberately disabled; this is not hosted-flow evidence.
 - Added a forward-only order-financial audit migration and RLS regression proving that owners can
   inspect their edits while staff and patrons cannot read financial snapshots.
+- Applied `20261108173000_audit_order_financials.sql` to production on 2026-11-08; remote migration
+  list and dry run confirmed parity. The rollback-only hosted RLS proof passed.
 - Updated deployment, rollback, architecture, current-state, and release-readiness documentation.
 
 ## Evidence
@@ -28,18 +30,15 @@ for exact command results.
 
 ## Remaining before the pilot
 
-1. Owner reviews and applies `20261108173000_audit_order_financials.sql` to production, then runs the
-   hosted database verification for the financial audit and RLS boundary. A read-only audit on
-   2026-11-08 confirmed the migration is absent remotely; see issue #5.
-2. Owner links this repository to the Vercel project, chooses the production domain, configures
-   Production Supabase variables and Preview demo mode, and allowlists the final Supabase Auth URLs.
-3. Owner publishes the production build; engineering verifies the served bundle targets the active
-   Supabase project and contains no demo markers.
-4. Engineering runs owner, employee, patron, and protected booking journeys against the live
-   production URL with the provisioned test identities and synthetic fixture.
-5. Owner completes and records the disposable-project backup/restore rehearsal before accepting
-   non-synthetic pilot data.
-6. Re-run all gates, make concern-specific commits, and only then consider a release version/tag.
-7. Complete the backup/restore rehearsal and capture a synthetic live booking screenshot/video.
+1. Resolve the remote E2E/deployed-artifact mismatch in issue #6; current live suite returned
+   1 pass and 5 failures.
+2. Push the reviewed branch after GitHub OAuth receives the `workflow` scope required by the CI
+   workflow change, then publish a Vercel preview and rerun all six browser journeys.
+3. Complete and record a disposable-project backup/restore rehearsal. The first local Supabase
+   startup failed on Docker image TLS timeouts and default port conflicts; no production dump was
+   created.
+4. Capture a successful live booking screenshot only after the current source is deployed and the
+   live booking flow passes.
+5. Re-run all gates and make concern-specific commits before considering a version bump/tag.
 
 No production deployment, release tag, or production-ready sign-off is claimed by this sprint.

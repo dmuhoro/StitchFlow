@@ -1,5 +1,9 @@
 # 2026-11-08 — Vercel pilot deployment readiness
 
+> Historical checkpoint: this record predates the later application of migration `20261108173000`.
+> The subsequent state and hosted E2E result are recorded in
+> [`2026-11-08_v1.4.0-rc.3-hosted-recovery.md`](./2026-11-08_v1.4.0-rc.3-hosted-recovery.md).
+
 ## Command / Step
 
 - `node -e "JSON.parse(require('node:fs').readFileSync('vercel.json', 'utf8'))"`

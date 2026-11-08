@@ -3,16 +3,13 @@
 > What is true today. Aspirational work is labelled **ASPIRATIONAL** and must not be assumed.
 
 Last verified: 2026-11-08 (Sprint 3 booking workflow, insert boundary, deploy gate, hosted schema
-repair, and pilot hardening). The production schema and migration history were verified through
-`20261107220000` on 2026-11-08. A new forward-only financial-audit migration
-(`20261108173000`) now exists locally and is not yet applied to production. Six hosted identities
+repair, and pilot hardening). Production migration `20261108173000` was applied and verified by
+`CI=1 supabase migration list --remote` and a no-pending-migrations dry run. Six hosted identities
 exist across the supervised pilot and an isolation-only tenant.
-The read-only migration listing reconfirmed production at `20261107220000`; issue #5 tracks the
-pending financial-audit migration.
-The hosted RLS proof, owner/staff/patron journeys, and protected booking-confirmation journey
-pass against a fresh local production build. The owner selected Vercel for the pilot; Vercel project
-setup, production environment configuration, publish, and live browser verification are not yet
-verified. The former Netlify site still serves a bundle pointing to the retired Supabase project.
+The rollback-only hosted RLS proof and local database/RLS tests pass. However, the latest six-test
+Playwright run against Vercel returned 1 pass and 5 failures; the deployed site still exposes the
+old duplicate sign-in button while the current source uses “Enter Atelier”. A disposable backup
+restore, successful live booking, current Vercel preview, and production verification remain open.
 Payments and SSR are not implemented for this pilot.
 Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_sprint-0-audit.md).
 
@@ -63,23 +60,22 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
 | Confirmed fitting requires a protected booking; status sync and anonymous insert denial | **PASS** — local `npm run verify:db` |
 | Client cannot insert a confirmed or staff-assigned appointment | **PASS** — local `verify:db` (RLS 13–14, staff S7a–S7d) |
 | Production deploy rejects a demo-mode artifact | **PASS** — `CONTEXT=production` negative check; `postbuild` gate |
-| Production schema and migration history match the tracked chain | **PASS** — `supabase migration list --remote` matched; hosted proof passed |
+| Production schema and migration history match the tracked chain | **PASS** — `CI=1 supabase migration list --remote` and `CI=1 supabase db push --dry-run --remote` confirmed current through `20261108173000` |
 | Booking-store overlap exclusion and holds (new `bookings`) | **PASS** — local `verify:db` and CI run [42371377892](https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892) |
 | Seamless feedback persistence | PASS |
 | Lookbook item publication | PASS |
 | Order creation with missing atelier guard | PASS |
 | Keyed order, feedback and invitation mutations require the resolved atelier | **PASS locally** — `npm run test:unit` and `npm run verify:db`; the hosted duplicate-code SQL fixture is present but was not run against hosted SQL in this verification. The separate hosted role/RLS proof passes 30/30. |
-| Owner financial edits record actor/before/after, with financial snapshots hidden from staff and patrons | **PASS locally** — migration `20261108173000_audit_order_financials.sql` and RLS regression; production apply is pending. |
+| Owner financial edits record actor/before/after, with financial snapshots hidden from staff and patrons | **PASS locally; migration applied remotely** — local `npm run verify:db`; hosted rollback-only proof passed |
 
 Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-engine.md) and
 [`evidence/2026-11-08_v1.4.0-rc.1.md`](evidence/2026-11-08_v1.4.0-rc.1.md).
 
 ## Not shipped — do not assume
 
-- **IN PROGRESS / live deploy not verified** Hosted owner booking flow: availability, hold, confirm,
-  cancel, appointment status synchronization, and resource setup are wired. The protected
-  confirmation journey passes against the current local production bundle connected to hosted
-  Supabase; the live site has not been replaced and verified before pilot opening.
+- **BLOCKED / live deploy not verified** Owner booking flow is wired; local database booking tests
+  pass. The latest hosted booking-confirmation test timed out before slot selection, and no booking
+  was confirmed.
 - **ASPIRATIONAL** Guest booking via an edge function with per-IP/phone/tenant rate limits and a bot
   challenge (ADR-009 §8). Anonymous callers are explicitly denied execute on every booking RPC.
 - **ASPIRATIONAL** Resource capacity greater than one and `booking_slots` for group workshops.
@@ -103,23 +99,22 @@ Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-
   unrestricted self-service sign-up are not.
 - **Approved but not implemented** SSR, per-tenant metadata, sitemap, robots, OG tags or structured
   data (ADR-008). These are outside Milestone 1.
-- **IN PROGRESS / production migration pending** Owner financial edits now have an audit trigger and
-  owner-only snapshot visibility locally. Apply migration `20261108173000_audit_order_financials.sql`
-  to production and verify the hosted boundary before pilot opening.
-- **IN PROGRESS / live deploy not verified** Three-identity and booking-confirmation browser tests
-  against the production site. All three roles and protected booking confirmation pass against a
-  fresh local artifact connected to hosted Supabase; the former Netlify artifact remains stale and
-  no Vercel deployment has been verified.
+- **DONE / remote schema current** Financial audit migration `20261108173000` is applied; remote list
+  and dry run are current. Trigger-specific assertions pass locally; hosted rollback-only RLS proof
+  passed.
+- **BLOCKED / hosted E2E** Against the configured Vercel URL, one employee role test passed and five
+  tests failed, including the duplicate header label, owner and patron assertions, invitation, and
+  booking. See issue #6 and the latest recovery evidence.
 
 ## Known limitations
 
 | Limitation | Impact | Owner |
 |------------|--------|-------|
 | Guest self-booking lacks rate limits and a bot challenge | Direct anon inserts and the visitor form are disabled pending the edge boundary | Engineering — before opening public booking |
-| Booking UI and appointment-status guard pass the hosted journey against a fresh local artifact; live-site journey is unverified | Do not open the pilot until the current artifact is published and verified on Vercel | Repository owner — link project, configure env, publish |
+| Booking UI and appointment-status guard pass local database proof; live booking journey is unverified | Do not open the pilot until the current artifact is published and verified on Vercel | Repository owner — resolve issue #6; engineering reruns hosted flow |
 | No owner/employee `INSERT` policy on `appointments`; staff booking uses `hold_slot` instead | Legacy staff-screen work cannot write `appointments` directly | Accepted boundary; do not write legacy appointment rows |
 | `booking_resources.capacity` is constrained to `1`; no `booking_slots` | Group workshops cannot be modelled yet | Engineering — Sprint 3 follow-up |
-| Live production site has not passed role or booking browser journeys | Three roles and booking confirmation pass against the fresh local artifact/current hosted Supabase; old Netlify bundle still targets the retired project and Vercel is not yet published | Repository owner — link Vercel, configure env, publish; engineering reruns journeys |
+| Live production site has not passed role or booking browser journeys | Latest remote run was 1/6; deployed header label differs from current source | Repository owner — authorize push; engineering publishes and reruns the reviewed build |
 | `idempotency_keys` retains the original hold token to make replay possible | A database reader could recover a live token for its short hold window; client roles are denied by RLS | Engineering — Security review |
 | No scheduled expiry sweeper outside booking transactions | An abandoned hold can block a slot until the next hold/confirm/reschedule on that resource | Engineering — Operations |
 | Tenant is chosen on the client; public path defaults to the Nairobi tenant | Any URL shows the default atelier; no slug/custom domain | Engineering — Sprint 2 |
@@ -130,7 +125,7 @@ Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-
 | Playwright invite flow is present but hosted credentials are not stored in the repository | Live browser proof requires a deliberate local/CI secret setup | Repository owner — Sprint 1 |
 | Production has six hosted identities across pilot and isolation-only tenants | Local fresh-artifact role journeys and hosted verifier pass; the former Netlify bundle embeds the retired project | Repository owner — publish Vercel artifact and verify |
 | Vercel production project is not yet linked or published | `vercel.json` and the postbuild `VERCEL_ENV=production` gate are in source; no live update can be verified until owner setup and publishing succeeds | Repository owner — connect project, configure env/domain/Auth URLs, publish |
-| Financial edit audit migration is not applied remotely | Local migration records before/after amounts and actor; the audit feed hides those rows from staff and patrons | Repository owner — review and apply `20261108173000_audit_order_financials.sql`, then run hosted verification |
+| Financial edit audit migration is applied remotely | Local trigger/RLS assertions pass; remote migration chain is current; hosted rollback-only proof passed | Engineering — retain as release evidence |
 
 ## Decisions awaiting approval
 

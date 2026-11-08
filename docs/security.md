@@ -85,16 +85,15 @@ to expose an RPC surface.
 | Demo identities, PIN `1234` and credential cards in the Supabase-mode bundle | **P0** | Source aliases exclude demo modules; `postbuild` `verify:build` rejects demo strings, and a production deploy context fails unless `VITE_DATA_MODE=supabase` with real Supabase values. CI proves the gate rejects a demo artifact. |
 | Legacy appointment requests can overlap as requested times | **Not a booking** | Pending rows are proposals only. Direct anonymous inserts are revoked; staff confirmation requires a protected booking and resource exclusion. Production carries the matched booking/insert migrations. |
 | A client could insert a `confirmed` appointment without a protected booking | **P1 — closed** | The client insert policy allows only an own-tenant `pending` request with no assigned tailor; the update guard still applies. RLS tests 13–14, staff S7. |
-| Live-site booking confirmation has not been exercised in a browser | **Pilot blocker** | UI calls availability, hold, confirm and cancel RPCs; local artifact journey against hosted Supabase passes. Run the journey against the live Vercel deployment after publishing. |
+| Live-site booking confirmation has not been exercised successfully in a browser | **Pilot blocker** | The latest Vercel E2E booking test timed out before slot selection; no booking was confirmed. Resolve the deployed UI mismatch and repeat using a synthetic fixture. |
 | `idempotency_keys` retains the original hold token for replay | Medium | Client roles are denied by RLS; only definer RPCs read it. Short hold window. |
 | No owner/employee `INSERT` policy on `appointments` | Intentional boundary | Staff booking belongs to the protected `hold_slot` workflow, not legacy appointment insertion. |
 | Guest self-booking has no rate limit or bot challenge | Medium | Direct anonymous writes are disabled in the migration and live visitor UI; implement the edge boundary before reopening. |
-| Financial edit audit migration not yet applied to production | **Pilot blocker** | `20261108173000_audit_order_financials.sql` records actor and before/after values; RLS tests require staff/patrons to see none of those snapshots. Apply and verify remotely before pilot use. |
+| Financial edit audit migration applied; live journey remains blocked | **Reduced risk / verify live use** | Remote migration parity is current through `20261108173000`; rollback-only hosted RLS proof and local actor/before/after assertions pass. |
 
-Production schema parity was verified on 2026-11-08 through the then-current chain. The new
-financial-audit migration is not yet applied remotely. Six hosted identities and synthetic fixtures
-exist; local artifact journeys against hosted Supabase pass, but the live Vercel site has not been
-published or verified.
+Production schema parity was verified on 2026-11-08 through `20261108173000`. Six hosted identities
+and synthetic fixtures exist. The hosted rollback-only RLS proof passed, but the latest live Vercel
+Playwright run returned 1 pass and 5 failures; the live booking flow has not completed.
 
 ## How to verify
 
