@@ -16,6 +16,7 @@ except `order_progress_notes`, which derives tenancy from `orders`.
 | `lookbook_items` | `id` | `atelier_id` | public published; staff all | staff insert/update; owner delete |
 | `orders` | `id` | `atelier_id` | owner; assigned employee; own patron | owner; assigned employee update |
 | `order_financials` | `order_id` | `atelier_id` | owner; own patron | owner |
+| `audit_log` | `id` | `atelier_id` | members: non-financial; owner-only financial snapshots | trigger only |
 | `order_progress_notes` | `id` | via `order_id` | owner; assigned employee; own patron | owner; assigned employee |
 | `measurements` | `id` | `atelier_id` | owner; assigned employee; own patron | owner; assigned employee |
 | `appointments` | `id` | `atelier_id` | owner; assigned employee; own patron | anon denied; client may insert own pending request only; owner/assigned employee update with booking-status guard |
@@ -45,6 +46,8 @@ except `order_progress_notes`, which derives tenancy from `orders`.
    `reschedule_booking` is not supported. `bookings` has no direct write policy.
 10. `booking_resources.capacity` is constrained to `1`; group capacity needs `booking_slots`, which
     does not exist yet. A resource with no availability rule is not bookable (fail closed).
+11. Owner financial changes record actor and before/after values. Financial audit rows are owner-only;
+    staff and patrons cannot read their amounts through `audit_log`.
 
 ## Writers
 
@@ -55,6 +58,7 @@ except `order_progress_notes`, which derives tenancy from `orders`.
 | `appointments` | `persistAppointment` for authenticated requests; booking triggers synchronize protected confirmation/cancellation |
 | `bookings` | `hold_slot`, `confirm_booking`, `cancel_booking`, `reschedule_booking` (RPCs; no direct client write) |
 | `feedback` | `persistFeedback`, `persistFeedbackStatus` |
+| `audit_log` | database triggers; no direct client writes |
 | `lookbook_items` | `persistLookbookItem` |
 | `ateliers`, `members` | `createAtelierForCurrentUser` (`create_atelier_with_owner` RPC), `persistAtelierSettings` |
 | `invitations` | `createInvitation`, `revokeInvitation` (tenant-scoped) |

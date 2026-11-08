@@ -99,6 +99,26 @@ within an atelier, so duplicate codes across tenants are an intentional regressi
 | `updated_at` | timestamptz | |
 
 **Access:** owner read/write; patron read own order only (`client_owns_order`); artisan never.
+Owner inserts, updates, and deletes are recorded in `audit_log` with actor and before/after financial
+values. Financial audit rows are visible only to owners; staff and patrons cannot retrieve those
+values through the broader audit feed.
+
+### `audit_log`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid pk | |
+| `atelier_id` | uuid | tenant |
+| `actor_user_id` | uuid | nullable for system/service writes |
+| `table_name` | text | audited table |
+| `record_id` | uuid | affected record key; `order_id` for financials |
+| `action` | text | `insert`, `update`, or `delete` |
+| `before_data`, `after_data` | jsonb | change snapshots; financial snapshots contain only order id, deposit, balance, and currency |
+| `created_at` | timestamptz | UTC |
+
+**Access:** active atelier members may read non-financial audit rows in their atelier. Only owners
+may read `order_financials` audit rows. Clients cannot insert, update, or delete audit rows; trigger
+functions write them.
 
 ### `order_progress_notes`
 
@@ -298,6 +318,7 @@ Missing tenant resolution and rows outside the selected atelier fail closed.
 | `get_availability(...)` | security definer, RPC | bounded tenant-scoped availability projection |
 | `guard_appointment_booking_status()` | trigger | blocks request confirmation without a protected booking |
 | `sync_appointment_booking_status()` | trigger | syncs requests after linked booking confirmation/cancellation |
+| `write_financials_audit_log()` | trigger | records owner financial changes without granting staff or patrons access to snapshots |
 | `hold_slot(...)` | security definer, RPC | tenant check, availability/blackout, expiry sweep, exclusion-backed hold, idempotent replay |
 | `confirm_booking(text)` | security definer, RPC | token hash lookup, tenant check, `held` → `confirmed` |
 | `cancel_booking(uuid)` | security definer, RPC | tenant/role check, idempotent `cancelled` |
@@ -344,6 +365,7 @@ transaction, and is callable only by `authenticated`. The retired
 20261107202000_add_source_to_appointments.sql
 20261107210000_guard_appointment_booking_status.sql
 20261107220000_restrict_client_appointment_insert.sql
+20261108173000_audit_order_financials.sql
 ```
 
 `rls_final` is authoritative for policies; `currency_alignment` widens the currency contract to
@@ -354,7 +376,8 @@ resource/booking tables and RPCs and does not alter `appointments`.
 ## Verification
 
 `npm run verify:db` applies the chain to an empty `postgres:16`, loads `supabase/seed.sql`, runs the
-14-scenario `supabase/tests/rls_isolation_test.sql`, the hosted/local E2E suite, the booking-engine
+14-scenario `supabase/tests/rls_isolation_test.sql`, including owner audit capture and employee/patron
+financial-audit denial, the hosted/local E2E suite, the booking-engine
 RLS/RPC suite, and a 200-attempt / 50-concurrent exclusion proof, then asserts RLS on every public
 table.
 

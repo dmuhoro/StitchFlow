@@ -42,6 +42,8 @@ to expose an RPC surface.
 7. A patron reads the row for their own order only.
 8. An artisan never reads `order_financials`.
 9. A patron cannot write a balance.
+10. Every `order_financials` insert, update, or delete is recorded with its actor and before/after
+    values. Only atelier owners may read those financial audit rows.
 
 ### Anonymous perimeter
 
@@ -81,16 +83,18 @@ to expose an RPC surface.
 | Risk | Severity | Status / mitigation |
 |------|----------|--------------------|
 | Demo identities, PIN `1234` and credential cards in the Supabase-mode bundle | **P0** | Source aliases exclude demo modules; `postbuild` `verify:build` rejects demo strings, and a production deploy context fails unless `VITE_DATA_MODE=supabase` with real Supabase values. CI proves the gate rejects a demo artifact. |
-| Legacy appointment requests can overlap as requested times | **Not a booking** | Pending rows are proposals only. Direct anonymous inserts are revoked; staff confirmation requires a protected booking and resource exclusion. Local migration proof passes; production has not received the migration. |
+| Legacy appointment requests can overlap as requested times | **Not a booking** | Pending rows are proposals only. Direct anonymous inserts are revoked; staff confirmation requires a protected booking and resource exclusion. Production carries the matched booking/insert migrations. |
 | A client could insert a `confirmed` appointment without a protected booking | **P1 — closed** | The client insert policy allows only an own-tenant `pending` request with no assigned tailor; the update guard still applies. RLS tests 13–14, staff S7. |
-| Hosted booking confirmation has not been exercised in a browser | **Pilot blocker** | UI now calls availability, hold, confirm and cancel RPCs; run the opt-in hosted E2E with the owner fixture after migration verification. |
+| Live-site booking confirmation has not been exercised in a browser | **Pilot blocker** | UI calls availability, hold, confirm and cancel RPCs; local artifact journey against hosted Supabase passes. Run the journey against the live Vercel deployment after publishing. |
 | `idempotency_keys` retains the original hold token for replay | Medium | Client roles are denied by RLS; only definer RPCs read it. Short hold window. |
-| No owner/employee `INSERT` policy on `appointments` | P1 | Staff cannot create a legacy fitting. Staff booking belongs to `hold_slot`. |
+| No owner/employee `INSERT` policy on `appointments` | Intentional boundary | Staff booking belongs to the protected `hold_slot` workflow, not legacy appointment insertion. |
 | Guest self-booking has no rate limit or bot challenge | Medium | Direct anonymous writes are disabled in the migration and live visitor UI; implement the edge boundary before reopening. |
-| No audit trail for owner money edits | Medium | Booking transitions are audited; money edits still are not. Sprint 1 |
-| Hosted project access unverified | Resolved 2026-11-08 | Schema and migration history inspected and repaired through the Management API; no password stored |
+| Financial edit audit migration not yet applied to production | **Pilot blocker** | `20261108173000_audit_order_financials.sql` records actor and before/after values; RLS tests require staff/patrons to see none of those snapshots. Apply and verify remotely before pilot use. |
 
-Production now has the complete tracked schema and a matched migration history (2026-11-08). The live booking pilot still needs hosted browser proof, which is blocked because production has no accounts yet; provision an owner identity (or deliberately seed pilot tenants) before running the opt-in journeys.
+Production schema parity was verified on 2026-11-08 through the then-current chain. The new
+financial-audit migration is not yet applied remotely. Six hosted identities and synthetic fixtures
+exist; local artifact journeys against hosted Supabase pass, but the live Vercel site has not been
+published or verified.
 
 ## How to verify
 
