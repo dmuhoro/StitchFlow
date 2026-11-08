@@ -35,7 +35,7 @@ for (const fixture of roleFixtures) {
     test.skip(!fixture.email || !fixture.password, `Set STITCHFLOW_E2E_${fixture.name.toUpperCase()}_EMAIL and _PASSWORD for the hosted ${fixture.name} flow.`);
 
     await page.goto('/');
-    await page.getByRole('button', { name: /Atelier sign in/i }).click();
+    await page.getByRole('button', { name: 'Atelier sign in', exact: true }).click();
     await page.getByLabel('Email').fill(fixture.email!);
     const passwordInput = page.getByLabel('Password');
     await passwordInput.fill(fixture.password!);

@@ -12,7 +12,7 @@ test.describe('protected fitting confirmation', () => {
 
   test('uses availability, holds a resource, confirms it, and shows the persisted booking', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: /Atelier sign in/i }).click();
+    await page.getByRole('button', { name: 'Atelier sign in', exact: true }).click();
     await page.getByLabel('Email').fill(email!);
     const passwordInput = page.getByLabel('Password');
     await passwordInput.fill(password!);
