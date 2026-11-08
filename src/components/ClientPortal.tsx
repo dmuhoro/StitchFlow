@@ -22,7 +22,7 @@ import {
   Layers
 } from 'lucide-react';
 import { useStitchFlow } from '../context/StitchFlowContext';
-import { ProductionStatus } from '../types';
+import { Appointment, ProductionStatus } from '../types';
 import { AccessGate } from './AccessGate';
 
 export const ClientPortal: React.FC = () => {
@@ -32,6 +32,7 @@ export const ClientPortal: React.FC = () => {
     setActiveClientId, 
     profiles, 
     orders, 
+    appointments,
     measurements, 
     feedbacks, 
     submitFeedback, 
@@ -61,6 +62,7 @@ export const ClientPortal: React.FC = () => {
   const currentClient = profiles.find(p => p.id === activeClientId) || clients[0];
 
   const clientOrders = orders.filter(o => o.client_id === activeClientId);
+  const clientAppointments = appointments.filter(appointment => appointment.client_id === currentClient.id);
   const clientMeasurement = measurements.find(m => m.client_id === activeClientId);
 
   const referralCode = `AFRICA-${currentClient.full_name.split(' ')[0].toUpperCase()}-20`;
@@ -302,7 +304,49 @@ export const ClientPortal: React.FC = () => {
         )}
       </div>
 
-      {/* 3. DIGITAL AFRICAN MEASUREMENT CARD */}
+      {/* 3. PATRON'S OWN FITTING REQUESTS */}
+      <section
+        aria-labelledby="patron-fittings-heading"
+        className="bg-white dark:bg-[#1C1917] p-6 rounded-3xl border border-[#E5DACB] dark:border-[#332C27] shadow-sm space-y-4"
+      >
+        <div className="flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-[#D4A347]" />
+          <h2 id="patron-fittings-heading" className="font-display text-xl font-bold text-[#161311] dark:text-[#F5EFE6]">
+            My Fitting Requests
+          </h2>
+        </div>
+        {clientAppointments.length === 0 ? (
+          <p className="text-sm text-[#6A5D52] dark:text-[#B8ABA0]">
+            No fitting requests are linked to this patron account.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {clientAppointments.map((appointment: Appointment) => (
+              <article
+                key={appointment.id}
+                className="rounded-2xl border border-[#E5DACB] dark:border-[#332C27] bg-[#FAF6F0] dark:bg-[#24201D] p-4 space-y-2"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-semibold text-sm text-[#161311] dark:text-[#F5EFE6]">
+                    {appointment.cultural_occasion || appointment.service_type.replaceAll('_', ' ')}
+                  </h3>
+                  <span className="text-[10px] uppercase font-bold text-[#8C6D2D] dark:text-[#D4A347]">
+                    {appointment.status}
+                  </span>
+                </div>
+                <p className="text-xs text-[#6A5D52] dark:text-[#B8ABA0]">
+                  {new Date(appointment.slot_datetime).toLocaleString()}
+                </p>
+                {appointment.notes && (
+                  <p className="text-xs text-[#6A5D52] dark:text-[#B8ABA0]">{appointment.notes}</p>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* 4. DIGITAL AFRICAN MEASUREMENT CARD */}
       {clientMeasurement && (
         <div className="bg-white dark:bg-[#1C1917] p-6 rounded-3xl border border-[#E5DACB] dark:border-[#332C27] shadow-sm space-y-4">
           <div className="flex items-center justify-between">
@@ -346,7 +390,7 @@ export const ClientPortal: React.FC = () => {
         </div>
       )}
 
-      {/* 4. POST-DELIVERY CEREMONIAL FEEDBACK */}
+      {/* 5. POST-DELIVERY CEREMONIAL FEEDBACK */}
       <div className="bg-white dark:bg-[#1C1917] p-6 rounded-3xl border border-[#E5DACB] dark:border-[#332C27] shadow-sm space-y-4">
         <div>
           <div className="flex items-center gap-2">

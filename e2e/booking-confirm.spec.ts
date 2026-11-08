@@ -2,27 +2,33 @@ import { test, expect } from '@playwright/test';
 
 const email = process.env.STITCHFLOW_E2E_OWNER_EMAIL;
 const password = process.env.STITCHFLOW_E2E_OWNER_PASSWORD;
-const requestName = process.env.STITCHFLOW_E2E_BOOKING_REQUEST_NAME;
 const resourceName = process.env.STITCHFLOW_E2E_BOOKING_RESOURCE_NAME;
 const bookingDate = process.env.STITCHFLOW_E2E_BOOKING_DATE;
 const bookingTime = process.env.STITCHFLOW_E2E_BOOKING_TIME;
-const hasFixture = Boolean(email && password && requestName && resourceName && bookingDate && bookingTime);
+const hasFixture = Boolean(email && password && resourceName && bookingDate && bookingTime);
 
 test.describe('protected fitting confirmation', () => {
   test.skip(!hasFixture, 'Set the owner account and a unique pending request/resource/date/time fixture to run this live flow.');
 
   test('uses availability, holds a resource, confirms it, and shows the persisted booking', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Atelier Sign In' }).click();
+    await page.getByRole('button', { name: /Atelier sign in/i }).click();
     await page.getByLabel('Email').fill(email!);
-    await page.getByLabel('Password').fill(password!);
-    await page.getByRole('button', { name: 'Sign In' }).click();
+    const passwordInput = page.getByLabel('Password');
+    await passwordInput.fill(password!);
+    await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+    if (await passwordInput.count()) {
+      await passwordInput.fill('');
+      await page.getByLabel('Email').fill('');
+    }
 
     await expect(page.getByText('Atelier Director & Founder Suite')).toBeVisible({ timeout: 15000 });
     await page.getByRole('button', { name: /Fitting Queue/ }).click();
     await expect(page.getByText('Protected fitting bookings')).toBeVisible({ timeout: 15000 });
 
-    await page.getByRole('button', { name: new RegExp(requestName!, 'i') }).click();
+    const request = page.getByRole('button').filter({ hasText: 'Ruracio bridal basted fitting' });
+    await expect(request).toHaveCount(1);
+    await request.click();
     await page.getByLabel('Fitting resource').selectOption({ label: resourceName! });
     await page.getByLabel(/Date \(/).fill(bookingDate!);
     const slot = page.getByRole('button', { name: bookingTime!, exact: true });

@@ -15,8 +15,17 @@ test.describe('invitation-code acceptance', () => {
 
     await expect(page.getByRole('heading', { name: 'Accept Invitation' })).toBeVisible();
     await page.getByLabel('Email').fill(email!);
-    await page.getByLabel('Password').fill(password!);
+    // The password field is revealed by the explicit "I have a password" toggle;
+    // the screen defaults to a magic link so an invitee cannot be phished into
+    // typing a password they do not have.
+    await page.getByRole('button', { name: 'I have a password' }).click();
+    const passwordInput = page.getByLabel('Password');
+    await passwordInput.fill(password!);
     await page.getByRole('button', { name: 'Sign in and continue' }).click();
+    if (await passwordInput.count()) {
+      await passwordInput.fill('');
+      await page.getByLabel('Email').fill('');
+    }
 
     await expect(page.getByText(new RegExp(`Signed in as\\s+${email!.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}`, 'i'))).toBeVisible({ timeout: 15000 });
     await page.getByRole('button', { name: 'Redeem invitation' }).click();

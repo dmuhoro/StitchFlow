@@ -27,6 +27,7 @@
     "noEmit": true
   },
   "exclude": [
-    "dist"
+    "dist",
+    "vite.config.ts"
   ]
 }

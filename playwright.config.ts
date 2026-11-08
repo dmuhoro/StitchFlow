@@ -11,8 +11,8 @@ export default defineConfig({
   reporter: process.env.CI ? 'github' : 'list',
   use: {
     baseURL,
-    trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
+    trace: usesLocalPreview ? 'retain-on-failure' : 'off',
+    screenshot: usesLocalPreview ? 'only-on-failure' : 'off',
   },
   webServer: usesLocalPreview
     ? {

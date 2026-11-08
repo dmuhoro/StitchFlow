@@ -23,8 +23,10 @@ publishable key. Authorization is entirely Postgres Row Level Security.
 └──────────────────────────────────────────────────────────────┘
 ```
 
-Static hosting is Netlify (`netlify.toml`): `npm run build` → `dist/`, SPA fallback to
-`index.html`, and security headers.
+Static hosting is Netlify (`netlify.toml`): `npm run build` uses the Milestone 1 SPA configuration
+(`vite.pilot.config.ts`) to produce `dist/`, with an SPA fallback to `index.html` and security
+headers. The root `vite.config.ts` contains an unshipped SSR experiment and is not used by the
+supported `dev`, `build`, or `preview` scripts.
 
 ## 2. Modules
 
@@ -38,6 +40,7 @@ Static hosting is Netlify (`netlify.toml`): `npm run build` → `dist/`, SPA fal
 | `src/lib/atelier-repository.ts` | All reads and writes; row → domain mapping |
 | `src/lib/storage.ts` | Namespaced `localStorage` for demo mode |
 | `src/data/initialData.ts` | Demo tenancy and records |
+| `vite.pilot.config.ts` | Supported static SPA build for the managed pilot |
 | `src/types.ts` | Domain contracts |
 | `src/assets/images/` | Bundled couture imagery |
 
@@ -92,6 +95,7 @@ See [`db-contracts.md`](db-contracts.md) for table contracts and
 | Check | Command | What it proves |
 |-------|---------|----------------|
 | Types | `npm run lint` | `tsc --noEmit` is clean |
+| Repository writes | `npm run test:unit` | Tenant resolution fails closed; duplicate human keys cannot update another atelier |
 | Bundle | `npm run build` | Production build succeeds |
 | Artifacts | `npm run verify:build` | No literal source paths or secrets; Supabase-mode build also rejects known demo identities, PIN, credential cards, tenant slugs and demo copy |
 | Docs | `npm run check:docs` | Every relative Markdown link resolves |
@@ -100,7 +104,8 @@ See [`db-contracts.md`](db-contracts.md) for table contracts and
 
 ## 7. Deployment
 
-Netlify builds from `main`. Required environment: `VITE_SUPABASE_URL`,
+Netlify builds from `main` using `npm run build` and `vite.pilot.config.ts`. Required environment:
+`VITE_SUPABASE_URL`,
 `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_DATA_MODE=supabase`. The deploy is authorized by the
 repository owner; the agent must never request a token in chat. See
 [`runbooks/deployment.md`](runbooks/deployment.md).

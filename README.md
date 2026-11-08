@@ -11,16 +11,16 @@
 
 StitchFlow is a browser-based product prototype for African bespoke ateliers creating Grand Agbadas, Senator suits, Kitenge bridalwear, Kanzus, and other ceremonial garments. It brings the lookbook, fitting requests, production stages, culturally relevant measurement cards, artisan workbench, and patron updates into one warm, mobile-friendly experience.
 
-> **Verification status (2026-11-08):** `v1.4.0-rc.1` records the locally verified booking
-> workflow, booking status guards, and production bundle gate. The local suite passes 14 RLS
-> scenarios, 15 SQL E2E scenarios, booking tests, staff tests, and the 200-attempt concurrency
-> proof. The hosted project still needs migration-history reconciliation and hosted browser role
-> flows before live booking. See the [release evidence](docs/evidence/2026-11-08_v1.4.0-rc.1.md)
+> **Verification status (2026-11-08):** The production schema is reconciled, local build and
+> database suites pass, hosted publishable-key verification passes 30/30, owner/staff/patron browser
+> journeys pass 3/3, and protected booking confirmation passes 1/1 against the fresh local artifact
+> connected to hosted Supabase. The live Netlify artifact is still stale because publishing is
+> blocked on account credits. See the [pilot evidence](docs/evidence/2026-11-08_milestone-1-pilot-hardening.md)
 > and [release gates](docs/release-readiness.md).
 
 ## What is included
 
-The demo includes a cultural lookbook, a four-step fitting-request flow, an atelier director view, an artisan workbench, a patron portal, namespaced browser persistence, system/light/dark themes, KES/USD display formatting, mobile-friendly touch targets, and WhatsApp click-to-chat handoffs. Garment-specific concepts such as Agbada wingspan, Fila cap circumference, Sokoto taper, Kitenge print alignment, Kanzu robe drop, textile provenance, and posture/drape notes remain explicit in the product language and design briefs.
+The product includes a cultural lookbook, a fitting-request flow, an atelier director view, an artisan workbench, a patron portal with the patron's own fitting requests, namespaced browser persistence, system/light/dark themes, KES/USD display formatting, mobile-friendly touch targets, and WhatsApp click-to-chat handoffs. Garment-specific concepts such as Agbada wingspan, Fila cap circumference, Sokoto taper, Kitenge print alignment, Kanzu robe drop, textile provenance, and posture/drape notes remain explicit in the product language and design briefs.
 
 ## Demo access
 
@@ -38,7 +38,7 @@ Copy `.env.example` to `.env.local` and provide `VITE_SUPABASE_URL` and `VITE_SU
 
 ## Current scope and limitations
 
-StitchFlow is still a staged production migration. Demo mode remains the default local surface. The Supabase-mode bundle excludes demo identities and the demo PIN, and a production deploy now fails closed if it is built in demo mode. The booking UI uses the protected hold/confirm/cancel RPCs, client appointment inserts are limited to own-tenant pending requests, and the production project now carries the full tracked schema with a matched migration history. Tenant resolution is still client-side, order writes locate rows by `order_code` alone, and owner money-edit audit coverage is incomplete. Hosted browser role journeys still need provisioned identities; guest booking rate limits, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, and operational monitoring remain to be integrated and verified. Findings and priorities remain in the [Sprint 0 audit](docs/audit/2026-11-05_sprint-0-audit.md).
+StitchFlow is still a staged production migration. Demo mode remains the default local surface. The Supabase-mode bundle excludes demo identities and the demo PIN, and a production deploy now fails closed if built in demo mode. The booking UI uses protected booking RPCs, client appointment inserts are limited to own-tenant pending requests, and the production project carries the full tracked schema with a matched migration history. Repository writes fail closed without an atelier; human-key mutations include tenant scope. Tenant resolution remains client-side, and owner money-edit audit coverage is incomplete. Pilot identities and fitting fixtures exist; hosted role and protected booking journeys pass against the fresh local build, but the live Netlify artifact remains stale and publishing is blocked by account credits. Guest booking rate limits, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, and operational monitoring remain out of scope for the supervised pilot. See the [pilot operations runbook](docs/runbooks/pilot-operations.md), [deployment runbook](docs/runbooks/deployment.md), and [release gates](docs/release-readiness.md).
 ---
 
 > **Runtime guard enforcement**: All action boundaries (onboarding, feedback, order creation, lookbook publishing) now contain explicit fail‑closed checks that refuse unresolvable ateliers or missing authorization in production. This guarantees that a user cannot trigger unintended or unsafe writes.
@@ -62,6 +62,7 @@ Open [http://localhost:3000](http://localhost:3000). The repository includes an 
 ```bash
 npm ci                 # Reproducible install from package-lock.json
 npm run lint           # TypeScript validation
+npm run test:unit      # Repository write-boundary regressions
 npm run check:docs     # Relative Markdown link check
 npm run build          # Production bundle
 npm run verify:build   # Artifact assertions (paths and placeholders)
@@ -72,9 +73,20 @@ npm run audit          # Dependency vulnerability check
 
 `verify:build` runs as `postbuild` on every build. In a production deploy context it requires `VITE_DATA_MODE=supabase` with configured, non-placeholder Supabase values and rejects demo identities, the demo PIN, credential cards and demo slugs; CI proves the gate rejects a demo artifact.
 
+The supported `dev`, `build`, and `preview` scripts use `vite.pilot.config.ts`, a static SPA
+configuration for Milestone 1. The root `vite.config.ts` is an unshipped SSR experiment and is not
+used by these scripts.
+
 ### Production deployment
 
-The app is a static Vite build. `npm run build` publishes `dist/`, and `postbuild` verifies the artifact. A production deploy must set `VITE_DATA_MODE=supabase`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_PUBLISHABLE_KEY`; `netlify.toml` sets the production context to Supabase mode, and a demo-mode production build fails the gate. Use a deploy preview for a demo walkthrough. The connected production schema was reconciled and brought up to date on 2026-11-08; see the [hosted repair evidence](docs/evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md). Configure SPA fallback routing if application routes are added later.
+The app is a static Vite build. `npm run build` uses `vite.pilot.config.ts`, publishes `dist/`, and
+the postbuild hook verifies the artifact. A production deploy must set `VITE_DATA_MODE=supabase`,
+`VITE_SUPABASE_URL`, and `VITE_SUPABASE_PUBLISHABLE_KEY`; `netlify.toml` sets the production
+context to Supabase mode, and a demo-mode production build fails the gate. Use a deploy preview for
+a demo walkthrough. The connected production schema was reconciled on 2026-11-08; three role
+role and booking journeys and the hosted publishable-key RLS proof now pass against the fresh local build. The live
+Netlify site still needs owner-authorized publishing; see the [pilot hardening evidence](docs/evidence/2026-11-08_milestone-1-pilot-hardening.md)
+and [deployment runbook](docs/runbooks/deployment.md).
 
 ## Project map
 

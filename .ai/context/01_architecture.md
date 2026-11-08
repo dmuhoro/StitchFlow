@@ -5,7 +5,9 @@
 ## Stack
 
 - **UI:** React 19 + TypeScript, single-page application.
-- **Build:** Vite 8 (`@vitejs/plugin-react`), Tailwind CSS 4 through `@tailwindcss/vite`.
+- **Build:** Static Vite 8 SPA via `vite.pilot.config.ts` (`@vitejs/plugin-react`), Tailwind CSS 4
+  through `@tailwindcss/vite`. The root `vite.config.ts` SSR experiment is not used by supported app
+  scripts.
 - **Icons:** `lucide-react`.
 - **Backend:** Supabase Postgres + Auth + PostgREST, called from the browser with the publishable key.
 - **Data access:** raw `@supabase/supabase-js` queries in `src/lib/atelier-repository.ts`. No ORM.
@@ -55,7 +57,7 @@ persistence guarantee.
 ## Build and deploy
 
 - `npm run lint` → `tsc --noEmit`.
-- `npm run build` → `dist/`.
+- `npm run build` → `dist/` using the static pilot config.
 - `npm run verify:db` → disposable `postgres:16` migration chain + RLS suite + booking RPC suite +
   200-attempt concurrency proof.
 - Netlify publishes `dist/` with an SPA fallback and security headers.

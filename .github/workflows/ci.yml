@@ -32,6 +32,9 @@ jobs:
       - name: Types
         run: npm run lint
 
+      - name: Repository write-boundary tests
+        run: npm run test:unit
+
       - name: Documentation links
         run: npm run check:docs
 

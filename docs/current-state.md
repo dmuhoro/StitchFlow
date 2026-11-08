@@ -2,10 +2,13 @@
 
 > What is true today. Aspirational work is labelled **ASPIRATIONAL** and must not be assumed.
 
-Last verified: 2026-11-08 (Sprint 3 booking workflow, insert boundary, deploy gate, and hosted schema
-repair). Booking staff workflow is wired and locally verified; the production project now has the
-full tracked schema and a matched migration history. Hosted browser role flows remain blocked
-because production has no accounts yet. Payments and SSR remain explicitly incomplete.
+Last verified: 2026-11-08 (Sprint 3 booking workflow, insert boundary, deploy gate, hosted schema
+repair, and pilot hardening). The production project has the full tracked schema and a matched
+migration history. Six hosted identities exist across the supervised pilot and an isolation-only
+tenant. The hosted RLS proof, owner/staff/patron journeys, and protected booking-confirmation journey
+pass against a fresh local production build. The live Netlify site still serves a bundle pointing to
+the retired Supabase project, and publish remains blocked on account credits. Payments and SSR remain
+explicitly incomplete.
 Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_sprint-0-audit.md).
 
 ## Shipped and usable
@@ -32,7 +35,9 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
   update-only status guard can no longer be bypassed by an insert. The live visitor request form is
   disabled until rate-limited guest booking exists.
 - **Persistence:** order, measurement, appointment, feedback, lookbook and settings writes go through
-  `src/lib/atelier-repository.ts` in Supabase mode; failures surface as explicit toasts.
+  `src/lib/atelier-repository.ts` in Supabase mode. Repository writes fail closed without a resolved
+  atelier; order and feedback status writes scope human keys by tenant. Failures surface as explicit
+  toasts.
 - **Design briefs:** measurement card, production stepper, lookbook and booking briefs under `design/`.
 - **Owner onboarding:** `create_atelier_with_owner` creates the atelier and active owner membership
   atomically; the legacy client-insert contract is retired.
@@ -58,17 +63,18 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
 | Seamless feedback persistence | PASS |
 | Lookbook item publication | PASS |
 | Order creation with missing atelier guard | PASS |
+| Keyed order, feedback and invitation mutations require the resolved atelier | **PASS locally** — `npm run test:unit` and `npm run verify:db`; the hosted duplicate-code SQL fixture is present but was not run against hosted SQL in this verification. The separate hosted role/RLS proof passes 30/30. |
 
 Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-engine.md) and
 [`evidence/2026-11-08_v1.4.0-rc.1.md`](evidence/2026-11-08_v1.4.0-rc.1.md).
 
 ## Not shipped — do not assume
 
-- **IN PROGRESS / not verified** Hosted owner booking flow: availability, hold, confirm, cancel,
-  appointment status synchronization, and resource setup are wired and locally verified. The
-  production project now has the booking schema and a matched migration history
-  (`v1.4.0-rc.2`); the hosted browser flow still needs owner-provisioned identities, and the live
-  site cannot be updated until Netlify deploys are unblocked.
+- **IN PROGRESS / live deploy not verified** Hosted owner booking flow: availability, hold, confirm,
+  cancel, appointment status synchronization, and resource setup are wired. The protected
+  confirmation journey passes against the current local production bundle connected to hosted
+  Supabase; the live Netlify bundle still targets a retired project and must be replaced before
+  pilot opening.
 - **ASPIRATIONAL** Guest booking via an edge function with per-IP/phone/tenant rate limits and a bot
   challenge (ADR-009 §8). Anonymous callers are explicitly denied execute on every booking RPC.
 - **ASPIRATIONAL** Resource capacity greater than one and `booking_slots` for group workshops.
@@ -90,30 +96,29 @@ Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-
   for orders, measurements, settings, and roles; booking transitions are now appended too.
 - **ASPIRATIONAL** Sign-up, owner onboarding and staff/client invitations end to end.
 - **ASPIRATIONAL** SSR, per-tenant metadata, sitemap, robots, OG tags or structured data.
-- **ASPIRATIONAL** Passing three-identity and booking-confirmation browser tests against the hosted
-  project; fixtures require owner-provisioned accounts and a unique pending request/resource slot.
-  Production currently has no accounts.
+- **IN PROGRESS / live deploy not verified** Three-identity and booking-confirmation browser tests
+  against the live Netlify site. All three roles and protected booking confirmation pass against a
+  fresh local artifact connected to hosted Supabase; the live Netlify artifact remains stale.
 
 ## Known limitations
 
 | Limitation | Impact | Owner |
 |------------|--------|-------|
 | Guest self-booking lacks rate limits and a bot challenge | Direct anon inserts and the visitor form are disabled pending the edge boundary | Engineering — before opening public booking |
-| Booking UI and appointment-status guard are wired; local proof passes and the hosted schema is applied, but the hosted browser flow is unverified | Do not use for live confirmations until hosted role E2E passes | Engineering + repository owner |
+| Booking UI and appointment-status guard pass the hosted journey against a fresh local artifact; live-site journey is unverified | Do not open the pilot until the current artifact is published and verified on Netlify | Repository owner — restore credits/publish |
 | No owner/employee `INSERT` policy on `appointments`; staff booking uses `hold_slot` instead | Legacy staff-screen work cannot write `appointments` directly | Engineering — Sprint 3 |
 | `booking_resources.capacity` is constrained to `1`; no `booking_slots` | Group workshops cannot be modelled yet | Engineering — Sprint 3 follow-up |
-| Hosted frontend booking flow has not been run against production | Local UI calls protected booking RPCs and the hosted database now has them; the flow still needs a provisioned owner and a live slot | Repository owner — provision pilot identities |
+| Live Netlify bundle has not passed role or booking browser journeys | Three roles and booking confirmation pass against the fresh local artifact/current hosted Supabase; live bundle still targets the retired project | Repository owner — restore Netlify credits and publish |
 | `idempotency_keys` retains the original hold token to make replay possible | A database reader could recover a live token for its short hold window; client roles are denied by RLS | Engineering — Security review |
 | No scheduled expiry sweeper outside booking transactions | An abandoned hold can block a slot until the next hold/confirm/reschedule on that resource | Engineering — Operations |
 | Tenant is chosen on the client; public path defaults to the Nairobi tenant | Any URL shows the default atelier; no slug/custom domain | Engineering — Sprint 2 |
-| Order writes locate rows by `order_code` alone | Same code in two tenants can be ambiguous | Engineering — Sprint 1 |
 | Hosted Playwright onboarding still requires configured invite credentials to run against the live app | Browser proof is opt-in and cannot run from a clean checkout without a fixture | Repository owner — Sprint 1 |
 | No payment ledger or provider reconciliation | Order deposits/balances are displayed as order terms, not payment receipts | Engineering — later payment sprint |
 | Audit coverage exists for orders, measurements, settings, roles, and bookings, but not payments | Payment disputes cannot be investigated | Engineering — Sprint 4 |
 | Guest booking has no rate limit or bot challenge | Direct anon inserts are disabled until the edge boundary exists | Engineering — before public booking |
 | Playwright invite flow is present but hosted credentials are not stored in the repository | Live browser proof requires a deliberate local/CI secret setup | Repository owner — Sprint 1 |
-| Production has no accounts yet (0 auth users, 0 ateliers/members) | Hosted owner/employee/patron browser journeys cannot run until the owner provisions identities or seeds pilot tenants | Repository owner |
-| Netlify refuses new deploys: `403 Account credit usage exceeded` | The live site still serves a bundle that embeds the retired project `vpathqzkaqdtbykumxeo`; the corrected, gate-passing artifact is ready in `dist/` | Repository owner — restore Netlify credits and publish |
+| Production has six hosted identities across pilot and isolation-only tenants | Local fresh-artifact role journeys and hosted verifier pass; the live Netlify bundle embeds the retired project | Repository owner — restore deploy path and publish |
+| Netlify refuses new deploys: `403 Account credit usage exceeded` | Current source builds with the supported static `vite.pilot.config.ts`; no live update can be verified until owner-authorized publishing succeeds | Repository owner — restore credits and publish |
 
 ## Decisions awaiting approval
 

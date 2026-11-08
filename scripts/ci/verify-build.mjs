@@ -15,7 +15,8 @@
  *   - the runtime guards that refuse demo sign-in and demo reset are present
  *   - no demo identity, PIN, credential card, slug, or lookbook copy is present
  *
- * When the deploy context is production (Netlify sets CONTEXT=production):
+ * When the deploy context is production (Netlify sets CONTEXT=production,
+ * Vercel sets VERCEL_ENV=production):
  *   - VITE_DATA_MODE must be supabase; a demo-mode production deploy FAILS
  *   - VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY must be configured, non-placeholder values
  *
@@ -81,8 +82,12 @@ if (imageAssets.length === 0) {
 }
 
 const mode = process.env.VITE_DATA_MODE;
-const productionContext = [process.env.CONTEXT, process.env.NETLIFY_CONTEXT, process.env.STITCHFLOW_DEPLOY_CONTEXT]
-  .some((value) => value === 'production');
+const productionContext = [
+  process.env.CONTEXT,
+  process.env.NETLIFY_CONTEXT,
+  process.env.VERCEL_ENV,
+  process.env.STITCHFLOW_DEPLOY_CONTEXT,
+].some((value) => value === 'production');
 const enforceProductionArtifact = mode === 'supabase' || productionContext;
 
 if (productionContext) {
@@ -128,6 +133,12 @@ if (enforceProductionArtifact) {
   if (artifactRefs.length === 0) {
     fail('production build does not embed a Supabase project URL.');
   }
+  if (artifactRefs.length > 1) {
+    fail(`production build embeds multiple Supabase project refs: ${artifactRefs.join(', ')}.`);
+  }
+  if (artifactRefs.includes('vpathqzkaqdtbykumxeo')) {
+    fail('production build still targets the retired Supabase project.');
+  }
   if (configuredRef && !artifactRefs.includes(configuredRef)) {
     fail(
       `production build embeds Supabase project(s) ${artifactRefs.join(', ')} but ` +
@@ -157,6 +168,10 @@ if (enforceProductionArtifact) {
     'StitchFlow Atelier Nairobi',
     'Aso-Oke Heritage House Lagos',
     'Kenyan Coastal Kikoy & East African Heritage',
+    'PILOT-A-001',
+    'PILOT-A-002',
+    'PILOT-B-001',
+    'PILOT-EMP-A-9F3K',
   ]) {
     if (corpus.includes(forbidden)) fail(`production build still contains demo-only artifact: ${forbidden}`);
   }
