@@ -67,6 +67,25 @@ jobs:
           fi
           echo "PASS: the production gate rejected the demo-mode artifact."
 
+      # Negative proof: the project ref embedded in the artifact must match the
+      # configured environment. A stale dist pointed at a different backend must
+      # fail even when the URL is well-shaped.
+      - name: Prove the production gate rejects artifact/env project drift
+        run: |
+          VITE_DATA_MODE=supabase \
+          VITE_SUPABASE_URL=https://artifactref.supabase.co \
+          VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_artifactref_0123456789abcdef \
+          npm run build
+          if CONTEXT=production \
+             VITE_DATA_MODE=supabase \
+             VITE_SUPABASE_URL=https://differentref.supabase.co \
+             VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_differentref_0123456789abcdef \
+             node scripts/ci/verify-build.mjs; then
+            echo "FAIL: the production gate accepted an artifact built for another project."
+            exit 1
+          fi
+          echo "PASS: the production gate rejected artifact/env project drift."
+
   database:
     name: Migration chain and RLS
     runs-on: ubuntu-latest

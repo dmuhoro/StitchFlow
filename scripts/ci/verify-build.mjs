@@ -106,6 +106,41 @@ if (enforceProductionArtifact) {
   if (!/GoTrueClient|createClient/.test(corpus)) {
     fail('production build does not include the Supabase client.');
   }
+
+  // Compare the project refs actually embedded in the bundle with the ref the
+  // build was supposed to use. Without this, a stale `.env.local` or a reused
+  // `dist/` can ship a bundle pointed at a different backend while every other
+  // assertion still passes.
+  const artifactRefs = [...new Set(
+    [...corpus.matchAll(/https:\/\/([a-z0-9-]+)\.supabase\.co/g)].map((match) => match[1])
+  )];
+  const configuredRef = /^https:\/\/([a-z0-9-]+)\.supabase\.co\/?$/.exec(
+    process.env.VITE_SUPABASE_URL ?? ''
+  )?.[1];
+
+  let linkedRef = null;
+  try {
+    linkedRef = readFileSync(join(ROOT, 'supabase/.temp/project-ref'), 'utf8').trim() || null;
+  } catch {
+    linkedRef = null;
+  }
+
+  if (artifactRefs.length === 0) {
+    fail('production build does not embed a Supabase project URL.');
+  }
+  if (configuredRef && !artifactRefs.includes(configuredRef)) {
+    fail(
+      `production build embeds Supabase project(s) ${artifactRefs.join(', ')} but ` +
+        `VITE_SUPABASE_URL names ${configuredRef}; rebuild with the deployed environment.`
+    );
+  }
+  if (linkedRef && !artifactRefs.includes(linkedRef)) {
+    fail(
+      `production build does not embed the linked project ref ${linkedRef}; ` +
+        `it embeds ${artifactRefs.join(', ') || '(none)'}.`
+    );
+  }
+
   if (!corpus.includes('Demo role sign-in is disabled in production')) {
     fail('production build is missing the runtime guard that refuses demo role sign-in.');
   }
