@@ -1,7 +1,7 @@
 # Architecture
 
 > Canonical architecture for StitchFlow. Agent summary: `.ai/context/01_architecture.md`.
-> The SSR shell in [ADR-008](adr/ADR-008-single-tanstack-start-app.md) is **Proposed, not built**.
+> [ADR-008](adr/ADR-008-single-tanstack-start-app.md) is an approved future direction, not built.
 > Everything in §1–§5 describes the code that exists today.
 
 ## 1. Shape
@@ -23,10 +23,11 @@ publishable key. Authorization is entirely Postgres Row Level Security.
 └──────────────────────────────────────────────────────────────┘
 ```
 
-Static hosting is Netlify (`netlify.toml`): `npm run build` uses the Milestone 1 SPA configuration
-(`vite.pilot.config.ts`) to produce `dist/`, with an SPA fallback to `index.html` and security
-headers. The root `vite.config.ts` contains an unshipped SSR experiment and is not used by the
-supported `dev`, `build`, or `preview` scripts.
+Static hosting for the supervised pilot is Vercel (`vercel.json`): `npm run build` uses the
+Milestone 1 SPA configuration (`vite.pilot.config.ts`) to produce `dist/`, with an SPA fallback to
+`index.html` and security headers. `netlify.toml` is retained as legacy configuration; it is not the
+authoritative deployment target. Both Vite configs describe the static SPA; supported app scripts
+explicitly select `vite.pilot.config.ts`.
 
 ## 2. Modules
 
@@ -98,16 +99,18 @@ See [`db-contracts.md`](db-contracts.md) for table contracts and
 | Repository writes | `npm run test:unit` | Tenant resolution fails closed; duplicate human keys cannot update another atelier |
 | Bundle | `npm run build` | Production build succeeds |
 | Artifacts | `npm run verify:build` | No literal source paths or secrets; Supabase-mode build also rejects known demo identities, PIN, credential cards, tenant slugs and demo copy |
+| Browser smoke | `npm run test:e2e -- --grep "public entry renders"` | Public entry renders and its sign-in action opens the auth dialog |
 | Docs | `npm run check:docs` | Every relative Markdown link resolves |
 | Database | `npm run verify:db` | Chain applies to empty DB; 14-scenario RLS suite, 15 E2E scenarios, booking RPC suite, and a 200-attempt / 50-concurrent exclusion proof pass |
 | CI | `.github/workflows/ci.yml` | All of the above on every push |
 
 ## 7. Deployment
 
-Netlify builds from `main` using `npm run build` and `vite.pilot.config.ts`. Required environment:
-`VITE_SUPABASE_URL`,
-`VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_DATA_MODE=supabase`. The deploy is authorized by the
-repository owner; the agent must never request a token in chat. See
+Vercel builds from the connected repository using `npm run build` and `vite.pilot.config.ts`.
+Required Production environment: `VITE_SUPABASE_URL`,
+`VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_DATA_MODE=supabase`. Preview deployments use demo mode.
+Vercel's `VERCEL_ENV=production` activates the postbuild production gate. The deploy is authorized
+by the repository owner; the agent must never request a token in chat. See
 [`runbooks/deployment.md`](runbooks/deployment.md).
 
 ## 8. Deliberate non-goals
@@ -115,6 +118,6 @@ repository owner; the agent must never request a token in chat. See
 No server framework, no ORM, no server-side rendering, no payments in v1.0.0, and no multi-atelier
 membership per user. These are recorded so a future change does not assume they exist.
 
-Two of these are now proposed changes, not permanent non-goals: ADR-008 proposes a single TanStack
-Start app for SSR, and ADR-010 proposes an append-only payments ledger. Neither is implemented.
-Until the owner approves those ADRs, the non-goals above remain the shipped truth.
+ADR-008 approves a future single TanStack Start app for SSR, and ADR-010 proposes an append-only
+payments ledger. Neither is implemented. SSR, payments, and other Milestone 2 work are not part of
+the supervised Vercel pilot.

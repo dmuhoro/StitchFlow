@@ -17,7 +17,7 @@ jobs:
   quality:
     name: Types, docs and bundle
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -44,6 +44,12 @@ jobs:
       - name: Assert demo build artifacts
         run: npm run verify:build
 
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Public-entry browser smoke test
+        run: npm run test:e2e -- --grep "public entry renders"
+
       # Exercise the production mode branch without a real project. These are
       # non-secret synthetic values; they are never deployed.
       - name: Build (supabase mode branch)
@@ -69,6 +75,15 @@ jobs:
             exit 1
           fi
           echo "PASS: the production gate rejected the demo-mode artifact."
+
+      - name: Prove Vercel production rejects a demo-mode artifact
+        run: |
+          VITE_DATA_MODE=demo npm run build
+          if VERCEL_ENV=production node scripts/ci/verify-build.mjs; then
+            echo "FAIL: the Vercel production gate accepted a demo-mode artifact."
+            exit 1
+          fi
+          echo "PASS: the Vercel production gate rejected the demo-mode artifact."
 
       # Negative proof: the project ref embedded in the artifact must match the
       # configured environment. A stale dist pointed at a different backend must

@@ -1,15 +1,14 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import {fileURLToPath} from 'node:url';
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import {defineConfig} from 'vite';
+import { defineConfig } from 'vite';
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.VITE_DATA_MODE === 'supabase';
 
 export default defineConfig(() => {
-  // Order matters: Rollup's alias plugin uses the first matching entry, so the
-  // specific data/adapter specifiers must precede the generic '@' root alias.
+  // Specific aliases must precede the generic '@' root alias.
   const alias: Record<string, string> = {
     './AuthModal': isProduction
       ? path.resolve(rootDir, 'src/components/AuthModal.production.tsx')

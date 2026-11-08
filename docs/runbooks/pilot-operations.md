@@ -79,7 +79,7 @@ from production data loss is an explicit pilot limitation.
 
 ## Application rollback
 
-Follow [`rollback.md`](rollback.md): publish the last known-good immutable Netlify deploy, then
+Follow [`rollback.md`](rollback.md): promote the last known-good immutable Vercel deployment, then
 rerun the live-site verification in [`deployment.md`](deployment.md). Do not roll back database
 migrations; they are forward-only. If data corruption is suspected, pause writes and use the
 verified backup/restore procedure above. That procedure remains blocked until its rehearsal passes.

@@ -6,12 +6,12 @@
 
 - **UI:** React 19 + TypeScript, single-page application.
 - **Build:** Static Vite 8 SPA via `vite.pilot.config.ts` (`@vitejs/plugin-react`), Tailwind CSS 4
-  through `@tailwindcss/vite`. The root `vite.config.ts` SSR experiment is not used by supported app
-  scripts.
+  through `@tailwindcss/vite`. Both Vite configs describe the static SPA; supported app scripts
+  explicitly select the pilot config.
 - **Icons:** `lucide-react`.
 - **Backend:** Supabase Postgres + Auth + PostgREST, called from the browser with the publishable key.
 - **Data access:** raw `@supabase/supabase-js` queries in `src/lib/atelier-repository.ts`. No ORM.
-- **Hosting:** static build published to Netlify (`netlify.toml`).
+- **Hosting:** static build published to Vercel (`vercel.json`) per ADR-012; `netlify.toml` is legacy.
 - **CI:** `.github/workflows/ci.yml` (lint, build, docs links, database verification) — added in
   release layer L5.
 
@@ -29,8 +29,10 @@ Browser
 
 Booking writes have a second, stricter path: the owner workspace calls availability, hold,
 confirmation, and cancellation RPCs through `src/lib/atelier-booking-repository.ts`. The current
-working-tree UI is awaiting database and hosted browser verification. Anonymous appointment inserts
-and live visitor booking are disabled until a rate-limited guest boundary exists.
+Local database and hosted journey evidence is recorded in
+`docs/evidence/2026-11-08_milestone-1-pilot-hardening.md`; live-site verification is pending
+publication. Anonymous appointment inserts and live visitor booking are disabled until a
+rate-limited guest boundary exists.
 
 In `VITE_DATA_MODE=demo` the context writes to namespaced `localStorage` through
 `src/lib/storage.ts` and never calls Supabase. Demo mode is a presentation surface, not a
@@ -60,13 +62,13 @@ persistence guarantee.
 - `npm run build` → `dist/` using the static pilot config.
 - `npm run verify:db` → disposable `postgres:16` migration chain + RLS suite + booking RPC suite +
   200-attempt concurrency proof.
-- Netlify publishes `dist/` with an SPA fallback and security headers.
+- Vercel publishes `dist/` with an SPA fallback and security headers.
 
-## Proposed, not built
+## Approved or proposed, not built
 
-[ADR-008](../../docs/adr/ADR-008-single-tanstack-start-app.md) proposes replacing this static SPA
-with one TanStack Start app (public SSR group + authenticated app group). It is **Proposed** and
-gated on owner approval. Do not describe SSR as shipped.
+[ADR-008](../../docs/adr/ADR-008-single-tanstack-start-app.md) is an approved future direction to
+replace this static SPA with one TanStack Start app (public SSR group + authenticated app group).
+It is not implemented and is outside the supervised pilot. Do not describe SSR as shipped.
 
 [ADR-011](../../docs/adr/ADR-011-tenant-resolution.md) proposes server-side tenant resolution by
 verified domain, then subdomain, then slug. Today the client still chooses the tenant.
@@ -76,10 +78,10 @@ verified domain, then subdomain, then slug. Today the client still chooses the t
 | Gap | Severity | Owner layer |
 |-----|----------|-------------|
 | Supabase-mode demo artifact exclusion | Closed in current source; `verify:build` checks known demo markers | Sprint 1 |
-| Appointment status guard and booking UI integration | Implemented in working tree; migration and hosted proofs pending | Sprint 3 follow-up |
+| Appointment status guard and booking UI integration | Local database and hosted journey evidence pass; live-site proof pending | Sprint 3 |
 | Capacity > 1 / `booking_slots` not implemented; capacity is constrained to 1 | P2 | Sprint 3 follow-up |
-| No owner/employee `INSERT` policy on `appointments` | P1 | Sprint 3 |
+| No owner/employee `INSERT` policy on `appointments` | Intentional; staff booking uses protected RPCs | Sprint 3 |
 | Tenant chosen client-side; public path defaults to Nairobi | P1 | Sprint 2 |
-| No SSR, per-tenant metadata, sitemap, robots or OG tags | P1 | Sprint 2 |
-| No audit log, payments ledger or webhook table | P1 | Sprint 1/4 |
+| SSR, per-tenant metadata, sitemap, robots or OG tags not implemented | Approved future scope; outside pilot | ADR-008 |
+| No payments ledger or webhook table | P1 for payments; payments outside pilot | ADR-010 |
 | No media storage; URLs are remote or bundled | P2 | Post-launch |

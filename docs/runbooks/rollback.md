@@ -4,13 +4,14 @@
 
 ## Application rollback
 
-Netlify builds are immutable.
+Vercel production deployments are immutable.
 
-1. Open the Netlify project → Deploys.
-2. Select the last known-good production deploy.
-3. Choose **Publish deploy**.
+1. Open the Vercel project → Deployments.
+2. Select the last known-good production deployment.
+3. Promote it to Production using the Vercel dashboard.
 
-The live site reverts immediately. No rebuild is required.
+Confirm the restored bundle targets the active Supabase project and passes the live verification
+checks below. A previous deployment is not automatically safe if its backend target is stale.
 
 ## Database rollback
 
@@ -30,7 +31,7 @@ npm run build
 npm run verify:db
 ```
 
-For the live site, re-run the checks in [`deployment.md`](deployment.md#5-verify-the-live-site).
+For the live site, re-run the checks in [`deployment.md`](deployment.md#6-verify-the-live-site).
 
 ## Record
 
