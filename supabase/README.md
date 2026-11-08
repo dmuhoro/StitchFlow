@@ -52,13 +52,14 @@ Run locally on a disposable `postgres:16` via `npm run verify:db`:
 `appointments` is a request inbox; it still has no resource, duration, hold, idempotency key, or
 overlap constraint. Migrations require a protected booking before confirmation, disable anonymous
 inserts, and limit client inserts to own-atelier pending requests without staff assignment. The
-booking workflow and migrations pass local DB verification; hosted production apply is blocked by
-migration-history drift. See [`pilot evidence`](../docs/evidence/2026-11-08_v1.4.0-rc.1.md).
+booking workflow and migrations pass local DB verification and are applied to production; hosted
+browser proof still needs owner-provisioned identities. See
+[`hosted repair evidence`](../docs/evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md).
 
 ## Next step
 
-Reconcile production migration history, then apply migrations and run hosted owner/employee/patron
-and booking browser flows. The guest edge-function boundary with rate limits and a bot challenge is
-still required before public booking.
+Reconcile production migration history (done 2026-11-08), then provision owner/employee/patron
+fixtures and run the hosted browser flows. The guest edge-function boundary with rate limits and a bot
+challenge is still required before public booking.
 The prioritized defect list is in
 [`docs/audit/2026-11-05_sprint-0-audit.md`](../docs/audit/2026-11-05_sprint-0-audit.md).

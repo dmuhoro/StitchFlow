@@ -2,7 +2,8 @@
 
 **Date:** 2026-11-08
 **Release checkpoint:** `v1.4.0-rc.1`
-**Status:** local implementation verified; production pilot blocked.
+**Status:** local implementation verified; hosted schema repaired; hosted browser pilot blocked on
+provisioned identities.
 
 The repository's earlier checkpoints remain visible as `v1.0.0`, `v1.0.1`, `v1.1.0`, `v1.2.0`,
 and `v1.3.0`; this sprint continues that release trail with a tagged prerelease rather than
@@ -21,6 +22,9 @@ overwriting prior milestones.
 - Opt-in hosted role and booking browser tests.
 - Production deploy build enforcement and a CI negative test that proves a demo-mode artifact is
   rejected.
+- Hosted schema repair (2026-11-08): remote `20261106122030` was proven equivalent to local
+  `20261106160000`, the history row was recorded under the canonical version, and the seven missing
+  migrations were applied. Hosted RLS/onboarding proof passes.
 
 ## Evidence
 
@@ -30,14 +34,20 @@ overwriting prior milestones.
 - On 2026-11-08, lint, demo/Supabase builds, build artifact assertions, doc links, Playwright test
   collection, and `npm run verify:db` all passed (14 RLS scenarios, staff S1–S7). Details:
   `docs/evidence/2026-11-08_v1.4.0-rc.1.md`.
+- Hosted repair on 2026-11-08: `db push --dry-run` up to date, migration list matched, hosted
+  verification passed with unchanged row counts. Details:
+  `docs/evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md`.
 
 ## Remaining before live pilot
 
-1. Reconcile remote migration `20261106122030` with the actual production schema; do not mark it
-   reverted without confirming its contents and effects.
-2. Apply the tracked migrations only after the history is consistent.
-3. Run hosted owner, employee, patron, and booking confirmation browser journeys with provisioned
-   fixture identities and an isolated pending request/resource slot.
-4. Reverify the deployed artifact and URL after migration and role-flow gates pass.
+1. Provision owner/employee/patron identities (or deliberately seed pilot tenants). Production
+   currently has 0 auth users and 0 ateliers/members, so the hosted browser journeys cannot run.
+2. Run the hosted owner, employee, patron, and booking confirmation journeys with a unique pending
+   request/resource slot.
+3. Restore Netlify account credits (owner billing action), then publish the corrected artifact and
+   re-verify the live URL and production bundle. Netlify currently rejects deploys with
+   `403 Account credit usage exceeded`, so the live bundle still embeds the retired project
+   `vpathqzkaqdtbykumxeo`.
+4. Keep guest booking closed until the rate-limited edge boundary exists.
 
 This checkpoint is a prerelease record, not production approval.

@@ -40,5 +40,6 @@ PASS / FAIL / BLOCKED
 | Release and tag | `2026-11-01_release.md` | PASS |
 | Deployment | `2026-11-01_deployment.md` | PASS (deploy only; artifact later found to contain demo code) |
 | Sprint 0 eight-gate verification | `2026-11-05_sprint-0-verification.md` | 7 PASS / 1 FAIL |
-| Live-data pilot readiness | `2026-11-07-pilot-readiness.md` | Local PASS; production BLOCKED by remote migration-history drift and absent booking schema |
-| v1.4.0-rc.1 release checkpoint | `2026-11-08_v1.4.0-rc.1.md` | Prerelease; production pilot BLOCKED |
+| Live-data pilot readiness | `2026-11-07-pilot-readiness.md` | Local PASS; production later repaired in rc.2 |
+| v1.4.0-rc.1 release checkpoint | `2026-11-08_v1.4.0-rc.1.md` | Prerelease; production schema was still missing |
+| v1.4.0-rc.2 hosted repair | `2026-11-08_v1.4.0-rc.2-hosted-repair.md` | Hosted schema parity PASS; artifact gate PASS; live publish BLOCKED on Netlify credits; browser journeys BLOCKED on identities |

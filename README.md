@@ -38,7 +38,7 @@ Copy `.env.example` to `.env.local` and provide `VITE_SUPABASE_URL` and `VITE_SU
 
 ## Current scope and limitations
 
-StitchFlow is still a staged production migration. Demo mode remains the default local surface. The Supabase-mode bundle excludes demo identities and the demo PIN, and a production deploy now fails closed if it is built in demo mode. The booking UI uses the protected hold/confirm/cancel RPCs, and client appointment inserts are limited to own-tenant pending requests. Tenant resolution is still client-side, order writes locate rows by `order_code` alone, and owner money-edit audit coverage is incomplete. Hosted schema parity, hosted role journeys, guest booking rate limits, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, and operational monitoring remain to be integrated and verified. Findings and priorities remain in the [Sprint 0 audit](docs/audit/2026-11-05_sprint-0-audit.md).
+StitchFlow is still a staged production migration. Demo mode remains the default local surface. The Supabase-mode bundle excludes demo identities and the demo PIN, and a production deploy now fails closed if it is built in demo mode. The booking UI uses the protected hold/confirm/cancel RPCs, client appointment inserts are limited to own-tenant pending requests, and the production project now carries the full tracked schema with a matched migration history. Tenant resolution is still client-side, order writes locate rows by `order_code` alone, and owner money-edit audit coverage is incomplete. Hosted browser role journeys still need provisioned identities; guest booking rate limits, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, and operational monitoring remain to be integrated and verified. Findings and priorities remain in the [Sprint 0 audit](docs/audit/2026-11-05_sprint-0-audit.md).
 ---
 
 > **Runtime guard enforcement**: All action boundaries (onboarding, feedback, order creation, lookbook publishing) now contain explicit fail‑closed checks that refuse unresolvable ateliers or missing authorization in production. This guarantees that a user cannot trigger unintended or unsafe writes.
@@ -74,7 +74,7 @@ npm run audit          # Dependency vulnerability check
 
 ### Production deployment
 
-The app is a static Vite build. `npm run build` publishes `dist/`, and `postbuild` verifies the artifact. A production deploy must set `VITE_DATA_MODE=supabase`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_PUBLISHABLE_KEY`; `netlify.toml` sets the production context to Supabase mode, and a demo-mode production build fails the gate. Use a deploy preview for a demo walkthrough. Configure SPA fallback routing if application routes are added later.
+The app is a static Vite build. `npm run build` publishes `dist/`, and `postbuild` verifies the artifact. A production deploy must set `VITE_DATA_MODE=supabase`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_PUBLISHABLE_KEY`; `netlify.toml` sets the production context to Supabase mode, and a demo-mode production build fails the gate. Use a deploy preview for a demo walkthrough. The connected production schema was reconciled and brought up to date on 2026-11-08; see the [hosted repair evidence](docs/evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md). Configure SPA fallback routing if application routes are added later.
 
 ## Project map
 

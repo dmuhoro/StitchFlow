@@ -88,9 +88,9 @@ to expose an RPC surface.
 | No owner/employee `INSERT` policy on `appointments` | P1 | Staff cannot create a legacy fitting. Staff booking belongs to `hold_slot`. |
 | Guest self-booking has no rate limit or bot challenge | Medium | Direct anonymous writes are disabled in the migration and live visitor UI; implement the edge boundary before reopening. |
 | No audit trail for owner money edits | Medium | Booking transitions are audited; money edits still are not. Sprint 1 |
-| Hosted project access unverified | Blocker for deploy | Owner authorization |
+| Hosted project access unverified | Resolved 2026-11-08 | Schema and migration history inspected and repaired through the Management API; no password stored |
 
-Production schema currently lacks booking tables/RPCs and has migration-history drift at `20261106122030`; this blocks the live booking pilot until the owner reconciles that version with the live schema, then runs hosted role browser flows.
+Production now has the complete tracked schema and a matched migration history (2026-11-08). The live booking pilot still needs hosted browser proof, which is blocked because production has no accounts yet; provision an owner identity (or deliberately seed pilot tenants) before running the opt-in journeys.
 
 ## How to verify
 

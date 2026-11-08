@@ -53,6 +53,6 @@ default_currency, whatsapp_number, default_unit, timestamps). It does not receiv
 |------|--------|
 | Demo PIN in production | Refused at the action boundary (`StitchFlowContext.tsx:576`, `AuthModal.tsx:81`) |
 | No rate limiting on anonymous booking | Anonymous UI and direct database insert are disabled pending the edge boundary |
-| Booking UI and request status guard | Local database verification passes; not applied to production |
-| Patron appointment insert boundary | Local database verification proves pending own-tenant client requests only |
-| Production booking pilot | Blocked by missing booking schema and unmatched remote migration `20261106122030`; reconcile migration history, apply migrations, then run hosted role browser flows |
+| Booking UI and request status guard | Local database verification passes; migrations applied to production 2026-11-08 |
+| Patron appointment insert boundary | Local database verification proves pending own-tenant client requests only; applied to production |
+| Production booking pilot | Schema parity and hosted database proof PASS; blocked on owner-provisioned identities for hosted browser journeys |

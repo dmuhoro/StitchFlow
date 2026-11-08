@@ -5,6 +5,46 @@ All notable changes to StitchFlow are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0-rc.2] — 2026-11-08
+
+Hosted repair checkpoint. The connected production project now carries the complete tracked schema
+and a matched migration history, and both the local and hosted database proofs pass. Hosted browser
+role journeys remain blocked because production has no accounts yet; they require owner-provisioned
+identities.
+
+### Fixed
+
+- Reconciled production migration history. Remote version `20261106122030`
+  (`atomic_owner_onboarding`) is the same SQL as local
+  `20261106160000_atomic_owner_onboarding.sql`; the live function body, execute grants, and absence
+  of the retired `create_atelier_for_current_user` matched local. The history row was renamed to the
+  canonical local version after that comparison.
+- Applied the seven missing migrations to production: booking engine, booking staff slice, audit log,
+  owner invitation permissions, appointment `source`, appointment/booking status guard, and the
+  client appointment-insert boundary.
+- Closed a deploy-gate blind spot: the production check validated the environment but not the
+  project ref embedded in the artifact. A stale `dist/` built from the previous Supabase project
+  (`vpathqzkaqdtbykumxeo`) passed the gate while the environment named `qkhfjlxhulekjrfgrdbz`. The
+  gate now extracts the artifact's project ref and requires it to match `VITE_SUPABASE_URL` and the
+  linked project; CI includes a negative proof for artifact/env drift.
+
+### Verification
+
+- `supabase db push --dry-run --remote` reports `upToDate: true`; `supabase migration list --remote`
+  matches local and remote for every version.
+- `STITCHFLOW_ALLOW_HOSTED_VERIFY=1 npm run verify:hosted` passed and left row counts unchanged.
+- Hosted catalog now has 16 public tables, including `booking_resources`,
+  `resource_availability_rules`, `blackout_dates`, `bookings`, and `idempotency_keys`, plus
+  `hold_slot`, `confirm_booking`, `cancel_booking`, and `reschedule_booking`.
+- Production has 0 auth users and 0 ateliers/members. Hosted owner/employee/patron browser journeys
+  remain blocked on owner-provisioned identities.
+- The corrected production artifact cannot be published: Netlify rejects new deploys with
+  `403 Account credit usage exceeded - new deploys are blocked until credits are added`. The live
+  site (`https://stitchflow-12pv.netlify.app`) still serves the earlier bundle, which embeds the
+  retired project `vpathqzkaqdtbykumxeo`; that mismatch predates this checkpoint. Publishing is an
+  owner billing action, not an engineering task.
+- Evidence: `docs/evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md`.
+
 ## [1.4.0-rc.1] — 2026-11-08
 
 First prerelease checkpoint for the live-data booking workflow. This release records the locally

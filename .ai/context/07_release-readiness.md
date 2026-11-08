@@ -23,12 +23,15 @@
 double-booking) fails: `exclusion_constraints=0`, overlapping rows accepted, no staff `INSERT`
 policy.
 
-`v1.4.0-rc.1` records the locally verified booking integration as a prerelease checkpoint; it is
-not production approval. `S0-P0-01` is closed in source and the production artifact assertion. Booking status guard and UI
-wiring pass local DB verification. Production is missing booking tables/RPCs and has an unmatched
-remote migration version (`20261106122030`); hosted browser role flows also need owner-provisioned
-fixtures. Do not push migrations until the remote history is reconciled. See
-`docs/evidence/2026-11-07-pilot-readiness.md` and `docs/audit/2026-11-05_sprint-0-audit.md`.
+`v1.4.0-rc.2` records the hosted repair: the production project now has the complete tracked schema
+and a matched migration history. `S0-P0-01` is closed in source and the production artifact
+assertion. Booking status guard, insert boundary, and UI wiring pass local DB verification, and the
+seven pending migrations are applied to production. Hosted browser role flows still need
+owner-provisioned fixtures because production has no accounts yet; publishing is also blocked
+because Netlify rejects new deploys with `403 Account credit usage exceeded`, so the live bundle
+still embeds the retired project `vpathqzkaqdtbykumxeo`. See
+`docs/evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md` and
+`docs/audit/2026-11-05_sprint-0-audit.md`.
 
 ## P0 definitions
 

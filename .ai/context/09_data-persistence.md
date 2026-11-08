@@ -40,8 +40,8 @@ Anonymous visitors use `loadPublicAtelierSnapshot` to read the public atelier pr
 lookbook. Their fitting form is disabled in Supabase mode because no rate-limited guest boundary is
 deployed. Supabase mode never seeds demo orders, measurements, appointments, feedback, or lookbook.
 Owner booking setup, availability, hold, confirm, cancel, and request synchronization use the
-separate booking repository and protected RPCs; these paths pass local database proof. Production
-does not yet have the booking schema because its migration history must be reconciled first.
+separate booking repository and protected RPCs; these paths pass local database proof and their
+migrations are applied to production. Hosted browser proof still needs a provisioned owner identity.
 
 Writes deliberately not offered in `supabase` mode: tenant switching (the switcher is demo-only),
 reset-to-defaults against a live tenant (destructive), and role escalation.

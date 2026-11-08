@@ -6,6 +6,7 @@
 
 | Release | Date | Status | Notes |
 |---------|------|--------|-------|
+| v1.4.0-rc.2 | 2026-11-08 | Prerelease — hosted schema repaired; artifact gate fixed; live publish blocked on Netlify credits | [Release note](RELEASE_1.4.0-rc.2_NOTES.md), [evidence](../evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md) |
 | v1.4.0-rc.1 | 2026-11-08 | Prerelease — hosted pilot blocked | Booking integration; [release note](RELEASE_1.4.0-rc.1_NOTES.md), [evidence](../evidence/2026-11-08_v1.4.0-rc.1.md) |
 | v1.3.0 | 2026-11-07 | Released | Booking staff database slice and type exports; see `CHANGELOG.md` and `sprints/sprint-03.5-booking-staff-slice.md` |
 | v1.2.0 | 2026-11-07 | Released | Booking engine database layer; see `CHANGELOG.md` and `sprints/sprint-03-booking-engine-db.md` |
