@@ -61,7 +61,7 @@ or push to `main` if the site is connected to the repository. Record the deploy 
 - Sign-in works with a real member.
 - The lookbook renders bundled imagery (hashed asset URLs).
 - A patron sees only their own orders and balance.
-- An anonymous visitor can submit a pending fitting request.
+- Anonymous fitting submission is disabled until the rate-limited guest edge boundary is deployed.
 - The demo PIN is not accepted.
 
 ## Rollback

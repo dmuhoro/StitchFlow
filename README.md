@@ -11,18 +11,12 @@
 
 StitchFlow is a browser-based product prototype for African bespoke ateliers creating Grand Agbadas, Senator suits, Kitenge bridalwear, Kanzus, and other ceremonial garments. It brings the lookbook, fitting requests, production stages, culturally relevant measurement cards, artisan workbench, and patron updates into one warm, mobile-friendly experience.
 
-> **Verification status (2026-11-07):** `v1.2.0` adds the booking-engine **database layer**: a GiST
-> exclusion constraint on `bookings`, four tenant-scoped RPCs, in-transaction hold expiry, and an
-> idempotency ledger. `npm run verify:db` passes the 12-scenario RLS suite, the 15-scenario E2E
-> suite, the booking RPC suite (B1–B23), and a 200-attempt / 50-concurrent proof (1 success, 199
-> `slot_unavailable`, 0 duplicates).
->
-> The browser does **not** call the new booking RPCs yet, and the legacy `appointments` table still
-> accepts overlapping rows. Gate 8 remains open for that table (ADR-009 §8). The production bundle
-> still contains demo code and the demo PIN, so StitchFlow is a demo-first release, not a certified
-> production atelier system. Read
-> [`docs/audit/2026-11-05_sprint-0-audit.md`](docs/audit/2026-11-05_sprint-0-audit.md) before
-> importing real data.
+> **Verification status (2026-11-08):** `v1.4.0-rc.1` records the locally verified booking
+> workflow, booking status guards, and production bundle gate. The local suite passes 14 RLS
+> scenarios, 15 SQL E2E scenarios, booking tests, staff tests, and the 200-attempt concurrency
+> proof. The hosted project still needs migration-history reconciliation and hosted browser role
+> flows before live booking. See the [release evidence](docs/evidence/2026-11-08_v1.4.0-rc.1.md)
+> and [release gates](docs/release-readiness.md).
 
 ## What is included
 
@@ -38,13 +32,13 @@ Never use the demo PIN or client-side role gates as a security boundary in a liv
 
 The connected Supabase project contains tenant-aware tables for ateliers, members, lookbook items, orders, order progress notes, measurements, appointments, feedback, the booking engine (`booking_resources`, `resource_availability_rules`, `blackout_dates`, `bookings`, `idempotency_keys`), `audit_log`, and `invitations`. Row Level Security is enabled on every public table. Staff access is scoped to an atelier, patrons are scoped to their own records, and only published lookbook items are public. The browser integration lives in `src/lib/supabase.ts` and `src/lib/atelier-repository.ts`; backend notes and verification gates are documented in [supabase/README.md](supabase/README.md).
 
-The local suite has 12 adversarial RLS scenarios, 15 hosted/local E2E scenarios, and a booking RPC suite (B1–B23). The new `bookings` store is protected by a GiST exclusion constraint and four RPC-only write paths. The legacy `appointments` table is still unguarded: it has no exclusion constraint, resource, hold, or idempotency key, and an owner/employee cannot insert an appointment there. Those gaps are `S0-P0-02` and `S0-P1-03` in the [Sprint 0 audit](docs/audit/2026-11-05_sprint-0-audit.md), and retiring `appointments` is ADR-009 §8.
+The local suite has 14 adversarial RLS scenarios, 15 hosted/local E2E scenarios, a booking RPC suite (B1–B23), and a staff booking slice (S1–S7). The `bookings` store is protected by a GiST exclusion constraint and four RPC-only write paths. `appointments` is now a request inbox: a client may insert only an own-tenant pending request with no assigned tailor, anonymous inserts are revoked, and a database trigger refuses a confirmed or completed status unless a linked protected booking is confirmed. Pending requests can share a requested time because they are proposals, not reserved resource time. Retiring the legacy inbox in favour of the booking store remains ADR-009 §8 work.
 
 Copy `.env.example` to `.env.local` and provide `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Keep `VITE_DATA_MODE=demo` until Supabase Auth and the first owner onboarding flow have been tested. Never place a service-role key in Vite environment variables or browser code.
 
 ## Current scope and limitations
 
-StitchFlow is still intentionally a staged production migration. The Supabase schema and security boundary exist, but the React context still defaults to seeded browser-local demo data. Two P0 defects remain open: demo code and the demo PIN ship in the Supabase-mode bundle, and the legacy `appointments` path still accepts double-booking (the new `bookings` store is protected but not yet called by the UI). Tenant resolution is still client-side, order writes locate rows by `order_code` alone, and owner money-edit audit coverage is incomplete. Authentication UI, invitations, guest booking rate limits, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, and operational monitoring remain to be integrated and verified.
+StitchFlow is still a staged production migration. Demo mode remains the default local surface. The Supabase-mode bundle excludes demo identities and the demo PIN, and a production deploy now fails closed if it is built in demo mode. The booking UI uses the protected hold/confirm/cancel RPCs, and client appointment inserts are limited to own-tenant pending requests. Tenant resolution is still client-side, order writes locate rows by `order_code` alone, and owner money-edit audit coverage is incomplete. Hosted schema parity, hosted role journeys, guest booking rate limits, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, and operational monitoring remain to be integrated and verified. Findings and priorities remain in the [Sprint 0 audit](docs/audit/2026-11-05_sprint-0-audit.md).
 ---
 
 > **Runtime guard enforcement**: All action boundaries (onboarding, feedback, order creation, lookbook publishing) now contain explicit fail‑closed checks that refuse unresolvable ateliers or missing authorization in production. This guarantees that a user cannot trigger unintended or unsafe writes.
@@ -76,11 +70,11 @@ npm run preview        # Serve the production bundle locally
 npm run audit          # Dependency vulnerability check
 ```
 
-`verify:build` does **not** prove that demo code is absent; that is the open `S0-P0-01` defect.
+`verify:build` runs as `postbuild` on every build. In a production deploy context it requires `VITE_DATA_MODE=supabase` with configured, non-placeholder Supabase values and rejects demo identities, the demo PIN, credential cards and demo slugs; CI proves the gate rejects a demo artifact.
 
 ### Production deployment
 
-The app is a static Vite build. Run `npm run build` and publish `dist/` on Netlify, Cloudflare Pages, or another static host. Configure SPA fallback routing if application routes are added later.
+The app is a static Vite build. `npm run build` publishes `dist/`, and `postbuild` verifies the artifact. A production deploy must set `VITE_DATA_MODE=supabase`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_PUBLISHABLE_KEY`; `netlify.toml` sets the production context to Supabase mode, and a demo-mode production build fails the gate. Use a deploy preview for a demo walkthrough. Configure SPA fallback routing if application routes are added later.
 
 ## Project map
 

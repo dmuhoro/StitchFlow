@@ -92,6 +92,7 @@ interface StitchFlowContextType {
   acceptInvitation: (code: string) => Promise<{ success: boolean; atelier_id?: string; role?: string; error?: string }>;
   invitations: Invitation[];
   refreshInvitations: () => Promise<void>;
+  refreshAtelier: () => Promise<void>;
   inviteMember: (input: { email: string; role: 'employee' | 'client'; sendEmail: boolean }) => Promise<Invitation>;
   revokeInvitation: (id: string) => Promise<void>;
   invitationLink: (code: string) => string;
@@ -108,7 +109,7 @@ interface StitchFlowContextType {
   setActiveClientId: (id: string) => void;
   currency: 'KES' | 'NGN' | 'USD';
   setCurrency: (c: 'KES' | 'NGN' | 'USD') => void;
-  formatCurrency: (kesAmount: number) => string;
+  formatCurrency: (amount: number, currency?: 'KES' | 'NGN' | 'USD') => string;
   
   // Data entities
   profiles: Profile[];
@@ -405,6 +406,11 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return;
     }
     setInvitations(await listInvitationsRepository(activeAtelierId));
+  };
+
+  const refreshAtelier = async () => {
+    if (!isProductionMode || !currentUser) return;
+    await applyAuthenticatedMember();
   };
 
   const inviteMember = async (input: { email: string; role: 'employee' | 'client'; sendEmail: boolean }) => {
@@ -799,16 +805,12 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  const formatCurrency = (kesAmount: number): string => {
-    if (currency === 'USD') {
-      const usdAmount = Math.round(kesAmount / 130);
-      return `$${usdAmount.toLocaleString()}`;
-    }
-    if (currency === 'NGN') {
-      const ngnAmount = Math.round(kesAmount * 11.5);
-      return `₦${ngnAmount.toLocaleString()}`;
-    }
-    return `${kesAmount.toLocaleString()} KES`;
+  const formatCurrency = (amount: number, amountCurrency: 'KES' | 'NGN' | 'USD' = currency): string => {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: amountCurrency,
+      maximumFractionDigits: 0,
+    }).format(amount);
   };
 
   const updateOrderStatus = (orderId: string, newStatus: ProductionStatus, note?: string) => {
@@ -985,10 +987,18 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const updateAppointmentStatus = (id: string, status: AppointmentStatus) => {
+    if (isProductionMode && status === 'confirmed') {
+      showToast('Confirm this request through the protected booking workspace so a resource slot is reserved.');
+      return;
+    }
+    if (isProductionMode && !activeAtelierId) {
+      showToast('No atelier is resolved for this session. The fitting status was not saved.');
+      return;
+    }
     setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
-    if (isProductionMode) {
+    if (isProductionMode && activeAtelierId) {
       void saveOrToast(
-        persistAppointmentStatus(id, status),
+        persistAppointmentStatus(activeAtelierId, id, status),
         `Appointment status updated to ${status}`
       );
     } else {
@@ -1097,6 +1107,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       acceptInvitation,
       invitations,
       refreshInvitations,
+      refreshAtelier,
       inviteMember,
       revokeInvitation,
       invitationLink,

@@ -23,8 +23,12 @@
 double-booking) fails: `exclusion_constraints=0`, overlapping rows accepted, no staff `INSERT`
 policy.
 
-Two P0 defects are open: demo code in the production bundle (`S0-P0-01`) and booking concurrency
-(`S0-P0-02`). Full list: `docs/audit/2026-11-05_sprint-0-audit.md`.
+`v1.4.0-rc.1` records the locally verified booking integration as a prerelease checkpoint; it is
+not production approval. `S0-P0-01` is closed in source and the production artifact assertion. Booking status guard and UI
+wiring pass local DB verification. Production is missing booking tables/RPCs and has an unmatched
+remote migration version (`20261106122030`); hosted browser role flows also need owner-provisioned
+fixtures. Do not push migrations until the remote history is reconciled. See
+`docs/evidence/2026-11-07-pilot-readiness.md` and `docs/audit/2026-11-05_sprint-0-audit.md`.
 
 ## P0 definitions
 

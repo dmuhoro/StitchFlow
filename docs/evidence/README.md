@@ -16,6 +16,8 @@
 | 2026-11-05 | Sprint 0 eight-gate verification | `2026-11-05_sprint-0-verification.md` | 7 PASS / 1 FAIL |
 | 2026-11-07 | Sprint 3 booking-engine baseline | `2026-11-07-baseline.md` | PASS |
 | 2026-11-07 | Sprint 3 booking-engine database layer | `2026-11-07-booking-engine.md` | PASS (local + CI) |
+| 2026-11-07 | Live-data pilot readiness | `2026-11-07-pilot-readiness.md` | Local PASS; production BLOCKED |
+| 2026-11-08 | v1.4.0-rc.1 release checkpoint | `2026-11-08_v1.4.0-rc.1.md` | Prerelease; production pilot BLOCKED |
 
 ## Format
 

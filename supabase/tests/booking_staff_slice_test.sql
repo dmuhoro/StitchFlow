@@ -108,16 +108,18 @@ begin
     and indexname = 'bookings_appointment_live_unique';
   assert v_unique = 1, 'the one-live-booking-per-request index is missing';
 
-  -- The staff slice links from bookings; it must not quietly alter the
-  -- anonymous request policy on appointments.
+  -- Anonymous requests stay closed until the rate-limited guest boundary is
+  -- deployed. The browser UI is disabled alongside this database permission.
   select count(*) into v_public_policy
   from pg_policies
   where schemaname = 'public'
     and tablename = 'appointments'
     and policyname = 'appointments_public_insert';
-  assert v_public_policy = 1, 'appointments_public_insert was removed';
+  assert v_public_policy = 0, 'anonymous appointment insert policy must remain retired';
+  assert not has_table_privilege('anon', 'public.appointments', 'INSERT'),
+    'CRITICAL: anon still has direct appointment INSERT privilege';
 
-  raise notice 'PASS [S1] appointment link, tenant FK, live uniqueness, public insert retained';
+  raise notice 'PASS [S1] appointment link and tenant FK; anonymous insert remains disabled';
 end $$;
 
 -- ----------------------------------------------------------------------------
@@ -404,6 +406,23 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claims" = '{"sub": "a1111111-1111-1111-1111-111111111111", "role": "authenticated"}';
 
+-- Direct appointment status writes cannot claim confirmation without a live
+-- protected booking. The owner UI must use hold_slot/confirm_booking.
+do $$
+declare
+  v_refused boolean := false;
+begin
+  begin
+    update public.appointments
+       set status = 'confirmed'
+     where id = 'e1111111-1111-4001-8001-111111111111';
+  exception when check_violation then
+    v_refused := true;
+  end;
+  assert v_refused, 'CRITICAL: an appointment was directly confirmed without a protected booking';
+  raise notice 'PASS [S4-guard] direct confirmation without a booking is refused';
+end $$;
+
 do $$
 declare
   r jsonb;
@@ -469,6 +488,8 @@ begin
   select v into v_token from st_ids where k = 'linked_booking_token';
   r := public.confirm_booking(v_token);
   assert r ->> 'status' = 'confirmed', 'linked confirmation failed: ' || r::text;
+  assert (select status from public.appointments where id = 'e1111111-1111-4001-8001-111111111111') = 'confirmed',
+    'confirming a protected booking must update its request in the same transaction';
 
   r := public.hold_slot(
     '11111111-1111-1111-1111-111111111111',
@@ -479,7 +500,7 @@ begin
     10,
     'e1111111-1111-4001-8001-111111111111'
   );
-  assert r ->> 'error' = 'appointment_already_booked',
+  assert r ->> 'error' = 'appointment_not_pending',
     'a confirmed request must still refuse a second booking, got ' || r::text;
 
   raise notice 'PASS [S4c] confirmation does not reopen the request';
@@ -527,6 +548,8 @@ begin
 
   r := public.cancel_booking(v_id);
   assert r ->> 'status' = 'cancelled', 'linked cancel failed: ' || r::text;
+  assert (select status from public.appointments where id = 'e1111111-1111-4001-8001-111111111111') = 'pending',
+    'cancelling a booking must return its request to pending in the same transaction';
 
   r := public.hold_slot(
     '11111111-1111-1111-1111-111111111111',
@@ -597,6 +620,147 @@ begin
     'the free slot after the booking must remain';
 
   raise notice 'PASS [S5b] confirmed booking subtracts its slot from availability';
+end $$;
+
+-- A live atelier owner can atomically create a resource and weekly schedule;
+-- a patron cannot provision atelier resources.
+do $$
+declare
+  r jsonb;
+  v_resource uuid;
+  v_count integer;
+begin
+  r := public.create_booking_resource(
+    '11111111-1111-1111-1111-111111111111',
+    'fitting_room', 'Owner Created Fitting Room', 'Africa/Nairobi',
+    '09:00', '17:00', array[1, 2, 3, 4, 5, 6]::smallint[]
+  );
+  assert r ? 'id', 'owner resource setup failed: ' || r::text;
+  v_resource := (r ->> 'id')::uuid;
+  select count(*) into v_count from public.resource_availability_rules where resource_id = v_resource;
+  assert v_count = 6, 'resource setup must create all six weekly rules, got ' || v_count;
+  raise notice 'PASS [S6a] owner creates resource and weekly availability atomically';
+end $$;
+
+set local "request.jwt.claims" = '{"sub": "a3333333-3333-3333-3333-333333333333", "role": "authenticated"}';
+do $$
+declare
+  r jsonb;
+begin
+  r := public.create_booking_resource(
+    '11111111-1111-1111-1111-111111111111',
+    'fitting_room', 'Patron Resource', 'Africa/Nairobi',
+    '09:00', '17:00', array[1, 2, 3, 4, 5, 6]::smallint[]
+  );
+  assert r ->> 'error' = 'forbidden', 'CRITICAL: patron created a tenant booking resource: ' || r::text;
+  raise notice 'PASS [S6b] patron cannot provision a booking resource';
+end $$;
+
+-- ----------------------------------------------------------------------------
+-- S7: CLIENT APPOINTMENT INSERT BOUNDARY
+-- ----------------------------------------------------------------------------
+-- A client may file a pending request. Only the protected booking RPCs may
+-- produce a confirmed appointment, so an insert carrying any other status or a
+-- staff assignment must be refused by RLS. This closes the insert path that the
+-- update-only status guard does not cover.
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub": "a3333333-3333-3333-3333-333333333333", "role": "authenticated"}';
+
+do $$
+declare
+  v_allowed integer := 0;
+  v_refused integer := 0;
+  v_sqlstate text;
+begin
+  begin
+    insert into public.appointments (
+      atelier_id, client_id, client_name, client_phone,
+      service_type, slot_datetime, status
+    ) values (
+      '11111111-1111-1111-1111-111111111111',
+      'a3333333-3333-3333-3333-333333333333',
+      'Zainab Al-Mansoor', '+254733445566',
+      'basted_fitting', '2027-08-02 09:00+00', 'pending'
+    );
+    v_allowed := 1;
+  exception when others then
+    v_sqlstate := sqlstate;
+  end;
+  assert v_allowed = 1,
+    'a client pending request must be accepted, got ' || coalesce(v_sqlstate, 'none');
+  raise notice 'PASS [S7a] client can file a pending request';
+
+  v_refused := 0; v_sqlstate := null;
+  begin
+    insert into public.appointments (
+      atelier_id, client_id, client_name, client_phone,
+      service_type, slot_datetime, status
+    ) values (
+      '11111111-1111-1111-1111-111111111111',
+      'a3333333-3333-3333-3333-333333333333',
+      'Zainab Al-Mansoor', '+254733445566',
+      'basted_fitting', '2027-08-02 10:00+00', 'confirmed'
+    );
+    v_refused := 1;
+  exception when others then
+    v_sqlstate := sqlstate;
+  end;
+  assert v_refused = 0,
+    'CRITICAL: client inserted a confirmed appointment with no protected booking';
+  assert v_sqlstate = '42501',
+    'a confirmed client insert must be refused by RLS, got ' || coalesce(v_sqlstate, 'none');
+  raise notice 'PASS [S7b] client cannot insert a confirmed appointment';
+
+  v_refused := 0; v_sqlstate := null;
+  begin
+    insert into public.appointments (
+      atelier_id, client_id, client_name, client_phone,
+      service_type, slot_datetime, status, assigned_tailor_id
+    ) values (
+      '11111111-1111-1111-1111-111111111111',
+      'a3333333-3333-3333-3333-333333333333',
+      'Zainab Al-Mansoor', '+254733445566',
+      'basted_fitting', '2027-08-02 11:00+00', 'pending',
+      'a2222222-2222-2222-2222-222222222222'
+    );
+    v_refused := 1;
+  exception when others then
+    v_sqlstate := sqlstate;
+  end;
+  assert v_refused = 0,
+    'CRITICAL: client assigned a staff tailor while filing a request';
+  assert v_sqlstate = '42501',
+    'a client self-assignment must be refused by RLS, got ' || coalesce(v_sqlstate, 'none');
+  raise notice 'PASS [S7c] client cannot assign a staff tailor';
+end $$;
+
+reset role;
+set local role anon;
+set local "request.jwt.claims" = '{"role": "anon"}';
+
+do $$
+declare
+  v_inserted integer := 0;
+  v_sqlstate text;
+begin
+  begin
+    insert into public.appointments (
+      atelier_id, client_id, client_name, client_phone,
+      service_type, slot_datetime, status
+    ) values (
+      '11111111-1111-1111-1111-111111111111', null,
+      'Anonymous Guest', '+254700000000',
+      'grand_agbada', '2027-08-03 09:00+00', 'pending'
+    );
+    v_inserted := 1;
+  exception when others then
+    v_sqlstate := sqlstate;
+  end;
+  assert v_inserted = 0, 'CRITICAL: anonymous caller inserted an appointment directly';
+  assert v_sqlstate = '42501',
+    'anonymous appointment insert must be refused, got ' || coalesce(v_sqlstate, 'none');
+  raise notice 'PASS [S7d] anonymous appointment insert remains closed';
 end $$;
 
 ROLLBACK;

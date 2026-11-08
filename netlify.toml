@@ -5,6 +5,19 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Production is the Supabase-backed bundle. Demo builds are the preview surface
+# only. `postbuild` (scripts/ci/verify-build.mjs) refuses a demo-mode production
+# deploy even if this file is overridden in the Netlify UI, so a missing or
+# stale VITE_DATA_MODE cannot ship the demo PIN and identities.
+[context.production.environment]
+  VITE_DATA_MODE = "supabase"
+
+[context.deploy-preview.environment]
+  VITE_DATA_MODE = "demo"
+
+[context.branch-deploy.environment]
+  VITE_DATA_MODE = "demo"
+
 # Keep future client-side routes working on a static host.
 [[redirects]]
   from = "/*"

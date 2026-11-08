@@ -5,7 +5,7 @@
 ## v1.0.0 — Launch readiness (released, demo-first)
 
 - Reproducible schema and seed.
-- Proven tenant isolation (12 scenarios; gates 1–7).
+- Proven tenant isolation (14 scenarios; gates 1–7 plus appointment insert boundaries).
 - Bundled cultural imagery.
 - Wired persistence with fail-closed configuration.
 - CI, release, tag, clean tree, truthful docs.
@@ -44,9 +44,10 @@ Shipped:
 
 Remaining for the booking engine:
 
-- Frontend/UI wiring of the RPCs.
-- Retire/backfill `appointments` (ADR-009 §8).
-- Guest edge-function boundary with per-IP/phone/tenant rate limits and a bot challenge.
+- Hosted verification of the owner UI and status-guard migration (implemented in the current
+  working tree; local database verification is blocked by unavailable Docker/Postgres tooling).
+- Guest edge-function boundary with per-IP/phone/tenant rate limits and a bot challenge. Until it
+  exists, direct anonymous appointment inserts and the live visitor booking form are disabled.
 - `booking_slots` and capacity greater than one.
 - Scheduled expiry sweeper and its operational alert.
 

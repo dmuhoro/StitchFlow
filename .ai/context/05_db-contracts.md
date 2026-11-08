@@ -18,11 +18,11 @@ except `order_progress_notes`, which derives tenancy from `orders`.
 | `order_financials` | `order_id` | `atelier_id` | owner; own patron | owner |
 | `order_progress_notes` | `id` | via `order_id` | owner; assigned employee; own patron | owner; assigned employee |
 | `measurements` | `id` | `atelier_id` | owner; assigned employee; own patron | owner; assigned employee |
-| `appointments` | `id` | `atelier_id` | owner; assigned employee; own patron | anon pending insert; own patron insert; owner/assigned employee **update only** — no staff `INSERT` policy |
+| `appointments` | `id` | `atelier_id` | owner; assigned employee; own patron | anon denied; client may insert own pending request only; owner/assigned employee update with booking-status guard |
 | `booking_resources` | `id` | `atelier_id` | member read active; owner all | owner |
 | `resource_availability_rules` | `id` | `atelier_id` | member read | owner |
 | `blackout_dates` | `id` | `atelier_id` | member read | owner |
-| `bookings` | `id` | `atelier_id` | staff all; patron own | **RPC only** — no direct write policy |
+| `bookings` | `id` | `atelier_id` | staff all; patron own | **RPC only** — no direct write policy; linked request status sync |
 | `idempotency_keys` | `(atelier_id, scope, key)` | `atelier_id` | none | **RPC only** — RLS with no policies |
 | `feedback` | `id` | `atelier_id` | owner; own patron | own patron insert; owner update |
 
@@ -35,7 +35,7 @@ except `order_progress_notes`, which derives tenancy from `orders`.
    raise on tenant reassignment.
 4. A member cannot change their own `role` or `active`; only an owner can. Enforced by
    `guard_member_mutation`.
-5. Anonymous inserts into `appointments` must be `status = 'pending'` and `client_id is null`.
+5. Anonymous users cannot insert appointments until the rate-limited guest edge boundary ships.
 6. `active = false` revokes access on the next query, not at the next login.
 7. Country and city are nullable only until onboarding completes; a live atelier must set both.
 8. `bookings_no_overlap` is `EXCLUDE USING gist (resource_id WITH =, during WITH &&) WHERE status IN
@@ -52,14 +52,14 @@ except `order_progress_notes`, which derives tenancy from `orders`.
 |-------|--------------------|
 | `orders`, `order_financials`, `order_progress_notes` | `persistOrder`, `persistOrderStatus`, `persistTailorAssignment` |
 | `measurements` | `persistMeasurement` |
-| `appointments` | `persistAppointment`, `persistAppointmentStatus` |
+| `appointments` | `persistAppointment` for authenticated requests; booking triggers synchronize protected confirmation/cancellation |
 | `bookings` | `hold_slot`, `confirm_booking`, `cancel_booking`, `reschedule_booking` (RPCs; no direct client write) |
 | `feedback` | `persistFeedback`, `persistFeedbackStatus` |
 | `lookbook_items` | `persistLookbookItem` |
 | `ateliers`, `members` | `createAtelierForCurrentUser` (two client inserts, not atomic), `persistAtelierSettings` |
 
-Anonymous fitting requests are written by `persistAppointment` with `client_id = null`, `status =
-'pending'`, and the guest's name/phone. A member booking carries their auth uid.
+The public fitting form is disabled in Supabase mode. A member can submit a pending fitting request;
+the owner confirms it only by reserving a protected resource slot.
 
 `create_atelier_for_current_user(...)` is **not** in the current schema: created in
 `20261031110000_baseline_reconciliation.sql`, dropped at `20261031111500_direct_uid_rls.sql:160`.
@@ -76,12 +76,12 @@ Do not document or call it as if it exists.
 
 ## Verification
 
-`npm run verify:db` applies the whole chain to an empty database and runs the 12-scenario
+`npm run verify:db` applies the whole chain to an empty database and runs the 14-scenario
 `supabase/tests/rls_isolation_test.sql`, the 15-scenario hosted E2E suite, the booking RPC suite
 (B1–B23), and a 200-attempt / 50-concurrent exclusion proof from
 `scripts/db/booking_concurrency_test.sh`. A contract change without a scenario is unproven.
 
-The legacy `appointments` table is still unguarded: it has no exclusion constraint, resource, hold,
-or idempotency key, and overlapping rows are accepted. Gate 8 remains **FAIL** for that store and
-belongs to ADR-009 §8. The new `bookings` store passes Gate 8B; see
-`docs/evidence/2026-11-07-booking-engine.md`.
+`appointments` remains a request inbox without resource/overlap semantics. Anonymous writes are
+disabled; client inserts are limited to own-tenant pending requests without staff assignment, and
+only clients can use that insert policy. Migration guards require linked protected bookings for
+confirmed/completed status.

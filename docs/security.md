@@ -47,7 +47,8 @@ to expose an RPC surface.
 
 10. `anon` reads `ateliers` only through the granted public column list.
 11. `anon` reads `lookbook_items` only where `is_published = true`.
-12. `anon` inserts `appointments` only with `status = 'pending'` and `client_id is null`.
+12. `anon` cannot insert appointments until the rate-limited guest booking boundary ships. Only a
+    member with the client role may insert an own-tenant pending request with no assigned tailor.
 13. `anon` cannot read orders, members, measurements, feedback, or financials.
 14. `anon` cannot execute any booking RPC or read any booking table.
 
@@ -79,14 +80,17 @@ to expose an RPC surface.
 
 | Risk | Severity | Status / mitigation |
 |------|----------|--------------------|
-| Demo identities, PIN `1234` and credential cards ship in the Supabase-mode bundle | **P0** | Refused at the runtime action boundary, but present in the artifact; `verify:build` does not assert absence. Sprint 1. |
-| Overlapping appointments are accepted on the legacy `appointments` table; it has no exclusion constraint, resource or hold | **P0** | Gate 8 FAIL. The new `bookings` store is protected (Gate 8B PASS locally). Retiring `appointments` is ADR-009 §8. |
-| The browser still writes the legacy `appointments` path; no frontend calls the booking RPCs | **P1** | The protected path exists but is unused by the UI. Sprint 3 follow-up. |
+| Demo identities, PIN `1234` and credential cards in the Supabase-mode bundle | **P0** | Source aliases exclude demo modules; `postbuild` `verify:build` rejects demo strings, and a production deploy context fails unless `VITE_DATA_MODE=supabase` with real Supabase values. CI proves the gate rejects a demo artifact. |
+| Legacy appointment requests can overlap as requested times | **Not a booking** | Pending rows are proposals only. Direct anonymous inserts are revoked; staff confirmation requires a protected booking and resource exclusion. Local migration proof passes; production has not received the migration. |
+| A client could insert a `confirmed` appointment without a protected booking | **P1 — closed** | The client insert policy allows only an own-tenant `pending` request with no assigned tailor; the update guard still applies. RLS tests 13–14, staff S7. |
+| Hosted booking confirmation has not been exercised in a browser | **Pilot blocker** | UI now calls availability, hold, confirm and cancel RPCs; run the opt-in hosted E2E with the owner fixture after migration verification. |
 | `idempotency_keys` retains the original hold token for replay | Medium | Client roles are denied by RLS; only definer RPCs read it. Short hold window. |
 | No owner/employee `INSERT` policy on `appointments` | P1 | Staff cannot create a legacy fitting. Staff booking belongs to `hold_slot`. |
-| Anonymous booking has no rate limit | Medium | PostgREST/edge rate limit post-launch; `anon` cannot reach booking RPCs |
+| Guest self-booking has no rate limit or bot challenge | Medium | Direct anonymous writes are disabled in the migration and live visitor UI; implement the edge boundary before reopening. |
 | No audit trail for owner money edits | Medium | Booking transitions are audited; money edits still are not. Sprint 1 |
 | Hosted project access unverified | Blocker for deploy | Owner authorization |
+
+Production schema currently lacks booking tables/RPCs and has migration-history drift at `20261106122030`; this blocks the live booking pilot until the owner reconciles that version with the live schema, then runs hosted role browser flows.
 
 ## How to verify
 

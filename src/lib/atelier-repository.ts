@@ -117,10 +117,23 @@ const INVITATION_COLUMNS = 'id, atelier_id, email, role, invitation_code, invite
 export async function createInvitation(input: {
   atelierId: string;
   email: string;
-  role: 'employee' | 'client';
+  role: 'employee' | 'client' | 'owner';
   invitedBy: string;
 }): Promise<Invitation> {
   const client = requireSupabase();
+  // Verify caller is an active owner
+  const { data: current, error: currErr } = await client
+    .from('members')
+    .select('role')
+    .eq('id', input.invitedBy)
+    .eq('atelier_id', input.atelierId)
+    .eq('active', true)
+    .maybeSingle();
+  if (currErr || !current) throw new Error('access_denied');
+  if (input.role === 'owner' && current.role !== 'owner') {
+    throw new Error('only_owner_can_invite_owner');
+  }
+
   const code = crypto.randomUUID().replace(/-/g, '');
   const { data, error } = await client
     .from('invitations')
@@ -353,9 +366,9 @@ export async function persistAppointment(atelierId: string, appointment: Appoint
   if (error) throw error;
 }
 
-export async function persistAppointmentStatus(id: string, status: AppointmentStatus): Promise<void> {
+export async function persistAppointmentStatus(atelierId: string, id: string, status: AppointmentStatus): Promise<void> {
   const client = requireSupabase();
-  const { error } = await client.from('appointments').update({ status }).eq('id', id);
+  const { error } = await client.from('appointments').update({ status }).eq('atelier_id', atelierId).eq('id', id);
   if (error) throw error;
 }
 

@@ -24,6 +24,13 @@
 >
 > Frontend wiring, guest booking, capacity, the sweeper, and the legacy-store migration remain open.
 
+> **Pilot integration update (2026-11-07, unverified).** The working tree now contains the owner
+> availability/hold/confirm/cancel UI, atomic resource setup, appointment status guards and booking
+> status synchronization in `20261107210000_guard_appointment_booking_status.sql`. Anonymous
+> appointment inserts and the live visitor form are disabled until the guest edge boundary exists.
+> `npm run verify:db` and hosted browser proof are still required before this implementation is used
+> for a live pilot.
+
 ## Context
 
 `appointments` currently accepts any number of rows at the same `slot_datetime`. There is no

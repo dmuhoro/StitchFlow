@@ -221,7 +221,7 @@ export const ClientPortal: React.FC = () => {
                         {order.estimated_delivery}
                       </div>
                       <div className="text-xs text-[#6A5D52] dark:text-[#B8ABA0] mt-1">
-                        Balance Due: <strong className="text-[#161311] dark:text-[#F5EFE6]">{formatCurrency(order.balance_due)}</strong>
+                        Balance Due: <strong className="text-[#161311] dark:text-[#F5EFE6]">{formatCurrency(order.balance_due, order.currency)}</strong>
                       </div>
                     </div>
                   </div>

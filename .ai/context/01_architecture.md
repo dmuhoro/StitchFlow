@@ -25,10 +25,10 @@ Browser
   → snapshot reload → React state
 ```
 
-Booking writes have a second, stricter path: the browser must call the `hold_slot`,
-`confirm_booking`, `cancel_booking`, or `reschedule_booking` RPC. Those `SECURITY DEFINER` functions
-check tenant membership, availability, blackouts, expiry, and idempotency, then write `bookings`
-under a GiST exclusion constraint. No frontend code calls them yet.
+Booking writes have a second, stricter path: the owner workspace calls availability, hold,
+confirmation, and cancellation RPCs through `src/lib/atelier-booking-repository.ts`. The current
+working-tree UI is awaiting database and hosted browser verification. Anonymous appointment inserts
+and live visitor booking are disabled until a rate-limited guest boundary exists.
 
 In `VITE_DATA_MODE=demo` the context writes to namespaced `localStorage` through
 `src/lib/storage.ts` and never calls Supabase. Demo mode is a presentation surface, not a
@@ -73,9 +73,8 @@ verified domain, then subdomain, then slug. Today the client still chooses the t
 
 | Gap | Severity | Owner layer |
 |-----|----------|-------------|
-| Demo code, PIN and demo identities ship in the Supabase-mode bundle | P0 | Sprint 1 |
-| No server-side booking protection on the legacy `appointments` table | P0 | Sprint 3 / ADR-009 §8 |
-| New `bookings` store is protected but no frontend path calls its RPCs | P1 | Sprint 3 follow-up |
+| Supabase-mode demo artifact exclusion | Closed in current source; `verify:build` checks known demo markers | Sprint 1 |
+| Appointment status guard and booking UI integration | Implemented in working tree; migration and hosted proofs pending | Sprint 3 follow-up |
 | Capacity > 1 / `booking_slots` not implemented; capacity is constrained to 1 | P2 | Sprint 3 follow-up |
 | No owner/employee `INSERT` policy on `appointments` | P1 | Sprint 3 |
 | Tenant chosen client-side; public path defaults to Nairobi | P1 | Sprint 2 |

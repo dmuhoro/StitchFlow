@@ -9,9 +9,19 @@
  *   - no service-role key marker
  *   - at least one bundled image asset is emitted
  *
- * When the build ran with VITE_DATA_MODE=supabase:
+ * When the build ran with VITE_DATA_MODE=supabase, or when Netlify reports a
+ * production deploy context:
  *   - the Supabase client is present (the bundle is not demo-only)
  *   - the runtime guards that refuse demo sign-in and demo reset are present
+ *   - no demo identity, PIN, credential card, slug, or lookbook copy is present
+ *
+ * When the deploy context is production (Netlify sets CONTEXT=production):
+ *   - VITE_DATA_MODE must be supabase; a demo-mode production deploy FAILS
+ *   - VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY must be configured, non-placeholder values
+ *
+ * This runs as `postbuild`, so the deploy boundary itself fails closed. It is
+ * not enough for CI to run a separate assertion that a misconfigured deploy can
+ * skip.
  */
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, resolve, dirname, extname } from 'node:path';
@@ -71,9 +81,30 @@ if (imageAssets.length === 0) {
 }
 
 const mode = process.env.VITE_DATA_MODE;
-if (mode === 'supabase') {
+const productionContext = [process.env.CONTEXT, process.env.NETLIFY_CONTEXT, process.env.STITCHFLOW_DEPLOY_CONTEXT]
+  .some((value) => value === 'production');
+const enforceProductionArtifact = mode === 'supabase' || productionContext;
+
+if (productionContext) {
+  if (mode !== 'supabase') {
+    fail(
+      `production deploy built with VITE_DATA_MODE=${mode ?? '(unset)'}; it must be "supabase". ` +
+        'A demo-mode production bundle contains demo identities and the demo PIN.'
+    );
+  }
+  const url = process.env.VITE_SUPABASE_URL ?? '';
+  const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '';
+  if (!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(url) || /your-project|example|localhost|127\.0\.0\.1/i.test(url)) {
+    fail('production deploy needs a configured VITE_SUPABASE_URL (https://<ref>.supabase.co), not a placeholder.');
+  }
+  if (!key || key.length < 20 || /your_key_here|local_verification_only|placeholder|example/i.test(key)) {
+    fail('production deploy needs a configured VITE_SUPABASE_PUBLISHABLE_KEY, not a placeholder.');
+  }
+}
+
+if (enforceProductionArtifact) {
   if (!/GoTrueClient|createClient/.test(corpus)) {
-    fail('VITE_DATA_MODE=supabase build does not include the Supabase client.');
+    fail('production build does not include the Supabase client.');
   }
   if (!corpus.includes('Demo role sign-in is disabled in production')) {
     fail('production build is missing the runtime guard that refuses demo role sign-in.');

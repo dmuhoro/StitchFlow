@@ -14,7 +14,7 @@ publishable key. Authorization is entirely Postgres Row Level Security.
 ┌──────────────────────────────────────────────────────────────┐
 │ Browser                                                      │
 │  React 19 + Vite 8 + Tailwind 4                              │
-│  StitchFlowContext ──► atelier-repository ──► supabase-js    │
+│  StitchFlowContext ──► atelier repositories ──► supabase-js │
 └───────────────────────────────┬──────────────────────────────┘
                                 │ HTTPS (publishable key + JWT)
 ┌───────────────────────────────▼──────────────────────────────┐
@@ -76,9 +76,13 @@ Verified state of this layer (2026-11-07 booking-engine run):
   PostgREST write cannot bypass the tenant check, expiry sweep, idempotency ledger, or exclusion.
 - Guest contact details can be stored only by staff in this layer; anonymous callers cannot execute
   any booking RPC.
-- `appointments` is deliberately unchanged: it still has no resource, duration, hold, idempotency
-  key, or overlap constraint, and no owner/employee `INSERT` policy. It remains a second booking
-  store until ADR-009 §8 retires it.
+- `appointments` remains the fitting request inbox, without resource, duration, hold, or overlap
+  semantics. A database guard blocks confirmation/completion unless a linked `bookings` row is
+  confirmed, and booking transitions synchronize request status. The owner workspace reads
+  availability, confirms via hold/confirm RPCs, and cancels via `cancel_booking`. Direct anonymous
+  appointment writes are disabled until a rate-limited guest boundary is deployed. Authenticated
+  clients can insert only their own pending request, without a staff assignment; other roles cannot
+  use that insert policy.
 
 See [`db-contracts.md`](db-contracts.md) for table contracts and
 [`security.md`](security.md) for the invariant list.
@@ -89,9 +93,9 @@ See [`db-contracts.md`](db-contracts.md) for table contracts and
 |-------|---------|----------------|
 | Types | `npm run lint` | `tsc --noEmit` is clean |
 | Bundle | `npm run build` | Production build succeeds |
-| Artifacts | `npm run verify:build` | No literal source paths; no secret in output. **It does not prove demo code is absent** — see the P0 in `docs/audit/2026-11-05_sprint-0-audit.md` |
+| Artifacts | `npm run verify:build` | No literal source paths or secrets; Supabase-mode build also rejects known demo identities, PIN, credential cards, tenant slugs and demo copy |
 | Docs | `npm run check:docs` | Every relative Markdown link resolves |
-| Database | `npm run verify:db` | Chain applies to empty DB; 12-scenario RLS suite, 15 E2E scenarios, booking RPC suite, and a 200-attempt / 50-concurrent exclusion proof pass |
+| Database | `npm run verify:db` | Chain applies to empty DB; 14-scenario RLS suite, 15 E2E scenarios, booking RPC suite, and a 200-attempt / 50-concurrent exclusion proof pass |
 | CI | `.github/workflows/ci.yml` | All of the above on every push |
 
 ## 7. Deployment

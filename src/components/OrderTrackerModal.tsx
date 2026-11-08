@@ -193,7 +193,7 @@ export const OrderTrackerModal: React.FC = () => {
                     {searchedOrder.estimated_delivery}
                   </div>
                   <div className="text-[11px] text-[#6A5D52] mt-0.5">
-                    Balance: <span className="font-semibold">{formatCurrency(searchedOrder.balance_due)}</span>
+                    Balance: <span className="font-semibold">{formatCurrency(searchedOrder.balance_due, searchedOrder.currency)}</span>
                   </div>
                 </div>
               </div>

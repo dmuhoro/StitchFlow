@@ -210,20 +210,22 @@ BEGIN
 END $$;
 
 -- ----------------------------------------------------------------------------
--- TEST 6: ANONYMOUS BOOKING IS LIMITED TO PENDING, ACCOUNT-LESS REQUESTS
+-- TEST 6: ANONYMOUS BOOKING WRITES STAY CLOSED UNTIL THE RATE-LIMITED EDGE PATH
 -- ----------------------------------------------------------------------------
 DO $$
 BEGIN
-  INSERT INTO public.appointments (
-    atelier_id, client_name, client_phone, service_type, slot_datetime, status
-  ) VALUES (
-    '11111111-1111-1111-1111-111111111111',
-    'Walk-in Patron',
-    '+254700000001',
-    'grand_agbada',
-    now() + interval '3 days',
-    'pending'
-  );
+  BEGIN
+    INSERT INTO public.appointments (
+      atelier_id, client_name, client_phone, service_type, slot_datetime, status
+    ) VALUES (
+      '11111111-1111-1111-1111-111111111111',
+      'Walk-in Patron', '+254700000001', 'grand_agbada',
+      now() + interval '3 days', 'pending'
+    );
+    RAISE EXCEPTION 'expected anonymous pending-request denial';
+  EXCEPTION
+    WHEN insufficient_privilege THEN NULL;
+  END;
 
   BEGIN
     INSERT INTO public.appointments (
@@ -241,7 +243,7 @@ BEGIN
     WHEN insufficient_privilege THEN NULL;
   END;
 
-  RAISE NOTICE 'PASS [6] anonymous booking: pending accepted, confirmed denied';
+  RAISE NOTICE 'PASS [6] anonymous appointment writes denied pending rate-limited edge boundary';
 END $$;
 
 -- ----------------------------------------------------------------------------
@@ -436,6 +438,91 @@ BEGIN
 
   ASSERT v_blocked = 3, 'CRITICAL: A tenant_id mutation was not blocked';
   RAISE NOTICE 'PASS [12] tenant-id mutation guards: blocked=%', v_blocked;
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- TEST 13: A PATRON CAN ONLY FILE A PENDING REQUEST FOR THEMSELVES
+-- ----------------------------------------------------------------------------
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub": "a3333333-3333-3333-3333-333333333333", "role": "authenticated"}';
+
+DO $$
+DECLARE
+  v_inserted uuid;
+BEGIN
+  INSERT INTO public.appointments (
+    atelier_id, client_id, client_name, client_phone, service_type, slot_datetime, status
+  ) VALUES (
+    '11111111-1111-1111-1111-111111111111',
+    'a3333333-3333-3333-3333-333333333333',
+    'Dr. Zainab Al-Mansoor', '+254733445566', 'grand_agbada', now() + interval '5 days', 'pending'
+  ) RETURNING id INTO v_inserted;
+  ASSERT v_inserted IS NOT NULL, 'patron should be able to file their own pending request';
+
+  BEGIN
+    INSERT INTO public.appointments (
+      atelier_id, client_id, client_name, client_phone, service_type, slot_datetime, status
+    ) VALUES (
+      '11111111-1111-1111-1111-111111111111',
+      'a3333333-3333-3333-3333-333333333333',
+      'Dr. Zainab Al-Mansoor', '+254733445566', 'grand_agbada', now() + interval '6 days', 'confirmed'
+    );
+    RAISE EXCEPTION 'expected patron confirmed request denial';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.appointments (
+      atelier_id, client_id, client_name, client_phone, service_type, slot_datetime, status,
+      assigned_tailor_id
+    ) VALUES (
+      '11111111-1111-1111-1111-111111111111',
+      'a3333333-3333-3333-3333-333333333333',
+      'Dr. Zainab Al-Mansoor', '+254733445566', 'grand_agbada', now() + interval '7 days', 'pending',
+      'a1111111-1111-1111-1111-111111111111'
+    );
+    RAISE EXCEPTION 'expected patron assigned-tailor denial';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.appointments (
+      atelier_id, client_id, client_name, client_phone, service_type, slot_datetime, status
+    ) VALUES (
+      '22222222-2222-2222-2222-222222222222',
+      'a3333333-3333-3333-3333-333333333333',
+      'Dr. Zainab Al-Mansoor', '+254733445566', 'grand_agbada', now() + interval '8 days', 'pending'
+    );
+    RAISE EXCEPTION 'expected patron cross-tenant request denial';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  RAISE NOTICE 'PASS [13] patron appointment insert is own-tenant pending request only';
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- TEST 14: STAFF CANNOT USE THE PATRON REQUEST INSERT POLICY
+-- ----------------------------------------------------------------------------
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub": "a1111111-1111-1111-1111-111111111111", "role": "authenticated"}';
+
+DO $$
+BEGIN
+  BEGIN
+    INSERT INTO public.appointments (
+      atelier_id, client_id, client_name, client_phone, service_type, slot_datetime, status
+    ) VALUES (
+      '11111111-1111-1111-1111-111111111111',
+      'a1111111-1111-1111-1111-111111111111',
+      'Chief Tailor', '+254700000099', 'grand_agbada', now() + interval '9 days', 'pending'
+    );
+    RAISE EXCEPTION 'expected owner appointment insert denial';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  RAISE NOTICE 'PASS [14] owner cannot use patron pending-request insert policy';
 END $$;
 
 ROLLBACK;

@@ -29,9 +29,11 @@ narrow `SECURITY DEFINER` predicates with `search_path = ''`:
 3. A patron reads only rows whose `client_id` is their auth uid, plus owner/employee directory rows.
 4. A patron reads only the `order_financials` row for their own order.
 5. An anonymous visitor reads only published lookbook rows and the public atelier columns.
-6. An anonymous visitor may insert only a `pending`, account-less appointment.
-7. Deactivating a member revokes access on the next query.
-8. No caller can change `atelier_id`, `client_id`, or `assigned_tailor_id` to escape their tenant.
+6. An anonymous visitor cannot insert appointments until a rate-limited guest booking boundary ships.
+7. An authenticated patron may insert only an own-atelier pending request without a staff
+   assignment; owner and employee roles cannot use that policy.
+8. Deactivating a member revokes access on the next query.
+9. No caller can change `atelier_id`, `client_id`, or `assigned_tailor_id` to escape their tenant.
 
 ## Public surface
 
@@ -50,6 +52,7 @@ default_currency, whatsapp_number, default_unit, timestamps). It does not receiv
 | Risk | Status |
 |------|--------|
 | Demo PIN in production | Refused at the action boundary (`StitchFlowContext.tsx:576`, `AuthModal.tsx:81`) |
-| No rate limiting on anonymous booking | Open; PostgREST-level, post-launch |
-| No appointment capacity lock | Open; post-launch |
-| Remote project access unverified | Blocked on owner authorization |
+| No rate limiting on anonymous booking | Anonymous UI and direct database insert are disabled pending the edge boundary |
+| Booking UI and request status guard | Local database verification passes; not applied to production |
+| Patron appointment insert boundary | Local database verification proves pending own-tenant client requests only |
+| Production booking pilot | Blocked by missing booking schema and unmatched remote migration `20261106122030`; reconcile migration history, apply migrations, then run hosted role browser flows |

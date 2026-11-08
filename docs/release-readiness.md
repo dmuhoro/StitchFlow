@@ -1,7 +1,7 @@
 # Release Readiness
 
 > The authoritative to-do list. A gate is DONE only with cited evidence.
-> Last updated: 2026-11-07 (Sprint 3 booking-engine database layer).
+> Last updated: 2026-11-08 (v1.4.0-rc.1 booking integration checkpoint).
 
 ## Launch gates
 
@@ -17,6 +17,7 @@
 | L7 | Cleanup complete, lockfile committed, tree clean | DONE | `npm ci` succeeded on 2026-11-05; dead dependencies removed in `1bd06bb` |
 | L8 | README, CHANGELOG, sprints updated | DONE | `CHANGELOG.md` 1.0.0/1.0.1, sprint records, evidence index |
 | L9 | Deployment verified | DONE (deploy only) | `docs/evidence/2026-11-01_deployment.md` — live, but the artifact contains demo code (P0 below) |
+| L10 | Production deploy fails closed on a demo-mode artifact | DONE — source + CI | `scripts/ci/verify-build.mjs` (`CONTEXT=production`), `postbuild`, CI negative step; `docs/evidence/2026-11-08_v1.4.0-rc.1.md` |
 
 ## Sprint 0a verification gates (2026-11-05)
 
@@ -40,21 +41,32 @@
 | B3 | Booking writes are RPC-only; tenant, role, availability, and blackout checks hold | DONE | RPC suite B1–B12, B21–B22 |
 | B4 | Expiry sweep and idempotent replay/conflict semantics | DONE | RPC suite B13, B16–B20 |
 | B5 | 200 attempts / 50 concurrent on one slot: 1 success, 199 `slot_unavailable`, 0 duplicates | DONE — local and CI | `docs/evidence/2026-11-07-booking-engine.md`; CI run [42371377892](https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892) |
-| B6 | Legacy `appointments` double-booking protection | **FAIL — open** | ADR-009 §8; table intentionally untouched |
-| B7 | Frontend calls the booking RPCs | **NOT STARTED** | no `src/` caller yet |
-| B8 | Guest rate limits and bot challenge | **NOT STARTED** | ADR-009 §8 |
+| B6 | Confirmed fitting must have a protected resource booking | **LOCAL PASS — hosted migration pending** | New status guard and booking/request sync migration; `npm run verify:db` |
+| B7 | Owner UI calls availability, hold, confirm, cancel, and resource setup | **LOCAL PASS — hosted flow pending** | `src/components/BookingWorkspace.tsx`, `src/lib/atelier-booking-repository.ts`; opt-in Playwright test added |
+| B8 | Guest rate limits and bot challenge | **CLOSED BY FAIL-CLOSED DISABLEMENT** | Anonymous appointment inserts and the live visitor booking form are disabled until the edge boundary is deployed |
+| B9 | Client and staff cannot mint a confirmed appointment outside the booking RPCs | **LOCAL PASS** | `20261107220000_restrict_client_appointment_insert.sql`; RLS tests 13–14, staff S7a–S7d |
 
 ## Production-readiness verdict
 
-`v1.1.0` is a released **demo-first product**, not a certified production atelier system. `v1.2.0`
-adds the booking-engine database layer, which protects the new `bookings` store; it does not make
-the browser use that store yet. Two P0 defects remain open:
+`v1.4.0-rc.1` is a **prerelease checkpoint**, not a certified production atelier system. The
+Supabase-mode bundle excludes demo code, and the deploy boundary now fails closed. The booking staff
+UI, the insert boundary, and the fail-closed request guard pass local database verification. Hosted
+schema parity and hosted browser flows remain unproven. Production is missing the booking migrations
+and has an unmatched remote migration; local migration proof passes, but production
+migration-history reconciliation and hosted role fixtures remain release blockers:
 
-1. `S0-P0-01` — demo identities, PIN `1234`, credential cards and demo tenant slugs ship in a
-   Supabase-mode bundle, and `verify:build` still passes.
-2. `S0-P0-02` — the legacy `appointments` table still accepts overlapping rows and anonymous pending
-   inserts. The new `bookings` store is protected, but the live browser path still writes the legacy
-   table. Retiring it is ADR-009 §8.
+1. `S0-P0-01` — **closed in source and at the deploy boundary**. Supabase-mode build and
+   `verify:build` reject demo identities, PIN, credential cards, tenant slugs, and demo lookbook
+   copy. `postbuild` runs the assertion on every build, and a Netlify `CONTEXT=production` deploy
+   fails unless `VITE_DATA_MODE=supabase` with real Supabase values. CI proves the gate rejects a
+   demo artifact. Evidence: `docs/evidence/2026-11-08_v1.4.0-rc.1.md`.
+2. `S0-P0-02` — **code changed, local DB proof PASS; hosted proof pending**. The new migration guards
+   confirmation against the protected booking store and disables anonymous direct inserts. The
+   update-only guard was still bypassable by a client `INSERT`; migration
+   `20261107220000_restrict_client_appointment_insert.sql` now limits a client to an own-tenant
+   `pending` request with no assigned tailor. The owner UI uses
+   `hold_slot`/`confirm_booking`/`cancel_booking`. Production is missing these migrations and has an
+   unmatched remote migration version, so no push was attempted.
 
 Full prioritized list: `docs/audit/2026-11-05_sprint-0-audit.md`.
 
@@ -71,8 +83,9 @@ Full prioritized list: `docs/audit/2026-11-05_sprint-0-audit.md`.
 
 | Item | Blocker | Owner |
 |------|---------|-------|
-| Hosted Supabase schema parity / remote migration apply | Not verified in this environment; requires project authorization | Repository owner |
+| Hosted Supabase schema parity / remote migration apply | Remote has unmatched migration `20261106122030`; booking tables/RPCs absent. Reconcile the migration against the live schema before any push. | Repository owner |
 | Netlify deployment and custom-domain DNS | Not re-verified in this environment | Repository owner |
+| Hosted role-based and booking browser journeys | Requires owner-provisioned owner, employee, patron credentials and a unique pending booking fixture | Repository owner |
 | Payment gateway credentials | Must live in a server-side secret store; no credentials provided | Repository owner |
 | WhatsApp Business API sender and templates | Meta approval required | Atelier operator |
 | Kenya/Nigeria data-protection review | Human legal/privacy decision | Repository owner |

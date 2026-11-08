@@ -55,6 +55,18 @@ jobs:
           VITE_DATA_MODE: supabase
         run: npm run verify:build
 
+      # Negative proof: a production deploy context must REJECT a demo-mode
+      # artifact. Without this step the gate could regress to a no-op and CI
+      # would still be green.
+      - name: Prove the production gate rejects a demo-mode artifact
+        run: |
+          npm run build
+          if CONTEXT=production node scripts/ci/verify-build.mjs; then
+            echo "FAIL: the production gate accepted a demo-mode artifact."
+            exit 1
+          fi
+          echo "PASS: the production gate rejected the demo-mode artifact."
+
   database:
     name: Migration chain and RLS
     runs-on: ubuntu-latest

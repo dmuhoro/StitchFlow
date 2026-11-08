@@ -85,6 +85,7 @@ run_file "$ROOT/supabase/seed.sql"
 run_file "$ROOT/supabase/tests/rls_isolation_test.sql"
 run_file "$ROOT/supabase/tests/hosted_rls_e2e.sql"
 run_file "$ROOT/supabase/tests/booking_engine_test.sql"
+run_file "$ROOT/supabase/tests/booking_staff_slice_test.sql"
 bash "$ROOT/scripts/db/booking_concurrency_test.sh"
 
 echo "==> structural assertions"

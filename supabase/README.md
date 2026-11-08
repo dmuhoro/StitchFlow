@@ -46,17 +46,19 @@ Run locally on a disposable `postgres:16` via `npm run verify:db`:
 | 5 | A patron cannot update an order, balance, or measurement | PASS |
 | 6 | A staff member cannot change tenant IDs through an update payload | PASS |
 | 7 | Deleted or inactive members lose access immediately | PASS |
-| 8 | Appointment capacity and double-booking protection on the legacy `appointments` table | **FAIL** — table unchanged by this layer; see ADR-009 §8 |
+| 8 | Confirmed fitting has an exclusive resource reservation | **IMPLEMENTED, NEW MIGRATION PROOF PENDING** — status trigger links confirmed requests to the protected booking store |
 | 8B | Booking-store overlap exclusion, holds, expiry, and idempotency | **PASS** — RPC suite B1–B23 plus 200 attempts / 50 concurrent: 1 success, 199 `slot_unavailable`, 0 duplicates (local and CI run [42371377892](https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892)) |
 
-Gate 8 remains open for `appointments`: it still has no resource, duration, hold, idempotency key, or
-overlap constraint, no owner/employee `INSERT` policy, and has no resource model. Its
-`appointments_public_insert` policy is retained. Gate 8B closes only for the new `bookings` store,
-which the browser does not call yet. Evidence:
-[`docs/evidence/2026-11-07-booking-engine.md`](../docs/evidence/2026-11-07-booking-engine.md).
+`appointments` is a request inbox; it still has no resource, duration, hold, idempotency key, or
+overlap constraint. Migrations require a protected booking before confirmation, disable anonymous
+inserts, and limit client inserts to own-atelier pending requests without staff assignment. The
+booking workflow and migrations pass local DB verification; hosted production apply is blocked by
+migration-history drift. See [`pilot evidence`](../docs/evidence/2026-11-08_v1.4.0-rc.1.md).
 
 ## Next step
 
-Frontend wiring of the booking RPCs, retirement/backfill of `appointments` (ADR-009 §8), and the
-guest edge-function boundary with rate limits and a bot challenge. The prioritized defect list is in
+Reconcile production migration history, then apply migrations and run hosted owner/employee/patron
+and booking browser flows. The guest edge-function boundary with rate limits and a bot challenge is
+still required before public booking.
+The prioritized defect list is in
 [`docs/audit/2026-11-05_sprint-0-audit.md`](../docs/audit/2026-11-05_sprint-0-audit.md).

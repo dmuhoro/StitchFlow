@@ -2,8 +2,10 @@
 
 > What is true today. Aspirational work is labelled **ASPIRATIONAL** and must not be assumed.
 
-Last verified: 2026-11-07 (Sprint 3 booking-engine database layer). Booking, frontend wiring,
-payments, and SSR remain explicitly incomplete.
+Last verified: 2026-11-08 (Sprint 3 booking workflow, insert boundary, and deploy gate). Booking
+staff workflow is wired and locally verified; hosted schema parity and hosted browser role flows
+remain blocked by production migration-history drift and missing role fixtures. Payments and SSR
+remain explicitly incomplete.
 Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_sprint-0-audit.md).
 
 ## Shipped and usable
@@ -17,12 +19,18 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
 - **Backend foundation:** nine core tenant tables with RLS on every table, plus the Sprint 3 booking
   tables (`booking_resources`, `resource_availability_rules`, `blackout_dates`, `bookings`,
   `idempotency_keys`). The tracked migration chain replays from empty and the adversarial suite now
-  proves **12 RLS scenarios**, **15 hosted/local E2E scenarios**, and the booking RLS/RPC suite.
+  proves **14 RLS scenarios**, **15 hosted/local E2E scenarios**, and the booking RLS/RPC suite.
 - **Booking engine (database layer):** `bookings` carries a GiST exclusion constraint keyed by
   resource and time range; `hold_slot`, `confirm_booking`, `cancel_booking`, and
   `reschedule_booking` are the only write paths. Stale holds expire inside the transaction.
   Idempotency replay is stored in `idempotency_keys`. A 200-attempt / 50-concurrent proof asserts one
   winner and 199 `slot_unavailable` results.
+- **Booking staff workflow (local proof passed):** the owner workspace creates a
+  resource with weekly availability, chooses an available slot for a pending request, and uses the
+  protected hold/confirm/cancel RPCs. Database triggers guard confirmation and synchronize request
+  status. A client may insert only an own-tenant `pending` request with no assigned tailor, so the
+  update-only status guard can no longer be bypassed by an insert. The live visitor request form is
+  disabled until rate-limited guest booking exists.
 - **Persistence:** order, measurement, appointment, feedback, lookbook and settings writes go through
   `src/lib/atelier-repository.ts` in Supabase mode; failures surface as explicit toasts.
 - **Design briefs:** measurement card, production stepper, lookbook and booking briefs under `design/`.
@@ -31,7 +39,7 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
 - **Invitations:** email-bound employee/client invitation redemption is covered by the hosted SQL
   proof and a Playwright flow test.
 
-## Verified on 2026-11-07
+## Verified on 2026-11-08
 
 | Gate | Verdict |
 |------|---------|
@@ -42,26 +50,32 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
 | Patron cannot update order/balance/measurement | PASS |
 | Staff cannot change tenant IDs | PASS |
 | Deactivated members lose access | PASS |
-| Appointment capacity and double-booking (legacy `appointments`) | **FAIL** |
+| Confirmed fitting requires a protected booking; status sync and anonymous insert denial | **PASS** — local `npm run verify:db` |
+| Client cannot insert a confirmed or staff-assigned appointment | **PASS** — local `verify:db` (RLS 13–14, staff S7a–S7d) |
+| Production deploy rejects a demo-mode artifact | **PASS** — `CONTEXT=production` negative check; `postbuild` gate |
 | Booking-store overlap exclusion and holds (new `bookings`) | **PASS** — local `verify:db` and CI run [42371377892](https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892) |
 | Seamless feedback persistence | PASS |
 | Lookbook item publication | PASS |
 | Order creation with missing atelier guard | PASS |
 
-Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-engine.md).
+Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-engine.md) and
+[`evidence/2026-11-08_v1.4.0-rc.1.md`](evidence/2026-11-08_v1.4.0-rc.1.md).
 
 ## Not shipped — do not assume
 
-- **ASPIRATIONAL** Frontend/UI wiring of the booking engine; no browser path calls the new booking
-  RPCs yet. This sprint shipped the database layer only.
+- **IN PROGRESS / not verified** Hosted owner booking flow: availability, hold, confirm, cancel,
+  appointment status synchronization, and resource setup are wired and locally verified. The
+  linked production project lacks the booking schema and its migration history has an unmatched
+  version; no production migration was applied.
 - **ASPIRATIONAL** Guest booking via an edge function with per-IP/phone/tenant rate limits and a bot
   challenge (ADR-009 §8). Anonymous callers are explicitly denied execute on every booking RPC.
 - **ASPIRATIONAL** Resource capacity greater than one and `booking_slots` for group workshops.
   `booking_resources.capacity` is constrained to `1` until that mechanism exists.
 - **ASPIRATIONAL** A scheduled hold-expiry sweeper. Expiry runs inside hold/confirm/reschedule
   transactions; there is no cron/edge worker yet.
-- **ASPIRATIONAL** Double-booking protection for the legacy `appointments` store. It is untouched and
-  its anonymous pending-insert policy is retained; the new `bookings` store is the protected path.
+- Legacy appointment requests remain pending proposals; local database proof confirms the status
+  guard and direct anonymous insert denial. Production application is pending migration-history
+  reconciliation.
 - **ASPIRATIONAL** Owner/employee appointment creation on `appointments`; staff booking now belongs
   to the `hold_slot` RPC, not the legacy table.
 - **ASPIRATIONAL** Server-resolved tenancy by domain, subdomain or slug; the client still chooses the
@@ -75,27 +89,28 @@ Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-
   for orders, measurements, settings, and roles; booking transitions are now appended too.
 - **ASPIRATIONAL** Sign-up, owner onboarding and staff/client invitations end to end.
 - **ASPIRATIONAL** SSR, per-tenant metadata, sitemap, robots, OG tags or structured data.
-- **ASPIRATIONAL** End-to-end browser tests against a hosted project.
+- **ASPIRATIONAL** Passing three-identity and booking-confirmation browser tests against the hosted
+  project; fixtures require owner-provisioned accounts and a unique pending request/resource slot.
 
 ## Known limitations
 
 | Limitation | Impact | Owner |
 |------------|--------|-------|
-| Demo identities, PIN `1234`, credential cards and demo slugs ship in a Supabase-mode bundle while `verify:build` passes | P0 false confidence; violates the zero-demo production claim | Engineering — Sprint 1 |
-| Legacy `appointments` still accepts overlapping rows and anonymous pending inserts; the new `bookings` store is protected | Two booking stores: a client on the legacy path can still double-book a tailor | Engineering — Sprint 3 (ADR-009 §8) |
+| Guest self-booking lacks rate limits and a bot challenge | Direct anon inserts and the visitor form are disabled pending the edge boundary | Engineering — before opening public booking |
+| Booking UI and appointment-status guard are wired; local proof passes, hosted migration/browser flow is unverified | Do not use for live confirmations until production migrations and hosted role E2E pass | Engineering + repository owner |
 | No owner/employee `INSERT` policy on `appointments`; staff booking uses `hold_slot` instead | Legacy staff-screen work cannot write `appointments` directly | Engineering — Sprint 3 |
 | `booking_resources.capacity` is constrained to `1`; no `booking_slots` | Group workshops cannot be modelled yet | Engineering — Sprint 3 follow-up |
-| No frontend calls `hold_slot`/`confirm_booking`/`cancel_booking`/`reschedule_booking` | The protected path exists but the UI still uses the legacy flow | Engineering — Sprint 3 follow-up |
+| Hosted frontend booking flow has not been run against production | Local UI calls protected booking RPCs; hosted database is missing those migrations | Repository owner — migration reconciliation and pilot fixture |
 | `idempotency_keys` retains the original hold token to make replay possible | A database reader could recover a live token for its short hold window; client roles are denied by RLS | Engineering — Security review |
 | No scheduled expiry sweeper outside booking transactions | An abandoned hold can block a slot until the next hold/confirm/reschedule on that resource | Engineering — Operations |
 | Tenant is chosen on the client; public path defaults to the Nairobi tenant | Any URL shows the default atelier; no slug/custom domain | Engineering — Sprint 2 |
 | Order writes locate rows by `order_code` alone | Same code in two tenants can be ambiguous | Engineering — Sprint 1 |
 | Hosted Playwright onboarding still requires configured invite credentials to run against the live app | Browser proof is opt-in and cannot run from a clean checkout without a fixture | Repository owner — Sprint 1 |
-| Money display converts every amount from KES at hardcoded rates | NGN/USD balances display wrong values | Engineering — Sprint 4 |
+| No payment ledger or provider reconciliation | Order deposits/balances are displayed as order terms, not payment receipts | Engineering — later payment sprint |
 | Audit coverage exists for orders, measurements, settings, roles, and bookings, but not payments | Payment disputes cannot be investigated | Engineering — Sprint 4 |
-| Anonymous booking has no rate limit or bot challenge; booking RPCs are denied to `anon` | Spam/resource exhaustion on the legacy path | Engineering — Sprint 3 follow-up |
+| Guest booking has no rate limit or bot challenge | Direct anon inserts are disabled until the edge boundary exists | Engineering — before public booking |
 | Playwright invite flow is present but hosted credentials are not stored in the repository | Live browser proof requires a deliberate local/CI secret setup | Repository owner — Sprint 1 |
-| Hosted Supabase state and remote migration apply were not verified in this environment | Remote schema parity unproven | Repository owner |
+| Hosted Supabase schema is behind: booking tables/RPCs are absent and remote migration `20261106122030` has no local file | Production migration push is unsafe until history is reconciled against the actual onboarding function/schema | Repository owner |
 | Netlify/DNS were not re-verified in this environment | Live URL and domain state not re-proven | Repository owner |
 
 ## Decisions awaiting approval

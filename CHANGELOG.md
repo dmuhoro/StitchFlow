@@ -5,6 +5,43 @@ All notable changes to StitchFlow are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0-rc.1] — 2026-11-08
+
+First prerelease checkpoint for the live-data booking workflow. This release records the locally
+verified integration work; it is **not approved for a production booking pilot** until the hosted
+migration history is reconciled and hosted role journeys pass.
+
+### Added
+
+- Owner booking workspace for resource setup, availability, slot hold, confirmation, cancellation,
+  and booking list refresh.
+- Booking/request status synchronization and a database guard requiring a confirmed protected
+  booking before a fitting request can be marked confirmed or completed.
+- Patron appointment insertion is limited to the patron's own atelier and pending requests, with no
+  staff assignment; owner/staff cannot use the patron insert policy.
+- Opt-in hosted Playwright journeys for owner, employee, patron, and booking confirmation.
+- Production deploy builds refuse demo mode or placeholder Supabase configuration, with a CI
+  negative proof that a demo artifact is rejected.
+- Evidence and release note: `docs/evidence/2026-11-08_v1.4.0-rc.1.md` and
+  `docs/releases/RELEASE_1.4.0-rc.1_NOTES.md`.
+
+### Changed
+
+- Disabled unauthenticated live fitting requests until the rate-limited guest booking boundary is
+  deployed.
+- Format order terms using each order's currency and remove unsupported revenue growth claims.
+- Scope the appointment update query by atelier.
+- Updated booking, security, and pilot readiness documentation.
+
+### Verification
+
+- `npm run lint`, `npm run build`, Supabase-mode `verify:build`, `npm run check:docs`, and
+  `npm run verify:db` passed locally. Full details and limitations are in
+  `docs/evidence/2026-11-08_v1.4.0-rc.1.md`.
+- Hosted SQL isolation verification passed, but hosted browser journeys were not run.
+- Production is missing booking tables/RPCs and has unmatched remote migration
+  `20261106122030`; no production migration was applied.
+
 ## [1.3.0] — 2026-11-07
 
 Booking staff slice database layer verified and frontend types wired.

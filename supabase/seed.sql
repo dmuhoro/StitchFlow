@@ -302,6 +302,80 @@ values
 on conflict (id) do nothing;
 
 -- ----------------------------------------------------------------------------
+-- 5b. BOOKING RESOURCES AND STAFF AVAILABILITY
+-- ----------------------------------------------------------------------------
+-- The staff booking workspace is only usable when the atelier publishes at
+-- least one resource with a working window. These are pilot fixtures, not
+-- schema defaults: a real atelier owns and edits its own rows.
+insert into public.booking_resources (
+  id, atelier_id, kind, display_name, capacity, timezone, active
+)
+values
+(
+  'a6000001-0001-4001-8001-000000000001',
+  '11111111-1111-1111-1111-111111111111',
+  'cutter',
+  'Master Cutter Bench — Agbada & Boubou',
+  1,
+  'Africa/Nairobi',
+  true
+),
+(
+  'a6000002-0002-4002-8002-000000000002',
+  '11111111-1111-1111-1111-111111111111',
+  'fitting_room',
+  'Bridal & Ceremonial Fitting Room',
+  1,
+  'Africa/Nairobi',
+  true
+),
+(
+  'b6000001-0001-4001-8001-000000000001',
+  '22222222-2222-2222-2222-222222222222',
+  'cutter',
+  'Aso-Oke Master Loom Bench',
+  1,
+  'Africa/Lagos',
+  true
+),
+(
+  'b6000002-0002-4002-8002-000000000002',
+  '22222222-2222-2222-2222-222222222222',
+  'fitting_room',
+  'Royal Agbada Fitting Room',
+  1,
+  'Africa/Lagos',
+  true
+)
+on conflict (id) do update set
+  display_name = excluded.display_name,
+  timezone = excluded.timezone,
+  active = excluded.active;
+
+-- Monday–Saturday, 09:00–18:00 local wall clock. Sunday is intentionally
+-- closed; a request for Sunday returns no slots rather than a silent default.
+insert into public.resource_availability_rules (
+  atelier_id, resource_id, weekday, starts_at, ends_at
+)
+select r.atelier_id, r.id, w, '09:00'::time, '18:00'::time
+from public.booking_resources r
+cross join generate_series(1, 6) as w
+where r.id in (
+  'a6000001-0001-4001-8001-000000000001',
+  'a6000002-0002-4002-8002-000000000002',
+  'b6000001-0001-4001-8001-000000000001',
+  'b6000002-0002-4002-8002-000000000002'
+)
+  and not exists (
+    select 1
+    from public.resource_availability_rules existing
+    where existing.resource_id = r.id
+      and existing.weekday = w
+      and existing.starts_at = '09:00'::time
+      and existing.ends_at = '18:00'::time
+  );
+
+-- ----------------------------------------------------------------------------
 -- 6. APPOINTMENTS
 -- ----------------------------------------------------------------------------
 insert into public.appointments (
@@ -337,6 +411,36 @@ values
   'b2222222-2222-2222-2222-222222222222',
   'Coronation Anniversary Banquet',
   'Private VIP fitting room requested with bespoke champagne setup'
+),
+-- Public requests with no account attached. These are the staff inbox fixture:
+-- they are pending until a staff member confirms them into a resource slot.
+(
+  'a3000002-1111-1111-1111-111111111111',
+  '11111111-1111-1111-1111-111111111111',
+  null,
+  'Wanjiru Mwangi',
+  '+254711223344',
+  'wanjiru.mwangi@example.ke',
+  'basted_fitting',
+  now() + interval '3 days',
+  'pending',
+  null,
+  'Ruracio bridal basted fitting',
+  'Public request submitted from the Nairobi lookbook. Wants a Saturday morning fitting.'
+),
+(
+  'b3000002-1111-1111-1111-111111111111',
+  '22222222-2222-2222-2222-222222222222',
+  null,
+  'Yewande Ogunleye',
+  '+2348023344556',
+  'yewande.ogunleye@example.ng',
+  'kitenge_wax_styling',
+  now() + interval '4 days',
+  'pending',
+  null,
+  'Kitenge wax styling consultation',
+  'Public request submitted from the Lagos lookbook. Asks about matching gele and ipele.'
 )
 on conflict (id) do update set
   status = excluded.status,
