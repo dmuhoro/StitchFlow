@@ -19,6 +19,7 @@
 | 2026-11-07 | Live-data pilot readiness | `2026-11-07-pilot-readiness.md` | Local PASS; production BLOCKED |
 | 2026-11-08 | v1.4.0-rc.1 release checkpoint | `2026-11-08_v1.4.0-rc.1.md` | Prerelease; production pilot BLOCKED |
 | 2026-11-08 | v1.4.0-rc.2 hosted repair | `2026-11-08_v1.4.0-rc.2-hosted-repair.md` | Hosted schema parity PASS; artifact gate PASS; live publish BLOCKED on Netlify credits; browser journeys BLOCKED on identities |
+| 2026-11-08 | Milestone 1 pilot hardening | `2026-11-08_milestone-1-pilot-hardening.md` | Local tenant/database/unit checks PASS; source lint/build, current live publish, hosted browser flows, and restore rehearsal BLOCKED |
 
 ## Format
 

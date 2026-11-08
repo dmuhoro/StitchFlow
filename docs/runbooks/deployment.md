@@ -7,8 +7,9 @@
 The repository owner must still own these:
 
 1. **Supabase account and identity provisioning.** The project ref is reachable through the CLI's
-   Management API session, which is how the 2026-11-08 schema repair was executed. Creating pilot
-   auth users, choosing tenant data, and rotating credentials remain owner decisions.
+   Management API session, which is how the 2026-11-08 schema repair was executed. Pilot identities
+   and fixtures now exist; changing identities, choosing tenant data, and rotating credentials
+   remain owner decisions.
 2. **Netlify authorization.** The Netlify CLI is authenticated for this workstation; production
    deploy approval and any custom-domain/DNS change remain with the owner. Never paste a token into
    chat or a committed file.
@@ -77,7 +78,26 @@ placeholder Supabase host, no service-role marker, and no demo identity or PIN. 
 `CONTEXT=production` invocation additionally requires `VITE_DATA_MODE=supabase` and configured,
 non-placeholder Supabase values, so a demo artifact or a stale mode fails closed.
 
-## 4. Deploy
+## 4. Restore Netlify deploy credits (owner action)
+
+The production site currently rejects publishes with `403 Account credit usage exceeded`. Restore
+the account's deploy capacity before trying to publish:
+
+1. Sign in to the Netlify account that owns `stitchflow-12pv`.
+2. Open **Team overview → Billing → Usage** (or the billing page available to the account owner)
+   and confirm the account is over its deploy-credit limit.
+3. Restore credits by completing the account's approved billing action: add the required credits,
+   update the payment method, or move to an approved plan. Do not send billing details or access
+   tokens to engineering.
+4. Return to the site's **Deploys** page and confirm the account can create a deploy. A successful
+   billing change alone is not evidence that the site can publish; the deploy must succeed.
+5. Before publishing, verify the production environment variables in **Site configuration →
+   Environment variables**: `VITE_DATA_MODE=supabase`, `VITE_SUPABASE_URL` for the active project,
+   and its publishable key. Never configure a service-role key in the browser build.
+
+Track the owner action in [issue #4](https://github.com/dmuhoro/StitchFlow/issues/4).
+
+## 5. Deploy
 
 ```bash
 npx netlify-cli deploy --prod --dir=dist --site=<site-id>
@@ -90,7 +110,7 @@ If the API returns `403 Account credit usage exceeded`, no deploy was created: t
 serving its previous bundle. Restore credits (owner billing action) before retrying; do not record a
 successful deploy.
 
-## 5. Verify the live site
+## 6. Verify the live site
 
 - The asset in `dist/index.html` is the asset the live URL serves.
 - The live bundle embeds the same project ref as `VITE_SUPABASE_URL` and
@@ -116,8 +136,8 @@ STITCHFLOW_E2E_BASE_URL=https://stitchflow-12pv.netlify.app npm run test:e2e
 ```
 
 Set `STITCHFLOW_E2E_OWNER_EMAIL`/`_PASSWORD`, `STITCHFLOW_E2E_EMPLOYEE_EMAIL`/`_PASSWORD`, and
-`STITCHFLOW_E2E_PATRON_EMAIL`/`_PASSWORD` in the shell or CI secret store. Production currently has
-no accounts, so these journeys cannot pass until the owner provisions them.
+`STITCHFLOW_E2E_PATRON_EMAIL`/`_PASSWORD` in the shell or CI secret store. Do not put their values
+in a command transcript, evidence file, issue, or repository file.
 
 ## Rollback
 
@@ -125,11 +145,14 @@ See [`rollback.md`](rollback.md).
 
 ## Status
 
-As of 2026-11-08 the production schema is reconciled and up to date, and the hosted RLS/onboarding
-proof passes. The production site (`https://stitchflow-12pv.netlify.app`) is configured for
-Supabase mode in the production context and demo mode for deploy previews, but publishing is
-**BLOCKED**: Netlify returns `403 Account credit usage exceeded - new deploys are blocked until
-credits are added`. The live bundle therefore still embeds the retired project
-`vpathqzkaqdtbykumxeo`; the corrected `index-DAH2avX7.js` passes the production gate and is ready in
-`dist/`. Hosted role journeys remain **BLOCKED** on owner-provisioned identities. See
-[`../evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md`](../evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md).
+As of 2026-11-08 the production schema is reconciled and up to date. Six hosted identities exist
+across the supervised pilot atelier and an isolation-only second tenant; the pilot fitting fixture
+is seeded. The hosted RLS proof passes 30/30, and owner/employee/patron journeys pass against the
+fresh local production artifact connected to hosted Supabase. The production site
+(`https://stitchflow-12pv.netlify.app`) still serves a bundle embedding the retired project
+`vpathqzkaqdtbykumxeo`, and Netlify returns `403 Account credit usage exceeded`; owner billing and a
+successful publish are **BLOCKED**. The supported static SPA source now builds and passes lint using
+`vite.pilot.config.ts`; the root `vite.config.ts` SSR experiment is not used by application scripts.
+The live-site role and booking-confirmation journeys still need a successful publish. Details:
+[`../evidence/2026-11-08_milestone-1-pilot-hardening.md`](../evidence/2026-11-08_milestone-1-pilot-hardening.md)
+and [issue #4](https://github.com/dmuhoro/StitchFlow/issues/4).

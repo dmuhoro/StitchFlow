@@ -2,40 +2,33 @@
 
 > Canonical: `docs/roadmap.md`.
 
-## Now — Sprint 0a done, Sprint 1 blocked
+## Now — Milestone 1: managed boutique-atelier pilot
 
-The product remains demo-first pending migration and hosted role-flow verification. The production
-bundle no longer contains known demo identities. Protected owner booking UI is in the working tree;
-database verification is blocked locally because Docker/Postgres tooling is unavailable.
+The product code, local tenant checks, production schema, and pilot identities/fixtures exist.
+Hosted RLS verification passes 30/30 and all three role journeys pass 3/3 against the fresh local
+production bundle connected to hosted Supabase. Completion is blocked by the live Netlify artifact
+targeting a retired project, Netlify's credit limit, live booking-confirmation verification, and an
+unperformed backup/restore rehearsal. Do not call the public pilot complete until those external
+gates pass.
 
-Sprint 1 may not start until the owner approves ADR-008 (SSR shell) and ADR-011 (tenant resolution).
+Scope: one supervised atelier, controlled owner/staff/patron workflows, owner-provisioned accounts,
+and explicit support/rollback procedures. A second hosted tenant is isolation-only test data.
 
-## v1.1.0 — First pilot atelier
+## Later — Milestone 2: public-ready product
 
-- Remove demo code from the production artifact; make the artifact gate assert absence.
-- Atomic onboarding RPC; tenant-correct order writes (`atelier_id` + `order_code`).
-- Audit trail for orders, measurements, settings and role changes.
-- Owner/employee protected booking confirmation using the booking RPCs (ADR-009).
-- Invite staff; publish the first lookbook.
-- Three-identity end-to-end test against a hosted project.
-- Media storage with signed URLs.
-- Email/WhatsApp transactional notifications.
-- Guest booking edge boundary with rate limits and a bot challenge. Guest writes stay disabled until it exists.
-
-## Later — business surface
-
-- Quotes, invoices, deposits, and payment reconciliation (M-Pesa, card) under ADR-010.
+- Guest self-booking with rate limits and a bot challenge.
+- Payments, deposits, invoices, and reconciliation (M-Pesa, card) under ADR-010.
+- WhatsApp Business API and transactional email/SMS delivery.
+- Media storage with signed URLs; SSR and public-launch metadata.
+- Multi-atelier membership, tenant resolution by domain/slug, and broader customer flows.
 - Fabric inventory, QC/rework, delivery and alteration history.
-- Measurement versioning and garment specification snapshots.
-- Consent, retention, export and deletion workflows.
-- Backups with a restore drill, and operational monitoring/alerting.
+- Measurement versioning, consent/retention/export/deletion, and expanded monitoring.
 
-## Explicitly out of scope for v1.0.0
+## Explicitly out of scope for Milestone 1
 
-- Payments.
 - Multi-atelier membership per user.
-- Native mobile apps.
-- Generic fashion-commerce catalog features.
+- Payments, public guest booking, WhatsApp/SMS integrations, media storage, SSR, and public-launch hardening.
+- Native mobile apps and generic fashion-commerce catalog features.
 
 ## Completion rule
 

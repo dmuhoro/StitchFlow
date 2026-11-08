@@ -5,6 +5,35 @@ All notable changes to StitchFlow are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Milestone 1 pilot hardening (in progress)
+
+This is an untagged engineering checkpoint, not a production release. Local build and hosted backend
+journeys pass; the managed pilot remains blocked on live Netlify publishing and backup/restore
+rehearsal.
+
+### Added
+
+- Patron portal visibility for the authenticated patron's own fitting requests.
+- Deterministic owner-provisioned pilot and fitting-fixture scripts, plus a pilot operations and
+  backup/restore rehearsal runbook.
+- Unit tests for fail-closed repository writes and tenant-scoped human-key mutations.
+
+### Fixed
+
+- Order-status, tailor-assignment, feedback-status, and invitation-revocation writes now require and
+  include the resolved atelier in the database mutation boundary.
+- Production artifact verification rejects retired or mismatched Supabase project references.
+
+### Verification
+
+- `npm run test:unit`, `npm run verify:db`, `npm run lint`, `npm run build`, and the production
+  artifact assertions pass using the supported static pilot Vite config.
+- Hosted publishable-key proof passed 30/30; owner, employee, and patron browser journeys passed
+  3/3; protected booking confirmation passed 1/1 against the fresh local artifact and hosted
+  Supabase. The live Netlify artifact still targets the retired project and publishing remains
+  blocked on account credits. See
+  `docs/evidence/2026-11-08_milestone-1-pilot-hardening.md`.
+
 ## [1.4.0-rc.2] — 2026-11-08
 
 Hosted repair checkpoint. The connected production project now carries the complete tracked schema

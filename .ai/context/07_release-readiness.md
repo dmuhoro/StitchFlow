@@ -2,36 +2,24 @@
 
 > Canonical: `docs/release-readiness.md`. This list is the authoritative to-do.
 
-## Launch gates
+## Milestone 1 — supervised one-atelier pilot
 
-| ID | Gate | Status | Evidence |
-|----|------|--------|----------|
-| L0 | Operating scaffold (docs, ADRs, sprints, agents) | DONE | `sprints/sprint-00-operating-scaffold.md` |
-| L1 | Reproducible migration chain on an empty database | DONE | `docs/evidence/2026-11-01_database_chain.md`; re-proven 2026-11-05 |
-| L2 | RLS isolation suite passes in CI | DONE | 12 scenarios: `docs/evidence/2026-11-05_sprint-0-verification.md` |
-| L3 | Local imagery bundles with hashed URLs | DONE | `docs/evidence/2026-11-01_build_artifacts.md` |
-| L4 | Persistence wired for every supported action | DONE | `docs/evidence/2026-11-01_persistence.md` |
-| L5 | CI runs lint, build, docs links, DB verification | DONE | `docs/evidence/2026-11-01_ci.md` |
-| L6 | Release versioned, tagged, pushed | DONE | `docs/evidence/2026-11-01_release.md` (tag `v1.0.0`) |
-| L7 | Cleanup (dead deps, lockfile, tree) | DONE | `npm ci` 2026-11-05; commit `1bd06bb` |
-| L8 | README, CHANGELOG, sprints updated | DONE | `CHANGELOG.md`, sprint records |
-| L9 | Deployment verified | DONE (deploy only) | `docs/evidence/2026-11-01_deployment.md`; artifact contains demo code |
+The production schema and migration history are reconciled. Tenant-safe repository writes pass
+unit/local database tests, and six hosted identities plus a fitting fixture exist across the pilot
+and an isolation-only tenant. Hosted publishable-key verification passes 30/30, and owner,
+employee, and patron browser journeys pass 3/3, and protected booking confirmation passes 1/1 against the
+fresh local production bundle connected to hosted Supabase. The live Netlify artifact still targets
+the retired project.
 
-## Sprint 0a result
+Current hard blockers:
 
-7 PASS / 1 FAIL across the eight verification gates. Gate 8 (appointment capacity and
-double-booking) fails: `exclusion_constraints=0`, overlapping rows accepted, no staff `INSERT`
-policy.
+- Netlify returns `403 Account credit usage exceeded`; owner must restore credits and publish.
+- Booking-confirmation browser flow against live deployment remains unverified; do not mutate the
+  hosted fixture before the current artifact is published.
+- The backup/restore rehearsal has not been performed.
 
-`v1.4.0-rc.2` records the hosted repair: the production project now has the complete tracked schema
-and a matched migration history. `S0-P0-01` is closed in source and the production artifact
-assertion. Booking status guard, insert boundary, and UI wiring pass local DB verification, and the
-seven pending migrations are applied to production. Hosted browser role flows still need
-owner-provisioned fixtures because production has no accounts yet; publishing is also blocked
-because Netlify rejects new deploys with `403 Account credit usage exceeded`, so the live bundle
-still embeds the retired project `vpathqzkaqdtbykumxeo`. See
-`docs/evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md` and
-`docs/audit/2026-11-05_sprint-0-audit.md`.
+See `docs/release-readiness.md`, `docs/evidence/2026-11-08_milestone-1-pilot-hardening.md`,
+`docs/runbooks/pilot-operations.md`, and issue #4.
 
 ## P0 definitions
 
