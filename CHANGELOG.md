@@ -8,8 +8,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 ## [Unreleased] — Milestone 1 pilot hardening (in progress)
 
 This is an untagged engineering checkpoint, not a production release. Local build and hosted backend
-journeys pass; the managed pilot remains blocked on live Netlify publishing and backup/restore
-rehearsal.
+journeys pass; Vercel project setup, live publishing, live browser verification, and backup/restore
+rehearsal remain incomplete.
 
 ### Added
 
@@ -17,12 +17,19 @@ rehearsal.
 - Deterministic owner-provisioned pilot and fitting-fixture scripts, plus a pilot operations and
   backup/restore rehearsal runbook.
 - Unit tests for fail-closed repository writes and tenant-scoped human-key mutations.
+- Vercel static-SPA deployment configuration and a CI negative proof for Vercel's production build
+  gate.
 
 ### Fixed
 
 - Order-status, tailor-assignment, feedback-status, and invitation-revocation writes now require and
   include the resolved atelier in the database mutation boundary.
 - Production artifact verification rejects retired or mismatched Supabase project references.
+- The unused root Vite config no longer imports the uninstalled TanStack Start and Netlify plugins.
+- Owner order-financial edits now produce actor-attributed before/after audit records; only owners can
+  read financial audit snapshots. The forward-only migration is pending production application.
+- Landing-page sign-in E2E selectors now target the exact public button label; the header action
+  remains separately named "Enter Atelier".
 
 ### Verification
 
@@ -30,8 +37,8 @@ rehearsal.
   artifact assertions pass using the supported static pilot Vite config.
 - Hosted publishable-key proof passed 30/30; owner, employee, and patron browser journeys passed
   3/3; protected booking confirmation passed 1/1 against the fresh local artifact and hosted
-  Supabase. The live Netlify artifact still targets the retired project and publishing remains
-  blocked on account credits. See
+  Supabase. Vercel is selected, but no production deployment or live verification is recorded. The
+  former Netlify artifact still targets the retired project. See
   `docs/evidence/2026-11-08_milestone-1-pilot-hardening.md`.
 
 ## [1.4.0-rc.2] — 2026-11-08

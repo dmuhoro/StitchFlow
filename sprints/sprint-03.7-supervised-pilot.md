@@ -3,7 +3,7 @@
 **Date:** 2026-11-08
 **Milestone:** 1 — managed pilot for one boutique atelier
 **Status:** BLOCKED — local hardening and hosted-backend journeys are verified against a fresh local
-artifact; live publishing and backup/restore rehearsal remain incomplete.
+artifact; Vercel publication, live journeys, and backup/restore rehearsal remain incomplete.
 
 ## Delivered in source
 
@@ -15,6 +15,8 @@ artifact; live publishing and backup/restore rehearsal remain incomplete.
   not a second customer atelier.
 - Pilot support, rollback, and disposable-project backup/restore rehearsal instructions.
 - Production artifact checks reject retired/mismatched Supabase project references.
+- Vercel static hosting selected and recorded in ADR-012; the deployment-provider readiness slice is
+  tracked in Sprint 3.8.
 
 ## Evidence
 
@@ -31,18 +33,19 @@ artifact; live publishing and backup/restore rehearsal remain incomplete.
 - `npm run check:docs`: PASS; `git diff --check`: PASS.
 - Initial browser attempts exposed a case-sensitive production sign-in locator and a stale fixture
   name. Locators now match the production landing and the unique seeded fitting by its explicit
-  occasion/type. The full hosted journey was not run against live Netlify because it still serves
-  the retired-project artifact.
+  occasion/type. The full hosted journey was not run against the live site because the former
+  Netlify deployment still serves the retired-project artifact.
 - Full command details: `docs/evidence/2026-11-08_milestone-1-pilot-hardening.md`.
 
 ## Remaining before the pilot
 
-1. Owner restores Netlify deploy credits and confirms production Supabase environment settings.
+1. Owner links the repository to Vercel, chooses the production domain, configures production
+   Supabase variables, and allowlists the final Auth redirect URLs.
 2. Publish the fresh artifact; verify its project ref and absence of demo identity markers.
-3. Re-run owner, employee, patron, and booking-confirmation browser journeys against live Netlify.
+3. Re-run owner, employee, patron, and booking-confirmation browser journeys against live Vercel.
 4. Complete and record a backup/restore rehearsal on a disposable project before accepting
    non-synthetic pilot data.
 5. Re-run all gates, make concern-specific commits, and only then consider version/tag/push. No
    version bump, tag, or push is claimed in this checkpoint.
 
-Owner deployment blocker: [issue #4](https://github.com/dmuhoro/StitchFlow/issues/4).
+Owner deployment setup: Vercel project, environment, domain, and Supabase Auth URL configuration.

@@ -3,12 +3,17 @@
 > What is true today. Aspirational work is labelled **ASPIRATIONAL** and must not be assumed.
 
 Last verified: 2026-11-08 (Sprint 3 booking workflow, insert boundary, deploy gate, hosted schema
-repair, and pilot hardening). The production project has the full tracked schema and a matched
-migration history. Six hosted identities exist across the supervised pilot and an isolation-only
-tenant. The hosted RLS proof, owner/staff/patron journeys, and protected booking-confirmation journey
-pass against a fresh local production build. The live Netlify site still serves a bundle pointing to
-the retired Supabase project, and publish remains blocked on account credits. Payments and SSR remain
-explicitly incomplete.
+repair, and pilot hardening). The production schema and migration history were verified through
+`20261107220000` on 2026-11-08. A new forward-only financial-audit migration
+(`20261108173000`) now exists locally and is not yet applied to production. Six hosted identities
+exist across the supervised pilot and an isolation-only tenant.
+The read-only migration listing reconfirmed production at `20261107220000`; issue #5 tracks the
+pending financial-audit migration.
+The hosted RLS proof, owner/staff/patron journeys, and protected booking-confirmation journey
+pass against a fresh local production build. The owner selected Vercel for the pilot; Vercel project
+setup, production environment configuration, publish, and live browser verification are not yet
+verified. The former Netlify site still serves a bundle pointing to the retired Supabase project.
+Payments and SSR are not implemented for this pilot.
 Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_sprint-0-audit.md).
 
 ## Shipped and usable
@@ -64,6 +69,7 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
 | Lookbook item publication | PASS |
 | Order creation with missing atelier guard | PASS |
 | Keyed order, feedback and invitation mutations require the resolved atelier | **PASS locally** — `npm run test:unit` and `npm run verify:db`; the hosted duplicate-code SQL fixture is present but was not run against hosted SQL in this verification. The separate hosted role/RLS proof passes 30/30. |
+| Owner financial edits record actor/before/after, with financial snapshots hidden from staff and patrons | **PASS locally** — migration `20261108173000_audit_order_financials.sql` and RLS regression; production apply is pending. |
 
 Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-engine.md) and
 [`evidence/2026-11-08_v1.4.0-rc.1.md`](evidence/2026-11-08_v1.4.0-rc.1.md).
@@ -73,8 +79,7 @@ Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-
 - **IN PROGRESS / live deploy not verified** Hosted owner booking flow: availability, hold, confirm,
   cancel, appointment status synchronization, and resource setup are wired. The protected
   confirmation journey passes against the current local production bundle connected to hosted
-  Supabase; the live Netlify bundle still targets a retired project and must be replaced before
-  pilot opening.
+  Supabase; the live site has not been replaced and verified before pilot opening.
 - **ASPIRATIONAL** Guest booking via an edge function with per-IP/phone/tenant rate limits and a bot
   challenge (ADR-009 §8). Anonymous callers are explicitly denied execute on every booking RPC.
 - **ASPIRATIONAL** Resource capacity greater than one and `booking_slots` for group workshops.
@@ -94,21 +99,27 @@ Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-
 - **ASPIRATIONAL** Measurement version history and garment specification snapshots.
 - **ASPIRATIONAL** Monitoring, alerting, and automated backups. The append-only `audit_log` exists
   for orders, measurements, settings, and roles; booking transitions are now appended too.
-- **ASPIRATIONAL** Sign-up, owner onboarding and staff/client invitations end to end.
-- **ASPIRATIONAL** SSR, per-tenant metadata, sitemap, robots, OG tags or structured data.
+- **PARTIAL** Owner onboarding and invitation redemption are implemented; transactional delivery and
+  unrestricted self-service sign-up are not.
+- **Approved but not implemented** SSR, per-tenant metadata, sitemap, robots, OG tags or structured
+  data (ADR-008). These are outside Milestone 1.
+- **IN PROGRESS / production migration pending** Owner financial edits now have an audit trigger and
+  owner-only snapshot visibility locally. Apply migration `20261108173000_audit_order_financials.sql`
+  to production and verify the hosted boundary before pilot opening.
 - **IN PROGRESS / live deploy not verified** Three-identity and booking-confirmation browser tests
-  against the live Netlify site. All three roles and protected booking confirmation pass against a
-  fresh local artifact connected to hosted Supabase; the live Netlify artifact remains stale.
+  against the production site. All three roles and protected booking confirmation pass against a
+  fresh local artifact connected to hosted Supabase; the former Netlify artifact remains stale and
+  no Vercel deployment has been verified.
 
 ## Known limitations
 
 | Limitation | Impact | Owner |
 |------------|--------|-------|
 | Guest self-booking lacks rate limits and a bot challenge | Direct anon inserts and the visitor form are disabled pending the edge boundary | Engineering — before opening public booking |
-| Booking UI and appointment-status guard pass the hosted journey against a fresh local artifact; live-site journey is unverified | Do not open the pilot until the current artifact is published and verified on Netlify | Repository owner — restore credits/publish |
-| No owner/employee `INSERT` policy on `appointments`; staff booking uses `hold_slot` instead | Legacy staff-screen work cannot write `appointments` directly | Engineering — Sprint 3 |
+| Booking UI and appointment-status guard pass the hosted journey against a fresh local artifact; live-site journey is unverified | Do not open the pilot until the current artifact is published and verified on Vercel | Repository owner — link project, configure env, publish |
+| No owner/employee `INSERT` policy on `appointments`; staff booking uses `hold_slot` instead | Legacy staff-screen work cannot write `appointments` directly | Accepted boundary; do not write legacy appointment rows |
 | `booking_resources.capacity` is constrained to `1`; no `booking_slots` | Group workshops cannot be modelled yet | Engineering — Sprint 3 follow-up |
-| Live Netlify bundle has not passed role or booking browser journeys | Three roles and booking confirmation pass against the fresh local artifact/current hosted Supabase; live bundle still targets the retired project | Repository owner — restore Netlify credits and publish |
+| Live production site has not passed role or booking browser journeys | Three roles and booking confirmation pass against the fresh local artifact/current hosted Supabase; old Netlify bundle still targets the retired project and Vercel is not yet published | Repository owner — link Vercel, configure env, publish; engineering reruns journeys |
 | `idempotency_keys` retains the original hold token to make replay possible | A database reader could recover a live token for its short hold window; client roles are denied by RLS | Engineering — Security review |
 | No scheduled expiry sweeper outside booking transactions | An abandoned hold can block a slot until the next hold/confirm/reschedule on that resource | Engineering — Operations |
 | Tenant is chosen on the client; public path defaults to the Nairobi tenant | Any URL shows the default atelier; no slug/custom domain | Engineering — Sprint 2 |
@@ -117,13 +128,15 @@ Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-
 | Audit coverage exists for orders, measurements, settings, roles, and bookings, but not payments | Payment disputes cannot be investigated | Engineering — Sprint 4 |
 | Guest booking has no rate limit or bot challenge | Direct anon inserts are disabled until the edge boundary exists | Engineering — before public booking |
 | Playwright invite flow is present but hosted credentials are not stored in the repository | Live browser proof requires a deliberate local/CI secret setup | Repository owner — Sprint 1 |
-| Production has six hosted identities across pilot and isolation-only tenants | Local fresh-artifact role journeys and hosted verifier pass; the live Netlify bundle embeds the retired project | Repository owner — restore deploy path and publish |
-| Netlify refuses new deploys: `403 Account credit usage exceeded` | Current source builds with the supported static `vite.pilot.config.ts`; no live update can be verified until owner-authorized publishing succeeds | Repository owner — restore credits and publish |
+| Production has six hosted identities across pilot and isolation-only tenants | Local fresh-artifact role journeys and hosted verifier pass; the former Netlify bundle embeds the retired project | Repository owner — publish Vercel artifact and verify |
+| Vercel production project is not yet linked or published | `vercel.json` and the postbuild `VERCEL_ENV=production` gate are in source; no live update can be verified until owner setup and publishing succeeds | Repository owner — connect project, configure env/domain/Auth URLs, publish |
+| Financial edit audit migration is not applied remotely | Local migration records before/after amounts and actor; the audit feed hides those rows from staff and patrons | Repository owner — review and apply `20261108173000_audit_order_financials.sql`, then run hosted verification |
 
 ## Decisions awaiting approval
 
-ADR-008 and ADR-011 are approved directionally; ADR-009 and ADR-010 remain **Proposed**. Their
-future SSR, booking, and payment implementation is not implied by the onboarding release.
+ADR-008, ADR-011, and ADR-012 are approved. ADR-008 SSR and ADR-011 tenant resolution are not
+implemented in the current pilot. ADR-009 and ADR-010 remain **Proposed**; no guest booking or
+payment implementation is implied by the supervised pilot.
 
 ## How to tell what is real
 
