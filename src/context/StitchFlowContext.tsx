@@ -440,7 +440,10 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const revokeInvitation = async (id: string) => {
-    await revokeInvitationRepository(id);
+    if (!isProductionMode || !activeAtelierId) {
+      throw new Error('No live atelier is resolved for invitation management.');
+    }
+    await revokeInvitationRepository(activeAtelierId, id);
     setInvitations(prev => prev.filter(invitation => invitation.id !== id));
     showToast('Invitation revoked.');
   };
@@ -1030,9 +1033,13 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const updateFeedbackStatus = (id: string, status: 'open' | 'addressed' | 'resolved') => {
+    if (isProductionMode && !activeAtelierId) {
+      showToast('No atelier is resolved for this session. Feedback status was not saved.');
+      return;
+    }
     setFeedbacks(prev => prev.map(f => f.id === id ? { ...f, resolution_status: status } : f));
-    if (isProductionMode) {
-      void saveOrToast(persistFeedbackStatus(id, status), `Feedback marked as ${status}`);
+    if (isProductionMode && activeAtelierId) {
+      void saveOrToast(persistFeedbackStatus(activeAtelierId, id, status), `Feedback marked as ${status}`);
     } else {
       showToast(`Feedback marked as ${status}`);
     }

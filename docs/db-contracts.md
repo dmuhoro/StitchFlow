@@ -81,6 +81,12 @@ Staff insert/update; owner delete.
 **Access:** owner all; assigned employee read/update; patron read own. Patron and artisan names are
 resolved from `members`; they are not stored here.
 
+**Application write scope:** `persistOrderStatus` resolves `order_code` inside the supplied
+`atelier_id` and repeats the tenant predicate on the update; `persistTailorAssignment` filters by
+both `atelier_id` and `order_code`. Both fail closed when no atelier is resolved and report a
+missing/inaccessible row rather than treating a zero-row update as success. The code is unique only
+within an atelier, so duplicate codes across tenants are an intentional regression fixture.
+
 ### `order_financials`
 
 | Column | Type | Notes |
@@ -271,6 +277,9 @@ replayed; booking rows retain only the token hash.
 | `created_at` | timestamptz | |
 
 **Access:** patron own insert/read; owner read/update in tenant.
+
+**Application write scope:** feedback status updates filter by both `atelier_id` and feedback `id`.
+Missing tenant resolution and rows outside the selected atelier fail closed.
 
 ## Functions
 

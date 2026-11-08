@@ -56,7 +56,12 @@ except `order_progress_notes`, which derives tenancy from `orders`.
 | `bookings` | `hold_slot`, `confirm_booking`, `cancel_booking`, `reschedule_booking` (RPCs; no direct client write) |
 | `feedback` | `persistFeedback`, `persistFeedbackStatus` |
 | `lookbook_items` | `persistLookbookItem` |
-| `ateliers`, `members` | `createAtelierForCurrentUser` (two client inserts, not atomic), `persistAtelierSettings` |
+| `ateliers`, `members` | `createAtelierForCurrentUser` (`create_atelier_with_owner` RPC), `persistAtelierSettings` |
+| `invitations` | `createInvitation`, `revokeInvitation` (tenant-scoped) |
+
+Repository writes fail closed without a resolved atelier. Order status/assignment use both
+`atelier_id` and `order_code`; feedback status and invitation revocation pair `atelier_id` with the
+row id. Measurement upserts conflict on `(atelier_id, client_id)`.
 
 The public fitting form is disabled in Supabase mode. A member can submit a pending fitting request;
 the owner confirms it only by reserving a protected resource slot.
