@@ -1,10 +1,15 @@
 name: CI
 
+# Every push on every branch is gated. Before this, only `main` was covered, so a
+# feature branch could sit red indefinitely and the first signal arrived after a
+# merge. Pull requests are gated regardless of their base branch for the same
+# reason: the branch that needs the signal is the one being proposed.
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
-    branches: [main]
+    branches: ['**']
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -140,3 +145,49 @@ jobs:
 
       - name: Replay migrations, seed and RLS suite
         run: npm run verify:db:host
+
+  e2e:
+    name: Hermetic browser journey
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      # The suite runs against a disposable local Supabase stack. It needs no
+      # project ref, no publishable key, and no hosted database password, so it
+      # gates a work branch even before the owner provisions anything.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.0.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Confirm the disposable stack is available
+        run: |
+          docker info >/dev/null
+          supabase --version
+
+      - name: Hermetic browser suite (clean run then immediate re-run)
+        env:
+          # Keep the first stack alive so the immediate re-run reuses it and
+          # resets the data instead of paying for a second image pull. The
+          # re-run is the property under test: a consumed slot must not leak.
+          STITCHFLOW_E2E_KEEP: '1'
+          STITCHFLOW_E2E_WORKDIR: /tmp/stitchflow-e2e
+        run: |
+          npm run test:e2e:hermetic
+          npm run test:e2e:hermetic
+
+      # Every gate above is only trusted if it has been seen rejecting its
+      # failure. This script feeds each gate the failure it exists to catch.
+      - name: Negative controls
+        run: npm run verify:controls

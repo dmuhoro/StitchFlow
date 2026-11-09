@@ -9,20 +9,31 @@
 -- Tenant B: Aso-Oke Heritage House Lagos (Nigeria - NGN)
 --
 -- No passwords are seeded. Sign in locally with a magic link through Mailpit.
+--
+-- The rows are GoTrue-complete rather than a bare (id, email) tuple: GoTrue
+-- filters by `instance_id` and scans the token columns into non-nullable
+-- strings, so a partial row is invisible to the admin API and to local sign-in.
+-- `supabase/seed.sql` must therefore match the shape declared in
+-- `scripts/db/supabase-shim.sql`. Do not drop these columns to "simplify" the
+-- seed: it silently breaks every local authentication flow.
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
 -- 1. AUTH USERS (deterministic identities for local verification)
 -- ----------------------------------------------------------------------------
-insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data)
+insert into auth.users (
+  instance_id, id, aud, role, email, email_confirmed_at,
+  confirmation_token, recovery_token, email_change_token_new, email_change,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+)
 values
-  ('a1111111-1111-1111-1111-111111111111', 'danny@stitchflow.ke', now(), '{"full_name":"Danny Muhoro"}'::jsonb),
-  ('a2222222-2222-2222-2222-222222222222', 'amani@stitchflow.ke', now(), '{"full_name":"Amani Wanjiru"}'::jsonb),
-  ('a3333333-3333-3333-3333-333333333333', 'zainab@diplomacy.org', now(), '{"full_name":"Dr. Zainab Al-Mansoor"}'::jsonb),
-  ('a4444444-4444-4444-4444-444444444444', 'njeri@wanjiku.co.ke', now(), '{"full_name":"Njeri Wambui"}'::jsonb),
-  ('b1111111-1111-1111-1111-111111111111', 'adeleke@heritageasooke.ng', now(), '{"full_name":"Chief Babatunde Adeleke"}'::jsonb),
-  ('b2222222-2222-2222-2222-222222222222', 'folake@heritageasooke.ng', now(), '{"full_name":"Folake Adeleke"}'::jsonb),
-  ('b3333333-3333-3333-3333-333333333333', 'oladipo@senate.gov.ng', now(), '{"full_name":"Senator Oladipo Williams"}'::jsonb)
+  ('00000000-0000-0000-0000-000000000000', 'a1111111-1111-1111-1111-111111111111', 'authenticated', 'authenticated', 'danny@stitchflow.ke', now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"full_name":"Danny Muhoro"}'::jsonb, now(), now()),
+  ('00000000-0000-0000-0000-000000000000', 'a2222222-2222-2222-2222-222222222222', 'authenticated', 'authenticated', 'amani@stitchflow.ke', now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"full_name":"Amani Wanjiru"}'::jsonb, now(), now()),
+  ('00000000-0000-0000-0000-000000000000', 'a3333333-3333-3333-3333-333333333333', 'authenticated', 'authenticated', 'zainab@diplomacy.org', now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"full_name":"Dr. Zainab Al-Mansoor"}'::jsonb, now(), now()),
+  ('00000000-0000-0000-0000-000000000000', 'a4444444-4444-4444-4444-444444444444', 'authenticated', 'authenticated', 'njeri@wanjiku.co.ke', now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"full_name":"Njeri Wambui"}'::jsonb, now(), now()),
+  ('00000000-0000-0000-0000-000000000000', 'b1111111-1111-1111-1111-111111111111', 'authenticated', 'authenticated', 'adeleke@heritageasooke.ng', now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"full_name":"Chief Babatunde Adeleke"}'::jsonb, now(), now()),
+  ('00000000-0000-0000-0000-000000000000', 'b2222222-2222-2222-2222-222222222222', 'authenticated', 'authenticated', 'folake@heritageasooke.ng', now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"full_name":"Folake Adeleke"}'::jsonb, now(), now()),
+  ('00000000-0000-0000-0000-000000000000', 'b3333333-3333-3333-3333-333333333333', 'authenticated', 'authenticated', 'oladipo@senate.gov.ng', now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"full_name":"Senator Oladipo Williams"}'::jsonb, now(), now())
 on conflict (id) do nothing;
 
 -- ----------------------------------------------------------------------------

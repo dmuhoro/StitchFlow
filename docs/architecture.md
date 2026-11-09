@@ -100,9 +100,10 @@ See [`db-contracts.md`](db-contracts.md) for table contracts and
 | Bundle | `npm run build` | Production build succeeds |
 | Artifacts | `npm run verify:build` | No literal source paths or secrets; Supabase-mode build also rejects known demo identities, PIN, credential cards, tenant slugs and demo copy |
 | Browser smoke | `npm run test:e2e -- --grep "public entry renders"` | Public entry renders and its sign-in action opens the auth dialog |
+| Hermetic browser journeys | `npm run test:e2e:hermetic` | Starts a disposable local Supabase stack with Auth and PostgREST, resets migrations and seeds, then runs the six browser journeys without hosted credentials |
 | Docs | `npm run check:docs` | Every relative Markdown link resolves |
 | Database | `npm run verify:db` | Chain applies to empty DB; 14-scenario RLS suite, 15 E2E scenarios, booking RPC suite, and a 200-attempt / 50-concurrent exclusion proof pass |
-| CI | `.github/workflows/ci.yml` | All of the above on every push |
+| CI | `.github/workflows/ci.yml` | All checks on every branch push and pull request; the hermetic E2E job needs no production credentials |
 
 ## 7. Deployment
 

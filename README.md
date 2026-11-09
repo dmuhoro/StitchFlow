@@ -39,7 +39,7 @@ Copy `.env.example` to `.env.local` and provide `VITE_SUPABASE_URL` and `VITE_SU
 
 ## Current scope and limitations
 
-StitchFlow is still a staged production migration. Demo mode remains the default local surface. The Supabase-mode bundle excludes demo identities and the demo PIN, and production builds fail closed unless Supabase mode and valid project settings are configured. The booking UI uses protected booking RPCs, client appointment inserts are limited to own-tenant pending requests, and production schema parity is current through `20261108173000`. Repository writes fail closed without an atelier; human-key mutations include tenant scope. Owner financial edits are audited by the applied forward-only migration. Tenant resolution remains client-side. Pilot identities and fitting fixtures exist; the configured Vercel URL currently fails hosted browser verification (1 pass/5 failures), the backup/restore rehearsal remains incomplete, and no live booking has been confirmed. Guest booking rate limits, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, and operational monitoring remain out of scope for the supervised pilot. See the [pilot operations runbook](docs/runbooks/pilot-operations.md), [deployment runbook](docs/runbooks/deployment.md), and [release gates](docs/release-readiness.md).
+StitchFlow is still a staged production migration. Demo mode remains the default local surface. The Supabase-mode bundle excludes demo identities and the demo PIN, and production builds fail closed unless Supabase mode and valid project settings are configured. The booking UI uses protected booking RPCs, client appointment inserts are limited to own-tenant pending requests, and production schema parity is current through `20261108173000`. Repository writes fail closed without an atelier; human-key mutations include tenant scope. Owner financial edits are audited by the applied forward-only migration. Tenant resolution remains client-side. Pilot identities and fitting fixtures exist; a hermetic local run passes all six browser journeys (including invitation redemption) twice in a row, the seven negative controls pass, and the local dump → restore → RLS rehearsal passes. The configured Vercel URL still serves the pre-checkout build and fails hosted browser verification (1 pass/5 failures), no live restore of pilot data has been made, and no live booking has been confirmed. Guest booking rate limits, payments, transactional email/SMS, WhatsApp Business API messaging, media storage, and operational monitoring remain out of scope for the supervised pilot. See the [pilot operations runbook](docs/runbooks/pilot-operations.md), [deployment runbook](docs/runbooks/deployment.md), and [release gates](docs/release-readiness.md).
 ---
 
 > **Runtime guard enforcement**: All action boundaries (onboarding, feedback, order creation, lookbook publishing) now contain explicit fail‑closed checks that refuse unresolvable ateliers or missing authorization in production. This guarantees that a user cannot trigger unintended or unsafe writes.
@@ -68,7 +68,10 @@ npm run check:docs     # Relative Markdown link check
 npm run build          # Production bundle
 npm run verify:build   # Artifact assertions (paths and placeholders)
 npm run verify:db      # Disposable postgres:16 + RLS, E2E, booking RPC and concurrency suites
-npm run test:e2e      # Public-entry smoke plus configured hosted journeys
+npm run test:e2e       # Public-entry smoke plus configured hosted journeys
+npm run test:e2e:hermetic  # Six browser journeys against a disposable local Supabase stack
+npm run verify:controls    # Negative controls: each artifact/demo gate must reject its failure
+npm run rehearse:restore   # Dump -> restore -> RLS rehearsal, with corrupt-archive self-controls
 npm run preview        # Serve the production bundle locally
 npm run audit          # Dependency vulnerability check
 ```
@@ -82,12 +85,13 @@ scripts explicitly select the pilot configuration.
 ## Pilot Launch
 
 **Status: BLOCKED — not yet cleared for real pilot users.** The configured production URL is
-[stitchflow-coral.vercel.app](https://stitchflow-coral.vercel.app), but hosted E2E found the old
-duplicate header sign-in label and failed four other hosted flows. Do not use this deployment for
-pilot operations until [issue #6](https://github.com/dmuhoro/StitchFlow/issues/6) is resolved. The
-financial-audit migration is applied and remote schema parity is current; the disposable restore
-rehearsal, refreshed deployment, and live journey verification remain open. See
-[`OWNER_ACTIONS.md`](OWNER_ACTIONS.md) and [`docs/release-readiness.md`](docs/release-readiness.md).
+[stitchflow-coral.vercel.app](https://stitchflow-coral.vercel.app), but it serves the pre-checkout
+build and fails hosted browser verification. Do not use this deployment for pilot operations until
+[issue #6](https://github.com/dmuhoro/StitchFlow/issues/6) is resolved. The financial-audit migration
+is applied and remote schema parity is current; the hermetic local suite (6/6 twice) and the
+local-source restore rehearsal pass. A reviewed publish, live journey verification, and a live
+restore of pilot data remain open. See [`OWNER_ACTIONS.md`](OWNER_ACTIONS.md) and
+[`docs/release-readiness.md`](docs/release-readiness.md).
 
 After those gates pass, the atelier owner signs in through **Atelier sign in**, opens the director
 workspace, then uses **Fitting Queue** to select a pending request, check resource availability,

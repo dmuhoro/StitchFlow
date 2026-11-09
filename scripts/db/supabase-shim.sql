@@ -14,12 +14,24 @@ create schema if not exists auth;
 
 create table if not exists auth.users (
   id uuid primary key,
-  email text,
-  encrypted_password text,
-  raw_user_meta_data jsonb not null default '{}'::jsonb,
-  email_confirmed_at timestamptz,
+  -- GoTrue (v2.197) filters users by instance_id and scans the token columns
+  -- into non-nullable strings. A row that omits them is invisible to the admin
+  -- API and to password/magic-link sign-in, so the shim carries the same shape
+  -- as a real GoTrue install and the tracked seed stays portable across both.
+  instance_id uuid,
   aud text not null default 'authenticated',
   role text not null default 'authenticated',
+  email text,
+  encrypted_password text,
+  email_confirmed_at timestamptz,
+  confirmation_token text not null default '',
+  recovery_token text not null default '',
+  email_change_token_new text not null default '',
+  email_change text not null default '',
+  raw_app_meta_data jsonb not null default '{}'::jsonb,
+  raw_user_meta_data jsonb not null default '{}'::jsonb,
+  is_sso_user boolean not null default false,
+  is_anonymous boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

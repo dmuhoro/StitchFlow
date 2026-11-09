@@ -1,6 +1,18 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const baseURL = process.env.STITCHFLOW_E2E_BASE_URL || 'http://127.0.0.1:4173';
+/**
+ * The suite runs in one of two modes:
+ *
+ *   - Hermetic (default): Playwright starts a preview server against a build it
+ *     did not produce, so `scripts/e2e/hermetic.sh` must have built it already.
+ *     Traces and screenshots are retained on failure because this is the mode a
+ *     developer debugs in.
+ *   - Remote: `STITCHFLOW_E2E_BASE_URL` names an already-running host. Playwright
+ *     never starts a server, so it cannot accidentally test a local build while
+ *     the operator believes they tested the deployment.
+ */
+const previewPort = process.env.STITCHFLOW_E2E_PREVIEW_PORT ?? '4173';
+const baseURL = process.env.STITCHFLOW_E2E_BASE_URL || `http://127.0.0.1:${previewPort}`;
 const usesLocalPreview = !process.env.STITCHFLOW_E2E_BASE_URL;
 
 export default defineConfig({
@@ -16,7 +28,7 @@ export default defineConfig({
   },
   webServer: usesLocalPreview
     ? {
-        command: 'npm run preview -- --host 127.0.0.1 --port 4173',
+        command: `npm run preview -- --host 127.0.0.1 --port ${previewPort}`,
         url: baseURL,
         reuseExistingServer: !process.env.CI,
       }

@@ -90,6 +90,28 @@ const productionContext = [
 ].some((value) => value === 'production');
 const enforceProductionArtifact = mode === 'supabase' || productionContext;
 
+// The hermetic browser suite builds the real Supabase-mode bundle against a
+// disposable loopback stack. It must still be scanned for demo artifacts, but it
+// cannot carry a hosted project ref. This exception is narrow on purpose:
+//   - it is opt-in and named,
+//   - it is ignored during a production deploy context,
+//   - it only accepts a loopback URL.
+// Anything else fails, so it cannot be used to relax a production build.
+const localSupabaseBuild =
+  !productionContext && process.env.STITCHFLOW_LOCAL_SUPABASE_BUILD === '1';
+
+if (localSupabaseBuild) {
+  const url = process.env.VITE_SUPABASE_URL ?? '';
+  if (!/^http:\/\/(127\.0\.0\.1|localhost):\d{2,5}\/?$/.test(url)) {
+    fail(
+      `STITCHFLOW_LOCAL_SUPABASE_BUILD=1 requires a loopback VITE_SUPABASE_URL, got "${url || '(unset)'}". ` +
+        'This flag must never be used for a hosted build.'
+    );
+  }
+}
+
+const enforceHostedProjectRefs = enforceProductionArtifact && !localSupabaseBuild;
+
 if (productionContext) {
   if (mode !== 'supabase') {
     fail(
@@ -130,26 +152,28 @@ if (enforceProductionArtifact) {
     linkedRef = null;
   }
 
-  if (artifactRefs.length === 0) {
-    fail('production build does not embed a Supabase project URL.');
-  }
-  if (artifactRefs.length > 1) {
-    fail(`production build embeds multiple Supabase project refs: ${artifactRefs.join(', ')}.`);
-  }
-  if (artifactRefs.includes('vpathqzkaqdtbykumxeo')) {
-    fail('production build still targets the retired Supabase project.');
-  }
-  if (configuredRef && !artifactRefs.includes(configuredRef)) {
-    fail(
-      `production build embeds Supabase project(s) ${artifactRefs.join(', ')} but ` +
-        `VITE_SUPABASE_URL names ${configuredRef}; rebuild with the deployed environment.`
-    );
-  }
-  if (linkedRef && !artifactRefs.includes(linkedRef)) {
-    fail(
-      `production build does not embed the linked project ref ${linkedRef}; ` +
-        `it embeds ${artifactRefs.join(', ') || '(none)'}.`
-    );
+  if (enforceHostedProjectRefs) {
+    if (artifactRefs.length === 0) {
+      fail('production build does not embed a Supabase project URL.');
+    }
+    if (artifactRefs.length > 1) {
+      fail(`production build embeds multiple Supabase project refs: ${artifactRefs.join(', ')}.`);
+    }
+    if (artifactRefs.includes('vpathqzkaqdtbykumxeo')) {
+      fail('production build still targets the retired Supabase project.');
+    }
+    if (configuredRef && !artifactRefs.includes(configuredRef)) {
+      fail(
+        `production build embeds Supabase project(s) ${artifactRefs.join(', ')} but ` +
+          `VITE_SUPABASE_URL names ${configuredRef}; rebuild with the deployed environment.`
+      );
+    }
+    if (linkedRef && !artifactRefs.includes(linkedRef)) {
+      fail(
+        `production build does not embed the linked project ref ${linkedRef}; ` +
+          `it embeds ${artifactRefs.join(', ') || '(none)'}.`
+      );
+    }
   }
 
   if (!corpus.includes('Demo role sign-in is disabled in production')) {

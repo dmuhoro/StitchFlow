@@ -20,7 +20,10 @@
     "seed:pilot-fitting": "node scripts/ops/seed-pilot-fitting.mjs",
     "verify:pilot": "node scripts/ops/verify-pilot.mjs",
     "test:unit": "vitest run --config vitest.config.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:hermetic": "bash scripts/e2e/hermetic.sh",
+    "verify:controls": "bash scripts/ci/negative-controls.sh",
+    "rehearse:restore": "bash scripts/ops/backup-restore-rehearsal.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

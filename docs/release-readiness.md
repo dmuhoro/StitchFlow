@@ -1,8 +1,8 @@
 # Release Readiness
 
 > The authoritative to-do list. A gate is DONE only with cited evidence.
-> Last updated: 2026-11-09 (remote migration current through `20261108173000`; branch push passed;
-> preview deployment blocked by Vercel build/deploy target mismatch).
+> Last updated: 2026-11-09 (hermetic E2E harness: 6/6 browser journeys twice, 7/7 negative
+> controls, local restore rehearsal; hosted deploy and live restore remain blocked).
 
 ## Launch gates
 
@@ -13,16 +13,44 @@
 | L2 | RLS isolation suite green | DONE | 12 scenarios + structural assertions: `docs/evidence/2026-11-05_sprint-0-verification.md` |
 | L3 | Local imagery bundled with hashed URLs | DONE | `docs/evidence/2026-11-01_build_artifacts.md` |
 | L4 | Persistence wired for every supported action | DONE | `docs/evidence/2026-11-01_persistence.md`; scope limits in the Sprint 0 audit |
-| L5 | CI runs lint, unit, browser smoke, build, docs, DB verification | DONE — browser smoke added in current checkpoint | `.github/workflows/ci.yml` |
+| L5 | CI runs lint, unit, browser smoke, build, docs, DB verification | DONE — source; remote run BLOCKED | `.github/workflows/ci.yml` (all-branch push/PR, credential-free hermetic `e2e` job); pending harness changes are not pushed, and the available GitHub token lacks `workflow` scope |
 | L6 | Release versioned, tagged, pushed | DONE | `docs/evidence/2026-11-01_release.md` (tag `v1.0.0`, remote ref verified) |
 | L7 | Cleanup complete, lockfile committed, tree clean | DONE | `npm ci` succeeded on 2026-11-05; dead dependencies removed in `1bd06bb` |
 | L8 | README, CHANGELOG, sprints updated | DONE | `CHANGELOG.md` 1.0.0/1.0.1, sprint records, evidence index |
 | L9 | Deployment verified | **BLOCKED — no preview deployment created** | `vercel build --prod` succeeded, but `vercel deploy --prebuilt` rejected the production-target artifact for a preview deployment; see `docs/evidence/2026-11-09_preview-deploy-blocked.md`. |
 | L10 | Production deploy fails closed on a demo-mode artifact | DONE — source + CI | `scripts/ci/verify-build.mjs` (`VERCEL_ENV=production`), `postbuild`, CI negative proof; `docs/evidence/2026-11-08_v1.4.0-rc.1.md` |
 | L11 | Tenant-safe human-key writes and missing-atelier fail-closed guard | **PASS locally; hosted role/RLS proof PASS, hosted duplicate-code SQL not run** | `npm run test:unit`, `npm run verify:db` (including duplicate `order_code` across tenants), and `npm run verify:pilot` (30/30); hosted SQL fixture: `supabase/tests/hosted_rls_e2e.sql` |
-| L12 | Owner/staff/patron hosted workflows | **BLOCKED — prior remote run 1 pass / 5 failures; current local E2E attempt blocked before tests** | Remote `npm run test:e2e -- --workers=1` against configured Vercel URL; see issue #6 and `docs/evidence/2026-11-08_pilot-e2e-failure.md` for current CLI blocker. |
-| L13 | Pilot support, rollback, and backup/restore rehearsal | **Runbook added; restore rehearsal NOT DONE** | `docs/runbooks/pilot-operations.md`; `supabase start` failed on Docker image TLS timeouts and local port conflicts; no production dump/restore was created |
+| L12 | Owner/staff/patron hosted workflows | **Local hermetic PASS 6/6 twice; hosted BLOCKED** | `npm run test:e2e:hermetic` against disposable local Supabase with fixture reset, including invite redemption; hosted bundle reported as stale by the owner. See `docs/evidence/2026-11-09_e2e-harness.md`. |
+| L13 | Pilot support, rollback, and backup/restore rehearsal | **Local-source rehearsal PASS; hosted restore BLOCKED** | `npm run rehearse:restore` rejects a real truncated local dump (exit 1), then restores a full dump and passes the RLS suite (exit 0). A live dump/restore needs `SOURCE_DB_URL` and the production database password. `docs/runbooks/pilot-operations.md`, `docs/evidence/2026-11-09_e2e-harness.md` |
 | L14 | Owner financial edits audited without exposing snapshots to staff/patrons | **Migration applied; hosted general RLS + local trigger proof PASS** | Remote migration list reverified current through `20261108173000`; see `docs/evidence/2026-11-08_pilot-release-execution.md`, `STITCHFLOW_ALLOW_HOSTED_VERIFY=1 npm run verify:hosted`, and `npm run verify:db` |
+
+## Verification boundary — 2026-11-09
+
+### Verified locally
+
+- The hermetic E2E harness starts a disposable Supabase stack with Auth and PostgREST, resets it
+  from tracked migrations and `supabase/seed.sql`, and runs all six browser journeys twice. The
+  pending fitting is recreated by `npm run seed:pilot-fitting` before each run.
+- Seven negative controls reject the configured demo/build failures, including a protected browser
+  journey run against a demo artifact and a demo artifact checked in a Vercel production context.
+- The backup/restore script rejects a 1,000-byte truncated local dump with exit 1, then restores a
+  complete local dump and runs `supabase/tests/rls_isolation_test.sql` successfully.
+- These checks use loopback-only configuration and no hosted database credential.
+
+### Blocked on credentials / authorization
+
+- The pending harness changes are not pushed. The available GitHub token lacks the `workflow`
+  scope needed to publish the modified Actions workflow; no remote CI run is claimed.
+- A live backup/restore needs `SOURCE_DB_URL` and the production database password. Neither was
+  supplied or used.
+- Hosted E2E requires an owner-approved deployment of the reviewed source. The owner reports the
+  current deployed bundle (`index-BPtRE36V.js`) predates commit `bb751ad`; this attribution was not
+  revalidated against the hosted project in this task.
+
+### Blocked on plan tier
+
+- Vercel project `stitchflow` is on Hobby, which does not permit commercial use. Upgrade to Pro
+  before a paid pilot. This plan limitation is separate from the local harness and its CI proof.
 
 ## Sprint 0a verification gates (2026-11-05)
 
@@ -63,9 +91,12 @@ human-key writes pass unit and local database tests. Six hosted identities and a
 fixture exist. A fresh static production build passes, the hosted publishable-key proof passes
 30/30, owner/employee/patron browser journeys pass 3/3, and protected booking confirmation passes 1/1
 against the fresh local bundle connected to hosted Supabase. The booking journey used the
-script-owned synthetic fixture. The latest Vercel production URL run returned 1 pass and 5 failures,
-including the duplicate header label; no live booking was confirmed. The backup/restore rehearsal
-could not start because Docker image pulls timed out:
+script-owned synthetic fixture. As of 2026-11-09 the hermetic harness passes all six browser
+journeys (including invitation redemption) twice in a row, seven artifact/demo-mode negative
+controls, and the local dump → restore → RLS rehearsal; see
+`docs/evidence/2026-11-09_e2e-harness.md`. The latest Vercel production URL run returned 1 pass and
+5 failures, including the duplicate header label; no live booking was confirmed, and the deployed
+artifact is stale relative to this checkout. A restore of live pilot data has not been made:
 
 1. `S0-P0-01` — **closed in source and at the deploy boundary**. Supabase-mode build and
    `verify:build` reject demo identities, PIN, credential cards, tenant slugs, and demo lookbook
@@ -100,11 +131,13 @@ Full prioritized list: `docs/audit/2026-11-05_sprint-0-audit.md`.
 | Item | Blocker | Owner |
 |------|---------|-------|
 | Hosted Supabase schema parity / remote migration apply | Applied and verified current through `20261108173000` by remote list and dry-run | Engineering; hosted migration issue resolved |
-| Hosted owner/employee/patron browser journeys | Remote E2E run 1 pass / 5 fail; current deployment exposes old header label and role assertions mismatch | Repository owner — authorize branch push; engineering publishes preview and reruns with synthetic fixtures; issue #6 |
-| Live booking confirmation journey | Local database booking proof passes; live UI flow timed out before slot selection and no booking was created | Repository owner — authorize updated deployment; engineering reruns and captures proof after all browser tests pass |
+| Hosted owner/employee/patron browser journeys | Local hermetic suite passes 6/6 twice; the deployed Vercel artifact still serves the pre-checkout build | Repository owner — approve publish of the reviewed artifact; engineering reruns the six journeys against it |
+| Live booking confirmation journey | Booking passes in `verify:db` and in the hermetic browser journey; no live booking has been made against the deployed site | Repository owner — approve publish; engineering captures the live booking after all browser tests pass |
 | Current source build/type-check | `npm run lint` and `npm run build` pass using `vite.pilot.config.ts`; root config is also static and no TanStack plugin is used | Engineering |
-| Vercel production artifact | Project, production URL, and production variable names exist; deployed code is not verified against this checkout and fails hosted E2E | Repository owner — approve GitHub workflow scope/push; engineering publishes and verifies reviewed artifact |
-| Pilot backup/restore rehearsal | Not performed; local Supabase startup hit Docker image TLS timeouts and port conflicts; no production dump was created | Repository owner — provide isolated Docker/Supabase environment; complete runbook rehearsal |
+| Vercel production artifact | Project, production URL, and production variable names exist; deployed code is not verified against this checkout and fails hosted E2E | Repository owner — approve publish; engineering publishes and verifies the reviewed artifact |
+| Pilot backup/restore rehearsal | Local dump → restore → RLS rehearsal passes with self-controls; a live dump/restore of pilot data has not been made | Repository owner — provide `SOURCE_DB_URL` and the production database password |
+| Vercel commercial use | Project `stitchflow` is on the Hobby plan, which forbids commercial use | Repository owner — upgrade to Pro before a paid pilot |
+| Regional availability | Single region `iad1`; no secondary region or failover configured | Repository owner — decide whether the pilot needs multi-region |
 | Payment gateway credentials | Must live in a server-side secret store; no credentials provided | Repository owner |
 | WhatsApp Business API sender and templates | Meta approval required | Atelier operator |
 | Kenya/Nigeria data-protection review | Human legal/privacy decision | Repository owner |

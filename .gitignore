@@ -18,3 +18,9 @@ supabase/.temp/
 .netlify
 .vercel
 .env*
+
+# Tracked templates and the hermetic test environment. Neither may hold a real
+# credential: `.env.test` is local-only and its generated key is injected
+# through `.env.test.local`, which stays ignored.
+!.env.example
+!.env.test

@@ -9,13 +9,38 @@ Operational scripts. Every script fails closed: a non-zero exit means the check 
 | `verify-db.sh` | Apply migrations + seed + RLS suite + booking RPC suite + concurrency proof to a disposable Postgres |
 | `db/booking_concurrency_test.sh` | 200 simultaneous hold attempts on one slot via `xargs -P 50`; asserts exactly one winner |
 | `db/supabase-shim.sql` | Minimal `auth` schema and roles for plain Postgres |
+| `ops/backup-restore-rehearsal.sh` | Dump a local or explicitly provided source, reject incomplete dumps, preserve source ACLs, restore to disposable PostgreSQL 16, compare all 16 public data-table row counts, then run the RLS suite on the restored DB |
+| `ops/source-db.mjs` | Pass `SOURCE_DB_URL` to Docker as process environment for read-only `pg_dump` and row-count queries; never prints the URL |
 
 ```bash
 npm run verify:db          # docker mode, disposable postgres:16
 ./scripts/verify-db.sh host # CI mode, uses PG* environment
+npm run rehearse:restore  # local disposable dump → restore → RLS proof
 ```
 
 The shim is never applied to a hosted Supabase project.
+
+The local rehearsal is safe without hosted credentials. Live-source mode requires `SOURCE_DB_URL`
+and only reads the source; the dump is restored into a separate disposable local container. A
+supplied dump without a source URL cannot pass because it cannot be compared against source row
+counts.
+
+## Hermetic browser tests
+
+| Script | Purpose |
+|--------|---------|
+| `e2e/hermetic.sh` | Start an isolated Supabase Auth + PostgREST stack on loopback, reset and seed it, build Supabase mode, then run Playwright |
+| `e2e/seed-local.mjs` | Create per-run random Auth passwords and an invitation fixture; passwords are passed in memory, never logged or written |
+| `ops/seed-pilot-fitting.mjs` | In hermetic mode, refuse all but the isolated E2E Supabase project and reset migrations/seed to recreate the pending fitting |
+| `ci/negative-controls.sh` | Prove demo artifact deploy gate and demo browser journey fail as expected |
+
+```bash
+npm run test:e2e:hermetic # six journeys; requires Docker, Supabase CLI and Playwright Chromium
+npm run verify:controls   # seven artifact/demo-mode negative controls
+```
+
+`.env.test` is a tracked, credential-free template for the loopback stack. The runner ignores
+ambient hosted values, refuses non-loopback E2E configuration, and generates passwords per run.
 
 ## CI guards
 

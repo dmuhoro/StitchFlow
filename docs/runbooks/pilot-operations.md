@@ -44,23 +44,37 @@ without explicit owner approval.
 
 ## Backup and restore rehearsal
 
-No automated backup or restore process has been verified for this pilot. Before accepting
-non-synthetic atelier data:
+The automated local-source rehearsal is `npm run rehearse:restore`. It dumps a freshly migrated
+local database, rejects malformed archives, preserves the source's grants/revokes, restores into a
+separate disposable PostgreSQL 16 container, compares all 16 tenant/data tables by row count, then runs
+`supabase/tests/rls_isolation_test.sql` and verifies RLS is enabled on every public table. A live
+source can be tested only by setting `SOURCE_DB_URL` in the operator's environment; the value is
+never printed or written to a file. The rehearsal is not evidence that hosted backups are scheduled
+or that a live pilot restore has been performed.
+
+Before accepting non-synthetic atelier data:
 
 1. In Supabase, confirm the active plan supports database backups and a restore destination. If it
    does not, stop and obtain an owner-approved backup plan.
-2. Create a backup of the disposable rehearsal project after the seed above.
-3. Restore that backup to a separate disposable project using the Supabase Dashboard's documented
-   restore flow. Never overwrite the production pilot to test a restore.
-4. Point a private `.env.pilot`/`PILOT_SECRETS_FILE` at the restored project and run
+2. Run `npm run rehearse:restore` against a disposable local source and retain only the command,
+   pass/fail, and row counts in the evidence record.
+3. If the owner authorizes a live rehearsal, set `SOURCE_DB_URL` without placing it in shell history,
+   command arguments, output, or evidence; run `npm run rehearse:restore`. The script makes a
+   read-only dump and row-count query, restores into a local disposable container, and never writes
+   to the source.
+4. If the hosted plan requires its dashboard restore flow, use a separate disposable project as the
+   target. Never overwrite the production pilot to test a restore.
+5. Point a private `.env.pilot`/`PILOT_SECRETS_FILE` at the restored project and run
    `npm run verify:pilot`. Require the six pilot/isolation identities and all RLS assertions to
    resolve; separately run `npm run verify:db` for the migration and database suite.
-5. Record the backup timestamp, restore target, verification commands/results, and any recovery
+6. Record the backup timestamp, restore target, verification commands/results, and any recovery
    time. Do not include database URLs, keys, passwords, email addresses, or patron details.
-6. Remove the disposable projects and local backup files through approved, targeted cleanup.
+7. Remove the disposable projects and local backup files through approved, targeted cleanup.
 
-This rehearsal is **not yet performed**. Until an owner completes it and records evidence, recovery
-from production data loss is an explicit pilot limitation.
+The local-source rehearsal passes; the live-source rehearsal is **BLOCKED** until the owner provides
+`SOURCE_DB_URL` and the production database password. Until then, recovery from production data loss
+is an explicit pilot limitation. See
+[`../evidence/2026-11-09_e2e-harness.md`](../evidence/2026-11-09_e2e-harness.md).
 
 ## Support and pause checklist
 

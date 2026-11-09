@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+# ============================================================================
+# NEGATIVE CONTROLS
+# ----------------------------------------------------------------------------
+# A gate that has never been observed rejecting something is decoration. This
+# script proves each gate actually fires by feeding it the failure it exists to
+# catch, and asserting a non-zero exit.
+#
+#   npm run verify:controls
+#
+# Covered:
+#   1. The production deploy gate rejects a demo-mode artifact.
+#   2. The hermetic local-build exception is opt-in and loopback-only, so it can
+#      never be used to relax a production build.
+#   3. The protected browser flow fails against a demo-mode build instead of
+#      reporting success or skipping.
+#
+# Exit codes: 0 all controls behaved; 1 a control did not fire.
+# ============================================================================
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$ROOT"
+
+LOG_DIR="$(mktemp -d -t stitchflow-controls-XXXXXX)"
+CASES=0
+PROBLEMS=0
+
+trap 'rm -rf "$LOG_DIR"' EXIT
+
+# A developer shell can export the hosted configuration. Every case below sets
+# what it needs, so clear the inherited values once: otherwise an ambient
+# `VITE_DATA_MODE=supabase` would change what the "demo artifact" case proves.
+unset VITE_DATA_MODE VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY
+unset CONTEXT NETLIFY_CONTEXT VERCEL_ENV STITCHFLOW_DEPLOY_CONTEXT
+unset STITCHFLOW_E2E_BASE_URL
+
+# run_case <expected: pass|fail> <label> <command...>
+run_case() {
+  local expected="$1" label="$2"
+  shift 2
+  CASES=$((CASES + 1))
+  local log="$LOG_DIR/case-$CASES.log"
+  if "$@" >"$log" 2>&1; then
+    actual="pass"
+    actual_code=0
+  else
+    actual_code=$?
+    actual="fail"
+  fi
+
+  if [[ "$actual" == "$expected" ]]; then
+    printf 'PASS  %-58s expected %-4s got %s (exit %s)\n' "$label" "$expected" "$actual" "$actual_code"
+  else
+    printf 'FAIL  %-58s expected %-4s got %s (exit %s)\n' "$label" "$expected" "$actual" "$actual_code"
+    sed -n '1,6p' "$log" | sed 's/^/        /'
+    PROBLEMS=$((PROBLEMS + 1))
+  fi
+}
+
+step() { printf '\n==> %s\n' "$1"; }
+
+# --- build fixtures for the artifact gate -----------------------------------
+step "building a demo-mode artifact"
+VITE_DATA_MODE=demo \
+VITE_SUPABASE_URL="http://127.0.0.1:54521" \
+VITE_SUPABASE_PUBLISHABLE_KEY="sb_publishable_negative_control_loopback_key" \
+  npm run build >"$LOG_DIR/build-demo.log" 2>&1 || {
+  echo "FAIL: could not build the demo artifact."
+  tail -20 "$LOG_DIR/build-demo.log"
+  exit 1
+}
+
+step "1-2. artifact gate"
+run_case pass "demo artifact, no deploy context" \
+  env -u VERCEL_ENV -u NETLIFY_CONTEXT -u CONTEXT \
+  node scripts/ci/verify-build.mjs
+run_case fail "demo artifact in a production deploy context" \
+  env VERCEL_ENV=production \
+  node scripts/ci/verify-build.mjs
+
+step "building a Supabase-mode artifact for the loopback stack"
+LOOPBACK_URL="http://127.0.0.1:54521"
+LOOPBACK_KEY="sb_publishable_negative_control_loopback_key"
+STITCHFLOW_LOCAL_SUPABASE_BUILD=1 \
+VITE_DATA_MODE=supabase \
+VITE_SUPABASE_URL="$LOOPBACK_URL" \
+VITE_SUPABASE_PUBLISHABLE_KEY="$LOOPBACK_KEY" \
+  npm run build >"$LOG_DIR/build-local.log" 2>&1 || {
+  echo "FAIL: could not build the Supabase-mode artifact."
+  tail -20 "$LOG_DIR/build-local.log"
+  exit 1
+}
+
+run_case pass "Supabase artifact, loopback + explicit local flag" \
+  env -u VERCEL_ENV \
+  VITE_DATA_MODE=supabase \
+  VITE_SUPABASE_URL="$LOOPBACK_URL" \
+  VITE_SUPABASE_PUBLISHABLE_KEY="$LOOPBACK_KEY" \
+  STITCHFLOW_LOCAL_SUPABASE_BUILD=1 \
+  node scripts/ci/verify-build.mjs
+run_case fail "local flag used with a hosted project URL" \
+  env -u VERCEL_ENV \
+  VITE_DATA_MODE=supabase \
+  VITE_SUPABASE_URL="https://example-project.supabase.co" \
+  VITE_SUPABASE_PUBLISHABLE_KEY="$LOOPBACK_KEY" \
+  STITCHFLOW_LOCAL_SUPABASE_BUILD=1 \
+  node scripts/ci/verify-build.mjs
+run_case fail "local loopback artifact promoted to production" \
+  env VERCEL_ENV=production \
+  VITE_DATA_MODE=supabase \
+  VITE_SUPABASE_URL="$LOOPBACK_URL" \
+  VITE_SUPABASE_PUBLISHABLE_KEY="$LOOPBACK_KEY" \
+  STITCHFLOW_LOCAL_SUPABASE_BUILD=1 \
+  node scripts/ci/verify-build.mjs
+run_case fail "loopback artifact without the explicit opt-in flag" \
+  env -u VERCEL_ENV \
+  VITE_DATA_MODE=supabase \
+  VITE_SUPABASE_URL="$LOOPBACK_URL" \
+  VITE_SUPABASE_PUBLISHABLE_KEY="$LOOPBACK_KEY" \
+  node scripts/ci/verify-build.mjs
+
+# --- 3. the protected flow must fail against demo ---------------------------
+step "3. protected browser flow against a demo-mode artifact"
+VITE_DATA_MODE=demo \
+VITE_SUPABASE_URL="$LOOPBACK_URL" \
+VITE_SUPABASE_PUBLISHABLE_KEY="$LOOPBACK_KEY" \
+  npm run build >"$LOG_DIR/build-demo-2.log" 2>&1 || {
+  echo "FAIL: could not rebuild the demo artifact."
+  exit 1
+}
+
+# Synthetic values on purpose: the point is that a demo build cannot satisfy a
+# Supabase-mode role journey. No real credential is used or needed.
+run_case fail "full E2E suite against a demo-mode build" \
+  env -u CI \
+  STITCHFLOW_E2E_OWNER_EMAIL=demo-negative-control@example.invalid \
+  STITCHFLOW_E2E_OWNER_PASSWORD=not-a-real-credential \
+  STITCHFLOW_E2E_PREVIEW_PORT=4191 \
+  npx playwright test --workers=1 --reporter=line --timeout=5000
+
+if ! grep -Fq 'Atelier sign in' "$LOG_DIR/case-$CASES.log"; then
+  echo "FAIL: the demo browser control did not fail at the missing sign-in control."
+  sed -n '1,12p' "$LOG_DIR/case-$CASES.log"
+  exit 1
+fi
+echo "Observed browser failure (expected, exit 1):"
+sed -n '1,18p' "$LOG_DIR/case-$CASES.log"
+
+printf '\n'
+if [[ "$PROBLEMS" -gt 0 ]]; then
+  printf 'FAIL: %d of %d negative control(s) did not behave as required.\n' "$PROBLEMS" "$CASES"
+  exit 1
+fi
+
+printf 'PASS: all %d negative controls fired as required.\n' "$CASES"
+printf 'NOTE: dist/ now holds a demo artifact. Run `npm run build` before deploying;\n'
+printf '      the production gate rejects a demo artifact regardless.\n'

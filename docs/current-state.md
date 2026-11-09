@@ -2,17 +2,18 @@
 
 > What is true today. Aspirational work is labelled **ASPIRATIONAL** and must not be assumed.
 
-Last verified: 2026-11-08 (Sprint 3 booking workflow, insert boundary, deploy gate, hosted schema
-repair, and pilot hardening). Production migration `20261108173000` was applied and reverified by
+Last verified: 2026-11-09 (Sprint 3 booking workflow, local hermetic E2E and backup/restore harness).
+Production migration `20261108173000` was applied and reverified by
 `CI=1 supabase migration list --remote` in
 [`evidence/2026-11-08_pilot-release-execution.md`](evidence/2026-11-08_pilot-release-execution.md);
 local and remote migration IDs match. Six hosted identities
 exist across the supervised pilot and an isolation-only tenant.
-The rollback-only hosted RLS proof and local database/RLS tests pass. However, the latest six-test
-Playwright run against Vercel returned 1 pass and 5 failures; the deployed site still exposes the
-old duplicate sign-in button while the current source uses “Enter Atelier”. A disposable backup
-restore, successful live booking, current Vercel preview, and production verification remain open.
-Payments and SSR are not implemented for this pilot.
+The rollback-only hosted RLS proof and local database/RLS tests pass. The local hermetic harness now
+passes all six browser journeys twice against a disposable Supabase stack, proves seven negative
+controls, and restores a local dump before running the RLS suite. Hosted deployment, hosted
+journeys, live backup/restore, and live booking remain open. The owner reports that the hosted
+failures came from a stale Vercel bundle (`index-BPtRE36V.js`, predating `bb751ad`); that
+attribution was not revalidated in this task. Payments and SSR are not implemented for this pilot.
 Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_sprint-0-audit.md).
 
 ## Shipped and usable
@@ -47,6 +48,15 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
   atomically; the legacy client-insert contract is retired.
 - **Invitations:** email-bound employee/client invitation redemption is covered by the hosted SQL
   proof and a Playwright flow test.
+
+## Verified on 2026-11-09
+
+| Gate | Verdict |
+|------|---------|
+| Hermetic owner, employee, patron, invitation, public-entry, and booking journeys | **PASS locally** — 6/6 twice using `npm run test:e2e:hermetic`; each run resets and re-seeds the disposable local stack |
+| Demo artifact rejected in production context; owner journey fails against demo artifact | **PASS negative controls** — `npm run verify:controls`, 7/7 controls observed |
+| Local backup → restore → RLS suite | **PASS locally** — real 1,000-byte truncated dump rejected (exit 1), full local dump restored and RLS suite passed (exit 0) |
+| Hosted deployment, hosted E2E, and live backup/restore | **BLOCKED** — no deployment/production access in this task; see [`release-readiness.md`](release-readiness.md) |
 
 ## Verified on 2026-11-08
 

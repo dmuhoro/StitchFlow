@@ -3,6 +3,7 @@
 - [Sprint 3.6 — Live-pilot booking integration checkpoint](sprint-03.6-live-pilot-integration.md)
 - [Sprint 3.7 — Supervised pilot hardening](sprint-03.7-supervised-pilot.md)
 - [Sprint 3.8 — Vercel pilot deployment readiness](sprint-03.8-vercel-pilot-deployment-readiness.md)
+- [Sprint 3.9 — Hermetic E2E and restore harness](sprint-03.9-e2e-backup-restore-harness.md)
 
 > One record per layer of work. A sprint record states what was planned, what shipped, what was
 > proven, and what remains. It is not a marketing document.
@@ -27,3 +28,4 @@
 | [03.6](sprint-03.6-live-pilot-integration.md) | Live-pilot booking integration checkpoint | IN PROGRESS — v1.4.0-rc.1 |
 | [03.7](sprint-03.7-supervised-pilot.md) | Supervised pilot hardening | BLOCKED — fresh build, publish, hosted journeys, restore rehearsal |
 | [03.8](sprint-03.8-vercel-pilot-deployment-readiness.md) | Vercel pilot deployment readiness | BLOCKED — owner project setup, live verification, restore rehearsal |
+| [03.9](sprint-03.9-e2e-backup-restore-harness.md) | Hermetic E2E and restore harness | DONE locally — hosted deployment, live restore and remote CI remain blocked |

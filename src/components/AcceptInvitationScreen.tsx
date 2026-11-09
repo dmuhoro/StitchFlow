@@ -11,7 +11,7 @@ import { Loader2, Mail, KeyRound } from 'lucide-react';
  * restored by supabase-js before this screen renders the redeem step.
  */
 const AcceptInvitationScreen: React.FC<{ code: string }> = ({ code }) => {
-  const { acceptInvitation, currentUser, sendMagicLink, signInWithPassword } = useStitchFlow();
+  const { acceptInvitation, currentUser, authenticatedEmail, sendMagicLink, signInWithPassword } = useStitchFlow();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -20,6 +20,10 @@ const AcceptInvitationScreen: React.FC<{ code: string }> = ({ code }) => {
   const [password, setPassword] = useState('');
   const [usePassword, setUsePassword] = useState(false);
   const [linkSent, setLinkSent] = useState(false);
+
+  // A session is sufficient to show the redeem step. Membership arrives only
+  // after the RPC succeeds; the display email can come from either source.
+  const signedInEmail = currentUser?.email ?? authenticatedEmail;
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -89,7 +93,7 @@ const AcceptInvitationScreen: React.FC<{ code: string }> = ({ code }) => {
           <h1 className="font-display text-2xl font-bold tracking-tight">Accept Invitation</h1>
         </div>
         <p className="text-sm text-[#7B6F62] dark:text-[#A89B8C]">
-          {currentUser
+          {signedInEmail
             ? 'Redeem your role and join this atelier.'
             : 'Sign in with the email address that received this invitation, then redeem it.'}
         </p>
@@ -101,10 +105,10 @@ const AcceptInvitationScreen: React.FC<{ code: string }> = ({ code }) => {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        {currentUser ? (
+        {signedInEmail ? (
           <form onSubmit={onSubmit} className="space-y-3">
             <p className="text-xs text-[#7B6F62] dark:text-[#A89B8C]">
-              Signed in as <strong>{currentUser.email}</strong>.
+              Signed in as <strong>{signedInEmail}</strong>.
             </p>
             <button type="submit" disabled={busy} className="w-full rounded-2xl bg-[#D4A347] text-[#161311] font-semibold py-2.5 disabled:opacity-60 flex items-center justify-center gap-2">
               {busy && <Loader2 className="w-4 h-4 animate-spin" />}

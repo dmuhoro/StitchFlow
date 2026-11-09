@@ -1,28 +1,45 @@
 # Owner Actions Before Pilot
 
-Do not open StitchFlow to real pilot data until the remaining actions below are verified and
-recorded in the evidence log.
+Do not open StitchFlow to real pilot data until each remaining item is verified and recorded in the
+evidence log.
 
-- [ ] **Backup & restore rehearsal** — not performed. `supabase start` could not fetch required
-  Docker images (TLS/network timeouts), and default Supabase ports are occupied by another local
-  stack. Retry in an approved isolated environment; no production dump or restore was made.
-- [x] **Remote migration audit** — read-only audit performed on 2026-11-08 with
-  `CI=1 supabase migration list --remote`; reverified in
+## Verified locally
+
+- [x] **Hermetic E2E** — six journeys pass on a disposable local Supabase stack, both on a clean run
+  and immediate re-run. `npm run seed:pilot-fitting` rebuilds the pending request for each run.
+- [x] **Negative controls** — seven artifact and browser controls reject their deliberately bad
+  inputs, including demo-mode production artifact rejection.
+- [x] **Local backup/restore** — a truncated local dump is rejected (exit 1), then a complete local
+  dump is restored and the RLS isolation suite passes (exit 0).
+- [x] **Local engineering gates** — `npm run lint`, `npm run test:unit`, `npm run build`,
+  `npm run verify:db`, and `npm run check:docs`; exact results are in
+  [`docs/evidence/2026-11-09_e2e-harness.md`](docs/evidence/2026-11-09_e2e-harness.md).
+- [x] **Remote migration audit and financial-audit migration** — historical remote verification
+  through `20261108173000` is recorded in
   [`docs/evidence/2026-11-08_pilot-release-execution.md`](docs/evidence/2026-11-08_pilot-release-execution.md).
-  Production and local histories match through `20261108173000`.
-- [x] **Apply the financial-audit migration** — `CI=1 supabase db push --remote --yes` applied it;
-  the subsequent remote migration list matched local and `CI=1 supabase db push --dry-run --remote`
-  returned up to date. The rollback-only hosted RLS proof passed. The trigger-specific actor and
-  before/after assertions passed in local `npm run verify:db`.
-- [ ] **Refresh and verify Vercel deployment** — branch push succeeded, but no preview was created:
-  the production-target artifact from `vercel build --prod` was rejected by the preview deploy
-  command. Resolve the build/deploy target mismatch without promoting to production; see
+- [x] **Owner credential rotation** — owner confirmed rotation of the previously exposed password.
+  No live credential is stored in this repository.
+
+## Blocked on credentials / authorization
+
+- [ ] **Live backup/restore** — needs `SOURCE_DB_URL` and the production database password. Neither
+  was supplied; no production database was accessed.
+- [ ] **Hosted E2E and current deployment** — requires owner approval and authorization to publish
+  the reviewed source. The owner reports the deployed bundle `index-BPtRE36V.js` predates
+  `bb751ad`; this was not independently revalidated here. See
   [`docs/evidence/2026-11-09_preview-deploy-blocked.md`](docs/evidence/2026-11-09_preview-deploy-blocked.md)
   and [issue #6](https://github.com/dmuhoro/StitchFlow/issues/6).
-- [ ] **Verify live journeys** — remote E2E returned 1 pass and 5 failures. No booking was confirmed;
-  rerun owner, employee, patron, invite and booking flows after deploying the reviewed source with
-  approved synthetic fixtures. Track in [issue #6](https://github.com/dmuhoro/StitchFlow/issues/6).
-- [x] **Owner credential rotation** — owner confirms the previously exposed password was rotated.
-  No credential is stored in this repository.
-- [ ] **Push branch and open review PR** — push was rejected because the GitHub OAuth App lacks
-  `workflow` scope for `.github/workflows/ci.yml`. No PR or release tag exists.
+- [ ] **Remote CI run for the changed workflow** — pending harness changes are not pushed, and the
+  available GitHub token lacks the `workflow` scope. No push or remote workflow run was attempted.
+
+## Blocked on plan tier
+
+- [ ] **Commercial pilot** — Vercel project `stitchflow` is on Hobby, which forbids commercial use.
+  Owner must upgrade to Pro before a paid pilot.
+
+## Remaining owner decisions
+
+- [ ] **Regional availability** — the project runs in one region (`iad1`) with no failover. Do not
+  promise uptime above the single-region architecture.
+- [ ] **Payment and messaging integrations** — credentials and approval are not present; these are
+  outside the supervised pilot.

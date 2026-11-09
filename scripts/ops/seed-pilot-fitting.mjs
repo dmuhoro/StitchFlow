@@ -1,5 +1,55 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+
+if (process.env.STITCHFLOW_E2E_LOCAL_SEED === '1') {
+  const workdir = process.env.STITCHFLOW_E2E_WORKDIR;
+  if (!workdir || !existsSync(`${workdir}/supabase/config.toml`)) {
+    console.error('ERROR: local fitting seeding requires a Supabase E2E workdir.');
+    process.exit(2);
+  }
+
+  const config = readFileSync(`${workdir}/supabase/config.toml`, 'utf8');
+  if (!/^project_id\s*=\s*"StitchFlowE2E"\s*$/m.test(config)) {
+    console.error('ERROR: refusing to reset a Supabase project that is not the disposable E2E stack.');
+    process.exit(2);
+  }
+
+  const status = spawnSync(
+    'supabase',
+    ['status', '--workdir', workdir, '-o', 'json'],
+    { encoding: 'utf8' },
+  );
+  if (status.error || status.status !== 0) {
+    console.error('ERROR: the disposable Supabase E2E stack is not running.');
+    process.exit(2);
+  }
+
+  let apiUrl;
+  try {
+    const jsonStart = status.stdout.indexOf('{');
+    const result = JSON.parse(status.stdout.slice(jsonStart));
+    apiUrl = result.API_URL ?? result.api_url;
+  } catch {
+    console.error('ERROR: could not read the disposable stack API URL.');
+    process.exit(2);
+  }
+  if (!/^http:\/\/(127\.0\.0\.1|localhost):\d{2,5}$/.test(apiUrl ?? '')) {
+    console.error('ERROR: refusing to reset a non-loopback Supabase project.');
+    process.exit(2);
+  }
+
+  const reset = spawnSync('supabase', ['db', 'reset', '--workdir', workdir], {
+    stdio: 'inherit',
+  });
+  if (reset.error || reset.status !== 0) {
+    console.error('ERROR: the disposable E2E database could not be reset from tracked migrations and seed.');
+    process.exit(reset.status ?? 1);
+  }
+
+  console.log('PASS: the disposable E2E database was reset and its pending fitting request recreated.');
+  process.exit(0);
+}
 
 const secretsFile = process.env.PILOT_SECRETS_FILE ?? '.env.pilot';
 if (!existsSync(secretsFile)) {

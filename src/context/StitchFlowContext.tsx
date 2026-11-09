@@ -85,6 +85,8 @@ interface StitchFlowContextType {
   isProductionMode: boolean;
   authLoading: boolean;
   authError: string | null;
+  /** Session email even when the user has no membership yet (invite redemption). */
+  authenticatedEmail: string | null;
   needsOnboarding: boolean;
   atelierNotFound: boolean;
   publicAtelierLoading: boolean;
@@ -249,6 +251,10 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
   const [authLoading, setAuthLoading] = useState(dataMode === 'supabase');
   const [authError, setAuthError] = useState<string | null>(null);
+  // The authenticated session's email, independent of membership. An invitee is
+  // a signed-in user with no `members` row until they redeem a code, so the
+  // invitation screen cannot key its signed-in state on `currentUser`.
+  const [authenticatedEmail, setAuthenticatedEmail] = useState<string | null>(null);
   const [activeAtelierId, setActiveAtelierId] = useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authTargetRole, setAuthTargetRole] = useState<UserRole | null>(null);
@@ -327,6 +333,11 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
 
   const applyAuthenticatedMember = async () => {
+    // Capture the session identity before resolving membership: a signed-in
+    // invitee has no membership yet and must still reach the redeem step.
+    const authUser = supabase ? (await supabase.auth.getUser()).data.user : null;
+    setAuthenticatedEmail(authUser?.email ?? null);
+
     const member = await getCurrentMember();
     if (!member) {
       setCurrentUser(null);
@@ -765,6 +776,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const logout = () => {
     if (isProductionMode && supabase) void supabase.auth.signOut();
     setCurrentUser(null);
+    setAuthenticatedEmail(null);
     setProfiles([]);
     setCurrentRoleState('visitor');
     setInvitations([]);
@@ -1100,6 +1112,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       settingsModalOpen,
       setSettingsModalOpen,
       currentUser,
+      authenticatedEmail,
       loginAsUser,
       signInWithPassword,
       sendMagicLink,

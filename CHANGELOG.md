@@ -7,15 +7,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased] — Milestone 1 pilot hardening (in progress)
 
-This is an untagged engineering checkpoint, not a production release. Local build and hosted
-database checks pass; the configured Vercel site fails the latest live browser suite and the
-backup/restore rehearsal remains incomplete.
+This is an untagged engineering checkpoint, not a production release. The hermetic local browser
+suite, negative controls, and local-source backup/restore rehearsal pass; hosted deployment and live
+restore remain blocked.
 
 ### Added
 
 - Patron portal visibility for the authenticated patron's own fitting requests.
 - Deterministic owner-provisioned pilot and fitting-fixture scripts, plus a pilot operations and
   backup/restore rehearsal runbook.
+- Hermetic local Supabase E2E harness with per-run fitting reseed and generated in-memory test
+  credentials; no production Supabase access is required.
+- Disposable backup/restore rehearsal script with corruption controls, row-count comparison, and
+  the RLS isolation suite against the restored database.
+- All-branch push and pull-request CI coverage plus a credential-free hermetic E2E job.
 - Unit tests for fail-closed repository writes and tenant-scoped human-key mutations.
 - Vercel static-SPA deployment configuration and a CI negative proof for Vercel's production build
   gate.
@@ -31,20 +36,26 @@ backup/restore rehearsal remains incomplete.
   parity verified on 2026-11-08.
 - Landing-page sign-in E2E selectors now target the exact public button label; the header action
   remains separately named "Enter Atelier".
+- Invitation redemption recognizes an authenticated session before its membership row is created;
+  hermetic runs refuse non-loopback E2E URLs and suppress Supabase startup keys.
 
 ### Verification
 
-- `npm run test:unit`, `npm run verify:db`, `npm run lint`, `npm run build`, and the production
-  artifact assertions pass using the supported static pilot Vite config.
+- `npm run test:e2e:hermetic` passed all six browser journeys twice; `npm run verify:controls`
+  passed 7/7 controls. A real truncated local dump was rejected (exit 1), then the complete
+  local-source restore and RLS suite passed (exit 0).
+- `npm run test:unit`, `npm run verify:db`, `npm run lint`, `npm run build`, and
+  `npm run check:docs` are the required local gates; exact observed results are recorded in
+  `docs/evidence/2026-11-09_e2e-harness.md`.
 - Hosted publishable-key proof passed 30/30; owner, employee, and patron browser journeys passed
   3/3; protected booking confirmation passed 1/1 against the fresh local artifact and hosted
   Supabase. These are earlier local-artifact results; they do not represent the current Vercel
   deployment. The former Netlify artifact still targets the retired project. See
   `docs/evidence/2026-11-08_milestone-1-pilot-hardening.md`.
 - Latest live verification supersedes earlier hosted E2E evidence: the six-test run against the
-  configured Vercel URL returned 1 pass and 5 failures. A rollback-only hosted RLS proof passed;
-  the local Supabase backup/restore rehearsal did not run because Docker image pulls timed out.
-  Release remains blocked; see `docs/evidence/2026-11-08_v1.4.0-rc.3-hosted-recovery.md`.
+  configured Vercel URL returned 1 pass and 5 failures. The owner attributes the failures to a stale
+  deployed bundle predating `bb751ad`; this task did not access production. Release remains blocked;
+  see `docs/evidence/2026-11-08_v1.4.0-rc.3-hosted-recovery.md`.
 
 ## [1.4.0-rc.2] — 2026-11-08
 
