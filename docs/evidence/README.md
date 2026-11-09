@@ -22,6 +22,9 @@
 | 2026-11-08 | Milestone 1 pilot hardening | `2026-11-08_milestone-1-pilot-hardening.md` | Local tenant/database/unit checks PASS; source lint/build, current live publish, hosted browser flows, and restore rehearsal BLOCKED |
 | 2026-11-08 | Vercel pilot deployment readiness | `2026-11-08_vercel-pilot-readiness.md` | Vercel config, local build, unit/database checks, browser smoke and production fail-closed proof PASS; live deployment and restore rehearsal BLOCKED |
 | 2026-11-08 | v1.4.0-rc.3 hosted recovery attempt | `2026-11-08_v1.4.0-rc.3-hosted-recovery.md` | Migration applied and hosted rollback proof PASS; remote E2E 1/6; backup/restore and release BLOCKED |
+| 2026-11-08 | Pilot release execution | `2026-11-08_pilot-release-execution.md` | Step 1 PASS; production migration current through `20261108173000`; remaining steps not run yet |
+| 2026-11-08 | Local Vercel preview / E2E attempt | `2026-11-08_pilot-e2e-failure.md` | BLOCKED before E2E; installed Vercel CLI has no `preview` command |
+| 2026-11-09 | Vercel preview deployment attempt | `2026-11-09_preview-deploy-blocked.md` | Branch push PASS; production-target build cannot be deployed as preview; stopped at Step 2 |
 | 2026-11-08 | Live booking attempt | `booking-flow.md` | BLOCKED; remote UI mismatch prevented booking; no screenshot or booking confirmation |
 
 ## Format

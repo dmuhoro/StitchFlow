@@ -1,7 +1,8 @@
 # Release Readiness
 
 > The authoritative to-do list. A gate is DONE only with cited evidence.
-> Last updated: 2026-11-08 (remote financial-audit migration applied; hosted E2E and restore rehearsal still blocked).
+> Last updated: 2026-11-09 (remote migration current through `20261108173000`; branch push passed;
+> preview deployment blocked by Vercel build/deploy target mismatch).
 
 ## Launch gates
 
@@ -16,12 +17,12 @@
 | L6 | Release versioned, tagged, pushed | DONE | `docs/evidence/2026-11-01_release.md` (tag `v1.0.0`, remote ref verified) |
 | L7 | Cleanup complete, lockfile committed, tree clean | DONE | `npm ci` succeeded on 2026-11-05; dead dependencies removed in `1bd06bb` |
 | L8 | README, CHANGELOG, sprints updated | DONE | `CHANGELOG.md` 1.0.0/1.0.1, sprint records, evidence index |
-| L9 | Deployment verified | **BLOCKED — current deployed artifact fails hosted smoke** | Vercel project and production environment variable names are configured; six-test remote run returned 1 pass / 5 failures, including the duplicate header sign-in label. See issue #6. |
+| L9 | Deployment verified | **BLOCKED — no preview deployment created** | `vercel build --prod` succeeded, but `vercel deploy --prebuilt` rejected the production-target artifact for a preview deployment; see `docs/evidence/2026-11-09_preview-deploy-blocked.md`. |
 | L10 | Production deploy fails closed on a demo-mode artifact | DONE — source + CI | `scripts/ci/verify-build.mjs` (`VERCEL_ENV=production`), `postbuild`, CI negative proof; `docs/evidence/2026-11-08_v1.4.0-rc.1.md` |
 | L11 | Tenant-safe human-key writes and missing-atelier fail-closed guard | **PASS locally; hosted role/RLS proof PASS, hosted duplicate-code SQL not run** | `npm run test:unit`, `npm run verify:db` (including duplicate `order_code` across tenants), and `npm run verify:pilot` (30/30); hosted SQL fixture: `supabase/tests/hosted_rls_e2e.sql` |
-| L12 | Owner/staff/patron hosted workflows | **BLOCKED — 1 pass / 5 failures against current Vercel URL** | Remote `npm run test:e2e -- --workers=1` against `https://stitchflow-coral.vercel.app`; employee flow passed; public smoke, booking, invite, owner, and patron assertions failed. See issue #6. |
+| L12 | Owner/staff/patron hosted workflows | **BLOCKED — prior remote run 1 pass / 5 failures; current local E2E attempt blocked before tests** | Remote `npm run test:e2e -- --workers=1` against configured Vercel URL; see issue #6 and `docs/evidence/2026-11-08_pilot-e2e-failure.md` for current CLI blocker. |
 | L13 | Pilot support, rollback, and backup/restore rehearsal | **Runbook added; restore rehearsal NOT DONE** | `docs/runbooks/pilot-operations.md`; `supabase start` failed on Docker image TLS timeouts and local port conflicts; no production dump/restore was created |
-| L14 | Owner financial edits audited without exposing snapshots to staff/patrons | **Migration applied; hosted general RLS + local trigger proof PASS** | Remote migration list current through `20261108173000`; `STITCHFLOW_ALLOW_HOSTED_VERIFY=1 npm run verify:hosted`; `npm run verify:db` asserts actor/before/after capture and tenant visibility |
+| L14 | Owner financial edits audited without exposing snapshots to staff/patrons | **Migration applied; hosted general RLS + local trigger proof PASS** | Remote migration list reverified current through `20261108173000`; see `docs/evidence/2026-11-08_pilot-release-execution.md`, `STITCHFLOW_ALLOW_HOSTED_VERIFY=1 npm run verify:hosted`, and `npm run verify:db` |
 
 ## Sprint 0a verification gates (2026-11-05)
 

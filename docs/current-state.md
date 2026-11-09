@@ -3,8 +3,10 @@
 > What is true today. Aspirational work is labelled **ASPIRATIONAL** and must not be assumed.
 
 Last verified: 2026-11-08 (Sprint 3 booking workflow, insert boundary, deploy gate, hosted schema
-repair, and pilot hardening). Production migration `20261108173000` was applied and verified by
-`CI=1 supabase migration list --remote` and a no-pending-migrations dry run. Six hosted identities
+repair, and pilot hardening). Production migration `20261108173000` was applied and reverified by
+`CI=1 supabase migration list --remote` in
+[`evidence/2026-11-08_pilot-release-execution.md`](evidence/2026-11-08_pilot-release-execution.md);
+local and remote migration IDs match. Six hosted identities
 exist across the supervised pilot and an isolation-only tenant.
 The rollback-only hosted RLS proof and local database/RLS tests pass. However, the latest six-test
 Playwright run against Vercel returned 1 pass and 5 failures; the deployed site still exposes the
