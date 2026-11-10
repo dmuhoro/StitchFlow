@@ -32,6 +32,10 @@ cd "$ROOT"
 # three values from the disposable stack below. This is the boundary guard: the
 # values are never inherited.
 unset VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY VITE_DATA_MODE
+# A credential exported with a public prefix must not reach a build, even if the
+# operator sourced one into their shell. The build guard refuses it; clearing it
+# here keeps the harness hermetic instead of failing for an unrelated reason.
+unset VITE_SUPABASE_PASSWORD VITE_POSTGRESQL_URL VITE_SUPABASE_PERSONAL_ACCESS_TOKEN
 unset STITCHFLOW_E2E_BASE_URL
 unset STITCHFLOW_E2E_OWNER_EMAIL STITCHFLOW_E2E_OWNER_PASSWORD
 unset STITCHFLOW_E2E_EMPLOYEE_EMAIL STITCHFLOW_E2E_EMPLOYEE_PASSWORD

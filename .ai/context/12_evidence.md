@@ -49,3 +49,4 @@ PASS / FAIL / BLOCKED
 | Hermetic E2E and restore harness | `2026-11-09_e2e-harness.md` | Local 6/6 journeys twice, 7/7 negative controls, truncated dump rejected and full 16-table restore/RLS PASS; live restore and deploy BLOCKED |
 | Pilot gate reconciliation | `2026-11-10_pilot-gate-reconciliation.md` | Local gates, corrected remote CI, approved hosted deployment and three read-only roles PASS; hosted booking fixture and live restore BLOCKED |
 | Live booking attempt | `booking-flow.md` | BLOCKED; remote UI mismatch prevented booking; no screenshot or confirmation |
+| Published-secret boundary | `2026-11-10_bundle-secret-boundary.md` | Build refuses credential-shaped `VITE_` names; 9/9 controls; no publication found; DB password and access token must be rotated |

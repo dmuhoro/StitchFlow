@@ -14,6 +14,8 @@
 #      never be used to relax a production build.
 #   3. The protected browser flow fails against a demo-mode build instead of
 #      reporting success or skipping.
+#   4. A credential with a public prefix is refused before an artifact exists,
+#      because Vite would inline it into the browser bundle.
 #
 # Exit codes: 0 all controls behaved; 1 a control did not fire.
 # ============================================================================
@@ -32,6 +34,7 @@ trap 'rm -rf "$LOG_DIR"' EXIT
 # what it needs, so clear the inherited values once: otherwise an ambient
 # `VITE_DATA_MODE=supabase` would change what the "demo artifact" case proves.
 unset VITE_DATA_MODE VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY
+unset VITE_SUPABASE_PASSWORD VITE_POSTGRESQL_URL VITE_SUPABASE_PERSONAL_ACCESS_TOKEN
 unset CONTEXT NETLIFY_CONTEXT VERCEL_ENV STITCHFLOW_DEPLOY_CONTEXT
 unset STITCHFLOW_E2E_BASE_URL
 
@@ -118,6 +121,25 @@ run_case fail "loopback artifact without the explicit opt-in flag" \
   VITE_DATA_MODE=supabase \
   VITE_SUPABASE_URL="$LOOPBACK_URL" \
   VITE_SUPABASE_PUBLISHABLE_KEY="$LOOPBACK_KEY" \
+  node scripts/ci/verify-build.mjs
+
+# --- 4. a credential with a public prefix must never reach an artifact ------
+# Vite inlines VITE_* into the browser bundle. The build must refuse before an
+# artifact exists, and the artifact gate must refuse independently.
+step "4. published-secret guard"
+run_case fail "build with VITE_SUPABASE_PASSWORD set" \
+  env VITE_DATA_MODE=demo \
+  VITE_SUPABASE_URL="$LOOPBACK_URL" \
+  VITE_SUPABASE_PUBLISHABLE_KEY="$LOOPBACK_KEY" \
+  VITE_SUPABASE_PASSWORD=not-a-real-credential \
+  npm run build
+if ! grep -Fq 'VITE_SUPABASE_PASSWORD' "$LOG_DIR/case-$CASES.log"; then
+  echo "FAIL: the build refused for a reason other than the published-secret guard."
+  sed -n '1,12p' "$LOG_DIR/case-$CASES.log"
+  PROBLEMS=$((PROBLEMS + 1))
+fi
+run_case fail "artifact gate with VITE_SUPABASE_PASSWORD set" \
+  env VITE_SUPABASE_PASSWORD=not-a-real-credential \
   node scripts/ci/verify-build.mjs
 
 # --- 3. the protected flow must fail against demo ---------------------------

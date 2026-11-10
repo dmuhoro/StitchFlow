@@ -140,11 +140,42 @@ else
   ok "pilot identities" "absent — regenerate with npm run seed:pilot"
 fi
 
+section "published-secret scan"
+# Vite inlines every public-prefixed variable into the browser bundle. A name
+# that describes a credential must never carry that prefix. Both the shell and
+# the env files are checked: an exported variable is inherited by every build in
+# the session, which is exactly how a "deleted from .env.local" secret lingers.
+PUBLISHED_SECRETS=0
+scan_public_secret_name() {
+  local where="$1" key="$2"
+  [[ -n "$key" ]] || return 0
+  PUBLISHED_SECRETS=$((PUBLISHED_SECRETS + 1))
+  ok "$where" "defines ${key} — the build would publish it"
+}
+for key in $(printenv | cut -d= -f1 | grep -E '^(VITE_|NEXT_PUBLIC_|REACT_APP_)'); do
+  if printf '%s' "${key#VITE_}" | grep -qEi '(PASSWORD|PASSPHRASE|SECRET|SERVICE_ROLE|SERVICE_KEY|PRIVATE_KEY|ACCESS_KEY|CREDENTIAL|TOKEN|DATABASE_URL|POSTGRES|_DB_URL)'; then
+    scan_public_secret_name "shell environment" "$key"
+  fi
+done
+for envfile in .env .env.local .env.production .env.production.local .env.test .env.pilot; do
+  [[ -f "$envfile" ]] || continue
+  while IFS= read -r key; do
+    scan_public_secret_name "$envfile" "$key"
+  done < <(sed -nE 's/^[[:space:]]*(export[[:space:]]+)?((VITE_|NEXT_PUBLIC_|REACT_APP_)[A-Za-z0-9_]*(PASSWORD|PASSPHRASE|SECRET|SERVICE_ROLE|SERVICE_KEY|PRIVATE_KEY|ACCESS_KEY|CREDENTIAL|TOKEN|DATABASE_URL|POSTGRES|_DB_URL)[A-Za-z0-9_]*)=.*/\2/p' "$envfile")
+done
+if [[ "$PUBLISHED_SECRETS" == "0" ]]; then
+  ok "public-prefixed credentials" "none in the shell or in any env file"
+fi
+
 section "capabilities"
 runnable "npm run lint" "tsc --noEmit"
 runnable "npm run test:unit" "vitest"
 runnable "npm run check:docs" "link check"
-runnable "npm run build" "artifact gate"
+if [[ "$PUBLISHED_SECRETS" == "0" ]]; then
+  runnable "npm run build" "artifact gate"
+else
+  blocked "npm run build" "${PUBLISHED_SECRETS} credential(s) with a public prefix"
+fi
 
 if [[ "$DOCKER_OK" == "1" ]]; then
   runnable "npm run verify:db" "docker"

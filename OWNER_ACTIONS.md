@@ -3,12 +3,25 @@
 Do not open StitchFlow to real pilot data until each remaining item is verified and recorded in the
 evidence log.
 
+## P0 — rotate before anything else
+
+- [ ] **Reset the Supabase database password.** It was found in `.env.local` as `VITE_SUPABASE_PASSWORD`
+  (a `VITE_` prefix means Vite would publish it) and in a session terminal. Evidence and blast-radius
+  checks: [`docs/evidence/2026-11-10_bundle-secret-boundary.md`](docs/evidence/2026-11-10_bundle-secret-boundary.md).
+  Supabase → Project Settings → Database → Reset database password.
+- [ ] **Revoke the Supabase personal access token.** It was found in `.env.local` as
+  `VITE_SUPABASE_PERSONAL_ACCESS_TOKEN`; it is account-level, so it is broader than the database.
+  Supabase → Account → Access Tokens → Revoke.
+- [ ] **Re-enter the new password** with `npm run ops:set-source-db` (validates the URI, writes mode
+  600, never echoes). The live dump/restore rehearsal stays BLOCKED until this is done.
+
 ## Verified locally
 
 - [x] **Hermetic E2E** — six journeys pass on a disposable local Supabase stack, both on a clean run
   and immediate re-run. `npm run seed:pilot-fitting` rebuilds the pending request for each run.
-- [x] **Negative controls** — seven artifact and browser controls reject their deliberately bad
-  inputs, including demo-mode production artifact rejection.
+- [x] **Negative controls** — nine artifact, browser, and published-secret controls reject their
+  deliberately bad inputs, including demo-mode production artifact rejection and a build that sets a
+  credential with a public prefix.
 - [x] **Local backup/restore** — a truncated local dump is rejected (exit 1), then a complete local
   dump is restored and the RLS isolation suite passes (exit 0).
 - [x] **Local engineering gates** — `npm run lint`, `npm run test:unit`, `npm run build`,

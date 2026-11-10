@@ -27,6 +27,17 @@ deployment and read-only role journeys pass; hosted booking and live restore rem
 - Hosted pilot E2E configuration now emits the deployed fixture identifiers and booking request
   label, omits the stale date override, and defaults to the approved Vercel alias.
 
+### Security
+
+- The build now refuses a credential-shaped variable that carries a public prefix (`VITE_`,
+  `NEXT_PUBLIC_`, `REACT_APP_`), because Vite inlines it into the browser bundle. Enforcement sits at
+  the build boundary (`vite.pilot.config.ts`) and is re-checked by the artifact gate
+  (`scripts/ci/verify-build.mjs`); `npm run preflight` reports the same condition before a build runs.
+  Two negative controls prove the refusal. A database password and an account-level access token were
+  found in `.env.local` with a `VITE_` prefix; no evidence of publication was found in local artifacts,
+  git history, or the live bundle, and both must still be rotated by the owner. See
+  `docs/evidence/2026-11-10_bundle-secret-boundary.md`.
+
 ### Fixed
 
 - Order-status, tailor-assignment, feedback-status, and invitation-revocation writes now require and

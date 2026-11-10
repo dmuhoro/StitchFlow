@@ -76,6 +76,45 @@ if (/service_role/i.test(corpus)) {
   fail('bundle contains a service_role marker. A service-role key must never reach the browser.');
 }
 
+// --- published secrets ------------------------------------------------------
+// Vite inlines every `VITE_*` value into the bundle. A credential with a public
+// prefix is therefore a credential that ships. The config-time guard refuses
+// this build, but a gate that only exists in one config can be bypassed by a
+// second config, so the artifact gate checks the same invariant independently.
+const PUBLIC_PREFIX = /^(VITE_|NEXT_PUBLIC_|REACT_APP_)/;
+const SECRET_SHAPED =
+  /(PASSWORD|PASSPHRASE|SECRET|SERVICE_ROLE|SERVICE_KEY|PRIVATE_KEY|ACCESS_KEY|CREDENTIAL|TOKEN|DATABASE_URL|POSTGRES|_DB_URL)/i;
+
+const envSources = [
+  ...Object.keys(process.env).map((key) => ({ where: 'the process environment', key })),
+  ...readdirSync(ROOT)
+    .filter((name) => name === '.env' || name.startsWith('.env.'))
+    .flatMap((name) => {
+      let body = '';
+      try {
+        body = readFileSync(join(ROOT, name), 'utf8');
+      } catch {
+        return [];
+      }
+      return body
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('#'))
+        .map((line) => line.replace(/^export\s+/, '').split('=')[0].trim())
+        .filter(Boolean)
+        .map((key) => ({ where: name, key }));
+    }),
+];
+
+for (const { where, key } of envSources) {
+  if (PUBLIC_PREFIX.test(key) && SECRET_SHAPED.test(key.replace(PUBLIC_PREFIX, ''))) {
+    fail(
+      `${where} defines ${key}, which looks like a credential but carries a public prefix; ` +
+        `Vite would inline it into the browser bundle. Remove it from every .env* file.`,
+    );
+  }
+}
+
 const imageAssets = files.filter((file) => /\/assets\/.*\.(jpe?g|png|webp|avif|gif)$/i.test(file));
 if (imageAssets.length === 0) {
   fail('no bundled image assets were emitted under dist/assets.');
