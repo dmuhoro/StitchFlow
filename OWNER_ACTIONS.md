@@ -20,6 +20,12 @@ evidence log.
 - [x] **Owner credential rotation** — owner confirmed rotation of the previously exposed password.
   No live credential is stored in this repository.
 
+## Verified in GitHub Actions
+
+- [x] **Branch push and pull-request CI** — all three jobs passed for `ac22102`:
+  [push run](https://github.com/dmuhoro/StitchFlow/actions/runs/42756978325) and
+  [PR run](https://github.com/dmuhoro/StitchFlow/actions/runs/42756984649).
+
 ## Blocked on credentials / authorization
 
 - [ ] **Live backup/restore** — needs `SOURCE_DB_URL` and the production database password. Neither
@@ -29,11 +35,6 @@ evidence log.
   `bb751ad`; this was not independently revalidated here. See
   [`docs/evidence/2026-11-09_preview-deploy-blocked.md`](docs/evidence/2026-11-09_preview-deploy-blocked.md)
   and [issue #6](https://github.com/dmuhoro/StitchFlow/issues/6).
-- [ ] **Green remote CI rerun** — GitHub Actions ran push and PR checks for `6f64cbd`. Migration
-  and hermetic E2E jobs passed; the quality job failed because a production-landing smoke ran
-  against a demo artifact. The smoke is covered by the hermetic job; a corrected workflow rerun
-  needs an authorized push (the available GitHub token lacks `workflow` scope).
-
 ## Blocked on plan tier
 
 - [ ] **Commercial pilot** — Vercel project `stitchflow` is on Hobby, which forbids commercial use.

@@ -10,16 +10,14 @@ no production credentials: it passed 6/6 twice in a row, and its seven negative 
 `dump → restore → RLS` rehearsal pass locally. Evidence: `docs/evidence/2026-11-09_e2e-harness.md`.
 
 This is local proof, not a hosted release. The deployed artifact and live backup/restore have not
-been verified in this task, and no live booking has been confirmed. Remote CI ran for `6f64cbd`:
-the migration and hermetic browser jobs passed, but the quality job ran the production-landing
-smoke against a demo artifact and failed. The smoke was removed from that incorrect context and
-remains covered by the hermetic job. The correction is local and awaits an authorized remote rerun.
+been verified in this task, and no live booking has been confirmed. Remote push and PR CI both pass
+on `ac22102` after moving the production-landing smoke out of the demo build context and leaving it
+in the hermetic Supabase-mode browser suite.
 
 Current hard blockers:
 
-- Push the local CI correction with an authorized token (the available GitHub token lacks the
-  `workflow` scope), rerun CI, then obtain owner approval to publish the reviewed artifact and run
-  the six journeys against the deployed URL.
+- Obtain owner approval to publish the reviewed artifact and run the six journeys against the
+  deployed URL.
 - Complete a backup/restore of pilot data using `SOURCE_DB_URL` and the production database
   password. The local-source rehearsal is proven; the hosted restore is credential-blocked.
 - Move the Vercel project off the Hobby plan before a paid pilot (Hobby forbids commercial use).

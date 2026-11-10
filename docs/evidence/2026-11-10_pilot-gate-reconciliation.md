@@ -53,19 +53,31 @@ against the correct Supabase-mode artifact.
 | `npm run lint` | 0 | TypeScript check passed. |
 | `npm run test:unit` | 0 | 2 files, 7 tests passed. |
 | `VITE_DATA_MODE=demo VITE_SUPABASE_URL= VITE_SUPABASE_PUBLISHABLE_KEY= npm run build` | 0 | Credential-free demo build and artifact gate passed. |
-| `npm run check:docs` | 0 | 162 relative Markdown links resolved across 104 files. |
+| `npm run check:docs` | 0 | 161 relative Markdown links resolved across 104 files. |
 | `npm run verify:db` | 0 | Migration/RLS/booking suites passed; 200 attempts yielded 1 success, 199 `slot_unavailable`, and no duplicate. |
 | `npm run verify:controls` | 0 | All 7 negative controls fired; expected negative cases exited 1. |
 | `npm run rehearse:restore` | 0 | Truncated, missing-table, and unreplayable dumps were each rejected with exit 1; full local restore matched all 16 data-table counts and passed the restored-database RLS suite. |
 
-These are local results only. The new CI workflow has not yet been rerun remotely with the
-correction.
+These results are local and are separate from the remote CI runs recorded next.
+
+## Corrected remote CI result
+
+Commands:
+
+```sh
+gh run view 42756978325 --json name,headSha,headBranch,event,status,conclusion,jobs,url
+gh run view 42756984649 --json name,headSha,headBranch,event,status,conclusion,jobs,url
+```
+
+Both commands exited **0**. Push run [42756978325](https://github.com/dmuhoro/StitchFlow/actions/runs/42756978325)
+and pull-request run [42756984649](https://github.com/dmuhoro/StitchFlow/actions/runs/42756984649)
+passed all three jobs: types/docs/bundle, migration/RLS, and hermetic browser journey (including the
+clean run, immediate rerun, and negative controls). The tested head was `ac2210256c5105c020121d782e3c10aa05c5c298`.
 
 ## Remaining owner-controlled gates
 
 | Item | Status | Exact next requirement |
 |---|---|---|
-| Corrected remote CI run | **BLOCKED** | The workflow change is local and unpushed. The available GitHub token lacks `workflow` scope; an authorized push is needed. |
 | Hosted build and supervised pilot walkthrough | **BLOCKED** | Repository owner must approve publication of the reviewed source and confirm the intended Vercel project/domain. Then run the role journeys and a synthetic booking workflow against that deployment. |
 | Live backup/restore rehearsal | **BLOCKED** | Requires `SOURCE_DB_URL` and the production database password through an approved secret channel. Neither was supplied or used. |
 | Commercial pilot | **BLOCKED** | Vercel Hobby does not permit commercial use; repository owner must upgrade to Pro or decide not to run a paid pilot. |

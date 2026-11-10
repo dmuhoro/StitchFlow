@@ -8,13 +8,14 @@ The product code, local tenant checks, production schema, and pilot identities/f
 Hosted RLS verification passes 30/30 and all three role journeys pass 3/3 against the fresh local
 production bundle connected to hosted Supabase. Completion is blocked by the unverified hosted
 deployment, missing owner approval to publish and run the live workflow, the unperformed
-live-source backup/restore, and the corrected remote CI run. Do not call the pilot complete until
-those gates pass.
+live-source backup/restore. Corrected remote push and PR CI now pass. Do not call the pilot complete
+until the remaining hosted gates pass.
 
 Scope: one supervised atelier, controlled owner/staff/patron workflows, owner-provisioned accounts,
 and explicit support/rollback procedures. A second hosted tenant is isolation-only test data.
-Local browser/database/recovery gates pass. Hosted deployment, corrected remote CI, a live backup
-restore, and the owner-approved hosted walkthrough are still open; do not claim pilot readiness.
+Local browser/database/recovery gates and corrected remote push/PR CI pass. Hosted deployment, a
+live backup restore, and the owner-approved hosted walkthrough are still open; do not claim pilot
+readiness.
 
 ## Later — v2: public-ready product
 

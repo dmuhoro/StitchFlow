@@ -1,8 +1,8 @@
 # Release Readiness
 
 > The authoritative to-do list. A gate is DONE only with cited evidence.
-> Last updated: 2026-11-10 (local CI smoke correction and readiness verification complete;
-> corrected remote run, hosted deploy, and live restore remain blocked).
+> Last updated: 2026-11-10 (local gates and corrected push/PR CI pass; hosted deploy and live
+> restore remain blocked).
 
 ## Launch gates
 
@@ -13,7 +13,7 @@
 | L2 | RLS isolation suite green | DONE | 12 scenarios + structural assertions: `docs/evidence/2026-11-05_sprint-0-verification.md` |
 | L3 | Local imagery bundled with hashed URLs | DONE | `docs/evidence/2026-11-01_build_artifacts.md` |
 | L4 | Persistence wired for every supported action | DONE | `docs/evidence/2026-11-01_persistence.md`; scope limits in the Sprint 0 audit |
-| L5 | CI runs lint, unit, browser smoke, build, docs, DB verification | **REMOTE RUN RED — local correction complete; rerun pending** | Run [42625315493](https://github.com/dmuhoro/StitchFlow/actions/runs/42625315493) on `6f64cbd`: DB and hermetic E2E passed; quality job ran the production-landing smoke against a demo artifact and failed. The wrongly-contextualized step is removed; the same smoke remains in the hermetic job against the correct Supabase-mode artifact. See [`evidence/2026-11-10_pilot-gate-reconciliation.md`](evidence/2026-11-10_pilot-gate-reconciliation.md). |
+| L5 | CI runs lint, unit, browser smoke, build, docs, DB verification | **PASS — push and PR** | Corrected commit `ac22102`: push run [42756978325](https://github.com/dmuhoro/StitchFlow/actions/runs/42756978325) and PR run [42756984649](https://github.com/dmuhoro/StitchFlow/actions/runs/42756984649) passed all three jobs, including hermetic E2E and DB. The prior demo-artifact/production-smoke mismatch is recorded in [`evidence/2026-11-10_pilot-gate-reconciliation.md`](evidence/2026-11-10_pilot-gate-reconciliation.md). |
 | L6 | Release versioned, tagged, pushed | DONE | `docs/evidence/2026-11-01_release.md` (tag `v1.0.0`, remote ref verified) |
 | L7 | Cleanup complete, lockfile committed, tree clean | DONE | `npm ci` succeeded on 2026-11-05; dead dependencies removed in `1bd06bb` |
 | L8 | README, CHANGELOG, sprints updated | DONE | `CHANGELOG.md` 1.0.0/1.0.1, sprint records, evidence index |
@@ -43,13 +43,11 @@
 - The CI workflow now runs that public-entry smoke only through the hermetic E2E job. On 2026-11-10,
   the clean-stack suite passed 6/6; lint, unit, build, DB, docs, controls, and local restore gates
   also passed. Exact commands and exits: [`evidence/2026-11-10_pilot-gate-reconciliation.md`](evidence/2026-11-10_pilot-gate-reconciliation.md).
+- Corrected push and pull-request workflows both pass all three CI jobs on `ac22102`: [push](https://github.com/dmuhoro/StitchFlow/actions/runs/42756978325),
+  [PR](https://github.com/dmuhoro/StitchFlow/actions/runs/42756984649).
 
 ### Blocked on credentials / authorization
 
-- A remote push and PR run exist for `6f64cbd`; both ran the migration and hermetic E2E jobs
-  successfully, but failed in the quality job at the demo-artifact/public-landing mismatch. The
-  local workflow correction has not been pushed; a corrected remote rerun is blocked because the
-  available GitHub token lacks the `workflow` scope.
 - A live backup/restore needs `SOURCE_DB_URL` and the production database password. Neither was
   supplied or used.
 - Hosted E2E requires an owner-approved deployment of the reviewed source. The owner reports the

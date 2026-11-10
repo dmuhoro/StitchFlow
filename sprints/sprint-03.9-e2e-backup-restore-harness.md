@@ -1,8 +1,6 @@
 # Sprint 3.9 — Hermetic E2E and backup/restore harness
 
-**Status:** DONE locally; remote migration and hermetic E2E checks passed, while the remote quality
-job is red on a demo-artifact/public-landing smoke mismatch. Hosted deployment and live restore
-remain BLOCKED.
+**Status:** DONE locally and CI green on push/PR; hosted deployment and live restore remain BLOCKED.
 
 ## Goal
 
@@ -44,6 +42,6 @@ Exact commands and observed exit codes are recorded in
   smoke now runs through the hermetic job against the correct Supabase-mode artifact. The local
   correction and its passing regression evidence are in
   [`../docs/evidence/2026-11-10_pilot-gate-reconciliation.md`](../docs/evidence/2026-11-10_pilot-gate-reconciliation.md);
-  a corrected remote run still requires an authorized push.
+  the corrected push and PR runs both passed on `ac22102`.
 - Commercial use is BLOCKED on the Vercel Hobby plan; Pro is required.
 - No deployment, push, tag, version bump, or production Supabase access is part of this sprint.
