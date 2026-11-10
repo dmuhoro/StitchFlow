@@ -2,8 +2,9 @@
 
 **Date:** 2026-11-08
 **Milestone:** 1 — managed pilot for one boutique atelier
-**Status:** BLOCKED — Vercel is configured and the migration is applied, but hosted E2E is 1/6,
-backup/restore was not run, and the branch push is blocked by missing GitHub workflow scope.
+**Status:** Hosted deployment READY and owner/employee/patron read-only journeys PASS 3/3.
+Hosted booking awaits owner approval to reset the synthetic fitting; live restore remains blocked
+on credentials.
 
 ## Delivered in source
 
@@ -30,15 +31,15 @@ for exact command results.
 
 ## Remaining before the pilot
 
-1. Resolve the remote E2E/deployed-artifact mismatch in issue #6; current live suite returned
-   1 pass and 5 failures.
-2. Push the reviewed branch after GitHub OAuth receives the `workflow` scope required by the CI
-   workflow change, then publish a Vercel preview and rerun all six browser journeys.
-3. Complete and record a disposable-project backup/restore rehearsal. The first local Supabase
-   startup failed on Docker image TLS timeouts and default port conflicts; no production dump was
-   created.
-4. Capture a successful live booking screenshot only after the current source is deployed and the
-   live booking flow passes.
-5. Re-run all gates and make concern-specific commits before considering a version bump/tag.
+1. Obtain owner approval to reset only the script-owned synthetic fitting, then run the hosted
+   booking confirmation journey. No fixture reset or booking write has occurred.
+2. Verify a Vercel source-build using the repository's `.nvmrc` Node.js 20; the approved prebuilt
+   deployment used Node.js 22.22.1 while project settings reported 26.x.
+3. Complete and record a live-source backup/restore rehearsal after receiving `SOURCE_DB_URL` and
+   the production database password through an approved secret channel.
+4. Upgrade Vercel to Pro only before any commercial pilot; the current supervised pilot is
+   non-commercial.
 
-No production deployment, release tag, or production-ready sign-off is claimed by this sprint.
+The approved deployment is recorded in
+[`../docs/evidence/2026-11-10_pilot-gate-reconciliation.md`](../docs/evidence/2026-11-10_pilot-gate-reconciliation.md).
+No new version bump, release tag, or production-ready sign-off is claimed by this sprint.

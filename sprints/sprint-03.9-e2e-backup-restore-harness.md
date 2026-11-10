@@ -1,6 +1,7 @@
 # Sprint 3.9 — Hermetic E2E and backup/restore harness
 
-**Status:** DONE locally and CI green on push/PR; hosted deployment and live restore remain BLOCKED.
+**Status:** Local harness and CI DONE; hosted deployment and role journeys PASS; hosted booking and
+live restore remain BLOCKED.
 
 ## Goal
 
@@ -22,6 +23,9 @@ credentials or production database access.
   hermetic E2E job plus negative controls.
 - Readiness, changelog, evidence, and sprint records separate local proof from hosted credential
   blockers and the Vercel plan-tier blocker.
+- The hosted pilot environment generator now emits the provisioned order-code and fitting-label
+  overrides used by Playwright, omits a stale fixed booking date, and defaults to the current
+  approved Vercel alias.
 
 ## Verification
 
@@ -36,12 +40,17 @@ Exact commands and observed exit codes are recorded in
 ## Remaining
 
 - Live backup/restore is BLOCKED on `SOURCE_DB_URL` and the production database password.
-- Hosted browser verification is BLOCKED until an owner-approved deployment of the reviewed source.
+- Hosted owner/employee/patron read-only role verification is PASS 3/3 on the approved Vercel
+  deployment. Booking confirmation remains blocked until the synthetic fixture is authorized for
+  reset.
 - Remote CI was observed for `6f64cbd`: migration and hermetic E2E passed; quality failed because
   the landing-page smoke ran against the demo build instead of the Supabase-mode artifact. The
   smoke now runs through the hermetic job against the correct Supabase-mode artifact. The local
   correction and its passing regression evidence are in
   [`../docs/evidence/2026-11-10_pilot-gate-reconciliation.md`](../docs/evidence/2026-11-10_pilot-gate-reconciliation.md);
   the corrected push and PR runs both passed on `ac22102`.
-- Commercial use is BLOCKED on the Vercel Hobby plan; Pro is required.
-- No deployment, push, tag, version bump, or production Supabase access is part of this sprint.
+- Paid commercial use is BLOCKED on the Vercel Hobby plan; Pro is required. The selected
+  non-commercial supervised pilot is not blocked by this tier.
+- The hosted booking remains blocked on owner approval to reset only the script-owned synthetic
+  fitting fixture. No production fixture was reset and no booking was created.
+- Live backup/restore remains blocked on `SOURCE_DB_URL` and the production database password.

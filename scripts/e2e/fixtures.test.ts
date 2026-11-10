@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { bookingDate, nextServableDate } from '../../e2e/support/fixtures';
+import { PILOT_E2E_DEFAULT_BASE_URL, pilotE2EConfigLines } from '../ops/pilot-e2e-config.mjs';
 
 describe('tracked E2E environment', () => {
   it('is Supabase-mode, loopback-only, and contains no credentials or fixed booking date', () => {
@@ -27,5 +28,21 @@ describe('dynamic booking-date fixture', () => {
 
   it('moves an explicitly supplied closed Sunday to the next servable day', () => {
     expect(nextServableDate('2026-11-08')).toBe('2026-11-09');
+  });
+});
+
+describe('hosted pilot E2E configuration', () => {
+  it('defaults to the approved Vercel deployment', () => {
+    expect(PILOT_E2E_DEFAULT_BASE_URL).toBe('https://stitchflow-coral.vercel.app');
+  });
+
+  it('uses the provisioned order and request fixtures without pinning a booking date', () => {
+    const config = pilotE2EConfigLines((key, value) => `${key}=${value}`);
+
+    expect(config).toEqual([
+      'STITCHFLOW_E2E_OWN_ORDER=PILOT-A-001',
+      'STITCHFLOW_E2E_FOREIGN_ORDER=PILOT-B-001',
+      'STITCHFLOW_E2E_BOOKING_REQUEST_LABEL=Ruracio bridal basted fitting',
+    ]);
   });
 });

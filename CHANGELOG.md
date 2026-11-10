@@ -8,8 +8,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 ## [Unreleased] — Milestone 1 pilot hardening (in progress)
 
 This is an untagged engineering checkpoint, not a production release. The hermetic local browser
-suite, negative controls, and local-source backup/restore rehearsal pass; hosted deployment and live
-restore remain blocked.
+suite, negative controls, and local-source backup/restore rehearsal pass. The approved hosted
+deployment and read-only role journeys pass; hosted booking and live restore remain blocked.
 
 ### Added
 
@@ -24,6 +24,8 @@ restore remain blocked.
 - Unit tests for fail-closed repository writes and tenant-scoped human-key mutations.
 - Vercel static-SPA deployment configuration and a CI negative proof for Vercel's production build
   gate.
+- Hosted pilot E2E configuration now emits the deployed fixture identifiers and booking request
+  label, omits the stale date override, and defaults to the approved Vercel alias.
 
 ### Fixed
 
@@ -52,10 +54,12 @@ restore remain blocked.
   Supabase. These are earlier local-artifact results; they do not represent the current Vercel
   deployment. The former Netlify artifact still targets the retired project. See
   `docs/evidence/2026-11-08_milestone-1-pilot-hardening.md`.
-- Latest live verification supersedes earlier hosted E2E evidence: the six-test run against the
-  configured Vercel URL returned 1 pass and 5 failures. The owner attributes the failures to a stale
-  deployed bundle predating `bb751ad`; this task did not access production. Release remains blocked;
-  see `docs/evidence/2026-11-08_v1.4.0-rc.3-hosted-recovery.md`.
+- Pre-publication Vercel verification on 2026-11-10 superseded earlier hosted E2E evidence: the
+  six-test run returned 1 pass and 5 failures. Subsequent owner-approved deployment and role results
+  are recorded below; see `docs/evidence/2026-11-08_v1.4.0-rc.3-hosted-recovery.md`.
+- Subsequent owner-approved Vercel deployment is READY; hosted owner/employee/patron read-only
+  journeys pass 3/3. Booking remains blocked by the guarded synthetic fitting precondition; no live
+  booking or fixture reset occurred. See `docs/evidence/2026-11-10_pilot-gate-reconciliation.md`.
 
 ## [1.4.0-rc.2] — 2026-11-08
 

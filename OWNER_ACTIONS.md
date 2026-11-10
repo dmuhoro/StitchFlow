@@ -26,19 +26,35 @@ evidence log.
   [push run](https://github.com/dmuhoro/StitchFlow/actions/runs/42756978325) and
   [PR run](https://github.com/dmuhoro/StitchFlow/actions/runs/42756984649).
 
+## Verified on the hosted deployment
+
+- [x] **Approved Vercel deployment** — deployment `dpl_3psUv1F9c9Gq9FqKLx8bkdRXyp13` is READY at
+  `https://stitchflow-coral.vercel.app`; HTTP HEAD returned 200.
+- [x] **Owner, employee, and patron roles** — 3/3 read-only journeys pass against that deployment.
+  No hosted booking was created.
+
 ## Blocked on credentials / authorization
 
 - [ ] **Live backup/restore** — needs `SOURCE_DB_URL` and the production database password. Neither
-  was supplied; no production database was accessed.
-- [ ] **Hosted E2E and current deployment** — requires owner approval and authorization to publish
-  the reviewed source. The owner reports the deployed bundle `index-BPtRE36V.js` predates
-  `bb751ad`; this was not independently revalidated here. See
-  [`docs/evidence/2026-11-09_preview-deploy-blocked.md`](docs/evidence/2026-11-09_preview-deploy-blocked.md)
-  and [issue #6](https://github.com/dmuhoro/StitchFlow/issues/6).
+  was supplied; no live-source dump or restore was performed.
+
+## Blocked on fixture approval
+
+- [ ] **Hosted booking confirmation** — the guarded check did not find exactly one pending
+  script-owned synthetic fitting. No fixture reset, hold, or booking write occurred. Authorize a
+  narrowly scoped reset/recreation of that fixture before the previously approved synthetic
+  confirmation; do not run the broad `npm run seed:pilot` command against production.
+
+## Blocked on source-build parity
+
+- [ ] **Vercel Node.js alignment** — `.nvmrc` specifies Node.js 20, while Vercel project settings
+  reported 26.x and the successful prebuilt deployment used 22.22.1. Align the project and verify a
+  Vercel source-build before relying on remote build parity.
+
 ## Blocked on plan tier
 
 - [ ] **Commercial pilot** — Vercel project `stitchflow` is on Hobby, which forbids commercial use.
-  Owner must upgrade to Pro before a paid pilot.
+  Upgrade to Pro before a paid pilot; the selected non-commercial supervised pilot is not blocked.
 
 ## Remaining owner decisions
 

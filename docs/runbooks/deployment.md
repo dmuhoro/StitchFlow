@@ -141,7 +141,12 @@ STITCHFLOW_E2E_BASE_URL=https://<production-domain> npm run test:e2e
 
 Set `STITCHFLOW_E2E_OWNER_EMAIL`/`_PASSWORD`, `STITCHFLOW_E2E_EMPLOYEE_EMAIL`/`_PASSWORD`, and
 `STITCHFLOW_E2E_PATRON_EMAIL`/`_PASSWORD` in the shell or CI secret store. Do not put their values
-in a command transcript, evidence file, issue, or repository file.
+in a command transcript, evidence file, issue, or repository file. The owner-provisioning script
+generates the matching `PILOT-*` order overrides and booking request label in `.env.pilot`; the
+booking date is intentionally omitted so Playwright computes it for the current Nairobi calendar.
+Set `STITCHFLOW_E2E_BASE_URL` explicitly when loading an existing `.env.pilot` file or testing any
+deployment other than the current production alias; an older generated file may retain a previous
+host.
 
 ## Rollback
 
@@ -149,14 +154,10 @@ See [`rollback.md`](rollback.md).
 
 ## Status
 
-As of 2026-11-08 the production schema is reconciled and up to date. Six hosted identities exist
-across the supervised pilot atelier and an isolation-only second tenant; the pilot fitting fixture
-is seeded. The hosted RLS proof passes 30/30, and owner/employee/patron journeys pass against the
-fresh local production artifact connected to hosted Supabase. Vercel has been selected, and
-`vercel.json` plus the Vercel production artifact gate are in source, but owner project setup,
-environment configuration, publication, and live-site role/booking journeys remain **BLOCKED /
-NOT VERIFIED**. The former Netlify site still serves a bundle embedding the retired project
-`vpathqzkaqdtbykumxeo`. The supported static SPA source builds with `vite.pilot.config.ts`; no
-TanStack Start entry is required for Vercel preview or deployment. Details:
-[`../evidence/2026-11-08_milestone-1-pilot-hardening.md`](../evidence/2026-11-08_milestone-1-pilot-hardening.md)
+As of 2026-11-10, the approved Vercel deployment is READY and owner/employee/patron read-only
+journeys pass 3/3. Hosted booking remains blocked until the owner authorizes a narrowly scoped reset
+of the synthetic pending-fitting fixture; no booking was created. Live backup/restore remains
+blocked on `SOURCE_DB_URL` and the production database password. The project is Hobby, so Pro is
+required before a commercial pilot; the selected supervised pilot is non-commercial. Details:
+[`../evidence/2026-11-10_pilot-gate-reconciliation.md`](../evidence/2026-11-10_pilot-gate-reconciliation.md)
 and [release gates](../release-readiness.md).

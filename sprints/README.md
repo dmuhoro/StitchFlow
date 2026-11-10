@@ -26,6 +26,6 @@
 | [01a](sprint-01-real-data-real-auth.md) | Real data / real auth | IN PROGRESS |
 | [03](sprint-03-booking-engine-db.md) | Booking engine, database layer | DONE — v1.2.0 |
 | [03.6](sprint-03.6-live-pilot-integration.md) | Live-pilot booking integration checkpoint | IN PROGRESS — v1.4.0-rc.1 |
-| [03.7](sprint-03.7-supervised-pilot.md) | Supervised pilot hardening | BLOCKED — fresh build, publish, hosted journeys, restore rehearsal |
-| [03.8](sprint-03.8-vercel-pilot-deployment-readiness.md) | Vercel pilot deployment readiness | BLOCKED — owner project setup, live verification, restore rehearsal |
-| [03.9](sprint-03.9-e2e-backup-restore-harness.md) | Hermetic E2E and restore harness | DONE locally — hosted deployment, live restore and remote CI remain blocked |
+| [03.7](sprint-03.7-supervised-pilot.md) | Supervised pilot hardening | Hosted deployment and three read-only roles PASS; booking fixture and live restore BLOCKED |
+| [03.8](sprint-03.8-vercel-pilot-deployment-readiness.md) | Vercel pilot deployment readiness | Deployment and three read-only roles PASS; booking fixture and live restore BLOCKED |
+| [03.9](sprint-03.9-e2e-backup-restore-harness.md) | Hermetic E2E and restore harness | Local harness and CI PASS; hosted booking fixture and live restore BLOCKED |

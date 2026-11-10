@@ -2,18 +2,19 @@
 
 > What is true today. Aspirational work is labelled **ASPIRATIONAL** and must not be assumed.
 
-Last verified: 2026-11-09 (Sprint 3 booking workflow, local hermetic E2E and backup/restore harness).
+Last verified: 2026-11-10 (hosted pilot deployment and read-only role journeys).
 Production migration `20261108173000` was applied and reverified by
 `CI=1 supabase migration list --remote` in
 [`evidence/2026-11-08_pilot-release-execution.md`](evidence/2026-11-08_pilot-release-execution.md);
 local and remote migration IDs match. Six hosted identities
 exist across the supervised pilot and an isolation-only tenant.
-The rollback-only hosted RLS proof and local database/RLS tests pass. The local hermetic harness now
+The rollback-only hosted RLS proof and local database/RLS tests pass. The local hermetic harness
 passes all six browser journeys twice against a disposable Supabase stack, proves seven negative
-controls, and restores a local dump before running the RLS suite. Hosted deployment, hosted
-journeys, live backup/restore, and live booking remain open. The owner reports that the hosted
-failures came from a stale Vercel bundle (`index-BPtRE36V.js`, predating `bb751ad`); that
-attribution was not revalidated in this task. Payments and SSR are not implemented for this pilot.
+controls, and restores a local dump before running the RLS suite. The approved Vercel production
+deployment is READY and its owner, employee, and patron read-only journeys pass 3/3. Hosted booking
+is still blocked: the guarded fixture check did not find exactly one pending script-owned fitting,
+so no booking was made or fixture reset. Live backup/restore remains blocked on source credentials.
+Payments and SSR are not implemented for this pilot.
 Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_sprint-0-audit.md).
 
 ## Shipped and usable
@@ -49,14 +50,17 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
 - **Invitations:** email-bound employee/client invitation redemption is covered by the hosted SQL
   proof and a Playwright flow test.
 
-## Verified on 2026-11-09
+## Verified on 2026-11-10
 
 | Gate | Verdict |
 |------|---------|
 | Hermetic owner, employee, patron, invitation, public-entry, and booking journeys | **PASS locally** — 6/6 twice using `npm run test:e2e:hermetic`; each run resets and re-seeds the disposable local stack |
 | Demo artifact rejected in production context; owner journey fails against demo artifact | **PASS negative controls** — `npm run verify:controls`, 7/7 controls observed |
 | Local backup → restore → RLS suite | **PASS locally** — real 1,000-byte truncated dump rejected (exit 1), full local dump restored and RLS suite passed (exit 0) |
-| Hosted deployment, hosted E2E, and live backup/restore | **BLOCKED** — no deployment/production access in this task; see [`release-readiness.md`](release-readiness.md) |
+| Approved hosted deployment | **PASS** — Vercel deployment `dpl_3psUv1F9c9Gq9FqKLx8bkdRXyp13` is READY; production alias returns HTTP 200 |
+| Hosted owner, employee, and patron journeys | **PASS** — 3/3 read-only journeys against the approved deployment |
+| Hosted booking confirmation | **BLOCKED** — guarded fixture check found no exactly-one pending script-owned fitting; no booking write or fixture reset occurred |
+| Live backup/restore | **BLOCKED** — requires `SOURCE_DB_URL` and the production database password through an approved secret channel |
 
 ## Verified on 2026-11-08
 
@@ -85,9 +89,9 @@ Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-
 
 ## Not shipped — do not assume
 
-- **BLOCKED / live deploy not verified** Owner booking flow is wired; local database booking tests
-  pass. The latest hosted booking-confirmation test timed out before slot selection, and no booking
-  was confirmed.
+- **BLOCKED / hosted booking confirmation** Owner booking flow is wired; local database booking
+  tests pass. The current deployment passes the owner, employee, and patron role journeys, but its
+  synthetic pending-fitting precondition is not satisfied. No booking was confirmed.
 - **ASPIRATIONAL** Guest booking via an edge function with per-IP/phone/tenant rate limits and a bot
   challenge (ADR-009 §8). Anonymous callers are explicitly denied execute on every booking RPC.
 - **ASPIRATIONAL** Resource capacity greater than one and `booking_slots` for group workshops.
@@ -114,19 +118,15 @@ Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-
 - **DONE / remote schema current** Financial audit migration `20261108173000` is applied; remote list
   and dry run are current. Trigger-specific assertions pass locally; hosted rollback-only RLS proof
   passed.
-- **BLOCKED / hosted E2E** Against the configured Vercel URL, one employee role test passed and five
-  tests failed, including the duplicate header label, owner and patron assertions, invitation, and
-  booking. See issue #6 and the latest recovery evidence.
 
 ## Known limitations
 
 | Limitation | Impact | Owner |
 |------------|--------|-------|
 | Guest self-booking lacks rate limits and a bot challenge | Direct anon inserts and the visitor form are disabled pending the edge boundary | Engineering — before opening public booking |
-| Booking UI and appointment-status guard pass local database proof; live booking journey is unverified | Do not open the pilot until the current artifact is published and verified on Vercel | Repository owner — resolve issue #6; engineering reruns hosted flow |
+| Hosted booking confirmation has not passed | The guarded fitting fixture precondition is unmet; no live booking was created, while owner/employee/patron read-only journeys pass | Repository owner — authorize a narrowly scoped synthetic-fixture reset |
 | No owner/employee `INSERT` policy on `appointments`; staff booking uses `hold_slot` instead | Legacy staff-screen work cannot write `appointments` directly | Accepted boundary; do not write legacy appointment rows |
 | `booking_resources.capacity` is constrained to `1`; no `booking_slots` | Group workshops cannot be modelled yet | Engineering — Sprint 3 follow-up |
-| Live production site has not passed role or booking browser journeys | Latest remote run was 1/6; deployed header label differs from current source | Repository owner — authorize push; engineering publishes and reruns the reviewed build |
 | `idempotency_keys` retains the original hold token to make replay possible | A database reader could recover a live token for its short hold window; client roles are denied by RLS | Engineering — Security review |
 | No scheduled expiry sweeper outside booking transactions | An abandoned hold can block a slot until the next hold/confirm/reschedule on that resource | Engineering — Operations |
 | Tenant is chosen on the client; public path defaults to the Nairobi tenant | Any URL shows the default atelier; no slug/custom domain | Engineering — Sprint 2 |
@@ -135,8 +135,8 @@ Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-
 | Audit coverage exists for orders, measurements, settings, roles, and bookings, but not payments | Payment disputes cannot be investigated | Engineering — Sprint 4 |
 | Guest booking has no rate limit or bot challenge | Direct anon inserts are disabled until the edge boundary exists | Engineering — before public booking |
 | Playwright invite flow is present but hosted credentials are not stored in the repository | Live browser proof requires a deliberate local/CI secret setup | Repository owner — Sprint 1 |
-| Production has six hosted identities across pilot and isolation-only tenants | Local fresh-artifact role journeys and hosted verifier pass; the former Netlify bundle embeds the retired project | Repository owner — publish Vercel artifact and verify |
-| Vercel production project is not yet linked or published | `vercel.json` and the postbuild `VERCEL_ENV=production` gate are in source; no live update can be verified until owner setup and publishing succeeds | Repository owner — connect project, configure env/domain/Auth URLs, publish |
+| Production has six hosted identities across pilot and isolation-only tenants | Approved Vercel deployment and hosted owner/employee/patron role journeys pass; remote source-build parity remains unverified | Repository owner — align the Vercel Node.js version with `.nvmrc` and verify a source build |
+| Vercel project uses Node.js 26.x while `.nvmrc` specifies Node.js 20 | The successful prebuilt deployment used Node.js 22.22.1; remote source-build parity is unverified | Repository owner — align Vercel Node.js with `.nvmrc` and verify a source build |
 | Financial edit audit migration is applied remotely | Local trigger/RLS assertions pass; remote migration chain is current; hosted rollback-only proof passed | Engineering — retain as release evidence |
 
 ## Decisions awaiting approval

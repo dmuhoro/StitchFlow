@@ -9,18 +9,21 @@ verification harness now runs the six browser journeys against a disposable loca
 no production credentials: it passed 6/6 twice in a row, and its seven negative controls and
 `dump → restore → RLS` rehearsal pass locally. Evidence: `docs/evidence/2026-11-09_e2e-harness.md`.
 
-This is local proof, not a hosted release. The deployed artifact and live backup/restore have not
-been verified in this task, and no live booking has been confirmed. Remote push and PR CI both pass
-on `ac22102` after moving the production-landing smoke out of the demo build context and leaving it
-in the hermetic Supabase-mode browser suite.
+The approved Vercel deployment is READY and hosted owner/employee/patron read-only journeys pass
+3/3. Hosted booking has not been confirmed because the guarded script-owned fitting precondition is
+unmet; no fixture reset or booking write occurred. Live backup/restore remains credential-blocked.
+Remote push and PR CI both pass on `ac22102` after moving the production-landing smoke out of the
+demo build context and leaving it in the hermetic Supabase-mode browser suite.
 
 Current hard blockers:
 
-- Obtain owner approval to publish the reviewed artifact and run the six journeys against the
-  deployed URL.
+- Obtain owner approval to reset/recreate only the script-owned synthetic fitting, then complete
+  the hosted booking journey.
+- Verify Vercel source-build parity with the repository's `.nvmrc` Node.js version.
 - Complete a backup/restore of pilot data using `SOURCE_DB_URL` and the production database
   password. The local-source rehearsal is proven; the hosted restore is credential-blocked.
-- Move the Vercel project off the Hobby plan before a paid pilot (Hobby forbids commercial use).
+- Move the Vercel project off the Hobby plan before a paid pilot (Hobby forbids commercial use; the
+  selected supervised pilot is non-commercial).
   V2 scope, including multi-region failover, is deferred until the single-atelier pilot passes.
 
 See `docs/release-readiness.md`, `docs/evidence/2026-11-09_e2e-harness.md`,

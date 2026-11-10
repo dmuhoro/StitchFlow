@@ -1,8 +1,8 @@
 # Release Readiness
 
 > The authoritative to-do list. A gate is DONE only with cited evidence.
-> Last updated: 2026-11-10 (local gates and corrected push/PR CI pass; hosted deploy and live
-> restore remain blocked).
+> Last updated: 2026-11-10 (hosted deployment and three read-only roles pass; booking fixture and
+> live restore remain blocked).
 
 ## Launch gates
 
@@ -17,10 +17,10 @@
 | L6 | Release versioned, tagged, pushed | DONE | `docs/evidence/2026-11-01_release.md` (tag `v1.0.0`, remote ref verified) |
 | L7 | Cleanup complete, lockfile committed, tree clean | DONE | `npm ci` succeeded on 2026-11-05; dead dependencies removed in `1bd06bb` |
 | L8 | README, CHANGELOG, sprints updated | DONE | `CHANGELOG.md` 1.0.0/1.0.1, sprint records, evidence index |
-| L9 | Deployment verified | **BLOCKED — no preview deployment created** | `vercel build --prod` succeeded, but `vercel deploy --prebuilt` rejected the production-target artifact for a preview deployment; see `docs/evidence/2026-11-09_preview-deploy-blocked.md`. |
+| L9 | Deployment verified | **PASS — approved production deployment READY** | Deployment `dpl_3psUv1F9c9Gq9FqKLx8bkdRXyp13`, alias `https://stitchflow-coral.vercel.app`, HTTP 200; hosted evidence in [`evidence/2026-11-10_pilot-gate-reconciliation.md`](evidence/2026-11-10_pilot-gate-reconciliation.md). |
 | L10 | Production deploy fails closed on a demo-mode artifact | DONE — source + CI | `scripts/ci/verify-build.mjs` (`VERCEL_ENV=production`), `postbuild`, CI negative proof; `docs/evidence/2026-11-08_v1.4.0-rc.1.md` |
 | L11 | Tenant-safe human-key writes and missing-atelier fail-closed guard | **PASS locally; hosted role/RLS proof PASS, hosted duplicate-code SQL not run** | `npm run test:unit`, `npm run verify:db` (including duplicate `order_code` across tenants), and `npm run verify:pilot` (30/30); hosted SQL fixture: `supabase/tests/hosted_rls_e2e.sql` |
-| L12 | Owner/staff/patron hosted workflows | **Local hermetic PASS 6/6 twice; hosted BLOCKED** | `npm run test:e2e:hermetic` against disposable local Supabase with fixture reset, including invite redemption; hosted bundle reported as stale by the owner. See `docs/evidence/2026-11-09_e2e-harness.md`. |
+| L12 | Owner/staff/patron hosted workflows | **Local hermetic PASS 6/6 twice; hosted roles PASS 3/3; booking BLOCKED** | The hosted role journeys pass against the approved Vercel deployment. Booking confirmation stopped before any booking write because the guarded script-owned pending-fitting fixture was unavailable. |
 | L13 | Pilot support, rollback, and backup/restore rehearsal | **Local-source rehearsal PASS; hosted restore BLOCKED** | `npm run rehearse:restore` rejects a real truncated local dump (exit 1), then restores a full dump and passes the RLS suite (exit 0). A live dump/restore needs `SOURCE_DB_URL` and the production database password. `docs/runbooks/pilot-operations.md`, `docs/evidence/2026-11-09_e2e-harness.md` |
 | L14 | Owner financial edits audited without exposing snapshots to staff/patrons | **Migration applied; hosted general RLS + local trigger proof PASS** | Remote migration list reverified current through `20261108173000`; see `docs/evidence/2026-11-08_pilot-release-execution.md`, `STITCHFLOW_ALLOW_HOSTED_VERIFY=1 npm run verify:hosted`, and `npm run verify:db` |
 
@@ -46,18 +46,36 @@
 - Corrected push and pull-request workflows both pass all three CI jobs on `ac22102`: [push](https://github.com/dmuhoro/StitchFlow/actions/runs/42756978325),
   [PR](https://github.com/dmuhoro/StitchFlow/actions/runs/42756984649).
 
+### Verified on the approved hosted deployment
+
+- Vercel production deployment `dpl_3psUv1F9c9Gq9FqKLx8bkdRXyp13` is READY at
+  `https://stitchflow-coral.vercel.app`; an HTTP HEAD request returned 200.
+- Owner, employee, and patron read-only journeys passed 3/3 using the hosted pilot order codes.
+  The exact command and outcome are in
+  [`evidence/2026-11-10_pilot-gate-reconciliation.md`](evidence/2026-11-10_pilot-gate-reconciliation.md).
+- Hosted booking confirmation is **BLOCKED**. The guarded fixture check did not find exactly one
+  pending script-owned fitting. The check did not reset or modify the fixture, and no booking was
+  held or confirmed. Owner approval is required before changing that fixture.
+- The prebuilt deployment used Node.js 22.22.1; Vercel project settings reported Node.js 26.x while
+  `.nvmrc` specifies 20. A Vercel source-build using the repository version is not yet verified.
+
 ### Blocked on credentials / authorization
 
 - A live backup/restore needs `SOURCE_DB_URL` and the production database password. Neither was
   supplied or used.
-- Hosted E2E requires an owner-approved deployment of the reviewed source. The owner reports the
-  current deployed bundle (`index-BPtRE36V.js`) predates commit `bb751ad`; this attribution was not
-  revalidated against the hosted project in this task.
+
+### Blocked on fixture approval
+
+- Before the hosted booking journey can run, the repository owner must authorize resetting or
+  recreating only the script-owned synthetic fitting fixture. If a test booking exists for that
+  fixture, its release must also be explicitly limited to that synthetic booking. Do not run
+  `npm run seed:pilot` against production.
 
 ### Blocked on plan tier
 
 - Vercel project `stitchflow` is on Hobby, which does not permit commercial use. Upgrade to Pro
-  before a paid pilot. This plan limitation is separate from the local harness and its CI proof.
+  before a paid pilot. The selected supervised pilot is non-commercial, so this is not a blocker
+  for that scope.
 
 ## Sprint 0a verification gates (2026-11-05)
 
@@ -82,28 +100,24 @@
 | B4 | Expiry sweep and idempotent replay/conflict semantics | DONE | RPC suite B13, B16–B20 |
 | B5 | 200 attempts / 50 concurrent on one slot: 1 success, 199 `slot_unavailable`, 0 duplicates | DONE — local and CI | `docs/evidence/2026-11-07-booking-engine.md`; CI run [42371377892](https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892) |
 | B6 | Confirmed fitting must have a protected resource booking | **DONE — local and hosted schema** | Status guard applied; `npm run verify:db`; hosted migration apply in `docs/evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md` |
-| B7 | Owner UI calls availability, hold, confirm, cancel, and resource setup | **Local database proof PASS; live UI BLOCKED** | Local `npm run verify:db` passes booking RPC suite. Remote `e2e/booking-confirm.spec.ts` timed out before sign-in/slot selection; no booking was confirmed. |
+| B7 | Owner UI calls availability, hold, confirm, cancel, and resource setup | **Local database proof PASS; hosted role journeys PASS; hosted booking BLOCKED** | Local `npm run verify:db` and hosted owner/employee/patron read-only journeys pass. Booking awaits a pending script-owned fitting; no booking was confirmed. |
 | B8 | Guest rate limits and bot challenge | **CLOSED BY FAIL-CLOSED DISABLEMENT** | Anonymous appointment inserts and the live visitor booking form are disabled until the edge boundary is deployed |
 | B9 | Client and staff cannot mint a confirmed appointment outside the booking RPCs | **DONE — local and hosted schema** | `20261107220000_restrict_client_appointment_insert.sql`; RLS tests 13–14, staff S7a–S7d; applied to production in rc.2 |
 | B10 | Production migration history matches the tracked chain | **PASS — current** | `CI=1 supabase migration list --remote` shows local and remote through `20261108173000`; `CI=1 supabase db push --dry-run --remote` returned `upToDate: true` |
 
 ## Production-readiness verdict
 
-`v1.4.0-rc.2` remains the current package version and is a **prerelease checkpoint**, not a certified production atelier system. The
-Supabase-mode artifact gate rejects demo identities and retired/mismatched project refs. The booking
-staff UI, insert boundary, fail-closed request guard, and new financial audit boundary pass local
-database verification. Production schema parity is verified through `20261108173000`; the
-`20261108173000_audit_order_financials.sql` migration was applied. Tenant-safe
-human-key writes pass unit and local database tests. Six hosted identities and a pilot fitting
-fixture exist. A fresh static production build passes, the hosted publishable-key proof passes
-30/30, owner/employee/patron browser journeys pass 3/3, and protected booking confirmation passes 1/1
-against the fresh local bundle connected to hosted Supabase. The booking journey used the
-script-owned synthetic fixture. As of 2026-11-09 the hermetic harness passes all six browser
-journeys (including invitation redemption) twice in a row, seven artifact/demo-mode negative
+`v1.4.0-rc.2` remains the current package version and is a **prerelease checkpoint**, not a certified
+production atelier system. The Supabase-mode artifact gate rejects demo identities and
+retired/mismatched project refs. The booking staff UI, insert boundary, fail-closed request guard,
+and financial audit boundary pass local database verification. Production schema parity is verified
+through `20261108173000`; the financial audit migration is applied. Tenant-safe human-key writes
+pass unit and local database tests. The approved Vercel deployment is READY and hosted
+owner/employee/patron read-only journeys pass 3/3. Hosted booking confirmation remains blocked
+because the script-owned pending-fitting precondition is unmet; no booking was made or fixture
+reset. The hermetic harness passes all six browser journeys twice, seven artifact/demo-mode negative
 controls, and the local dump → restore → RLS rehearsal; see
-`docs/evidence/2026-11-09_e2e-harness.md`. The latest Vercel production URL run returned 1 pass and
-5 failures, including the duplicate header label; no live booking was confirmed, and the deployed
-artifact is stale relative to this checkout. A restore of live pilot data has not been made:
+`docs/evidence/2026-11-09_e2e-harness.md`. A restore of live pilot data has not been made:
 
 1. `S0-P0-01` — **closed in source and at the deploy boundary**. Supabase-mode build and
    `verify:build` reject demo identities, PIN, credential cards, tenant slugs, and demo lookbook
@@ -118,8 +132,8 @@ artifact is stale relative to this checkout. A restore of live pilot data has no
    `pending` request with no assigned tailor. The owner UI uses
    `hold_slot`/`confirm_booking`/`cancel_booking`. All seven pending migrations are now applied to
    production with a matched history; the browser confirmation journey passes against the fresh
-   local artifact. Vercel has a configured production URL, but the deployed artifact is not passing
-   the latest hosted browser checks; see issue #6.
+   local artifact. The current hosted role journeys pass; hosted booking awaits the synthetic
+   fitting precondition.
    Evidence: `docs/evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md`.
 
 Full prioritized list: `docs/audit/2026-11-05_sprint-0-audit.md`.
@@ -138,10 +152,9 @@ Full prioritized list: `docs/audit/2026-11-05_sprint-0-audit.md`.
 | Item | Blocker | Owner |
 |------|---------|-------|
 | Hosted Supabase schema parity / remote migration apply | Applied and verified current through `20261108173000` by remote list and dry-run | Engineering; hosted migration issue resolved |
-| Hosted owner/employee/patron browser journeys | Local hermetic suite passes 6/6 twice; the deployed Vercel artifact still serves the pre-checkout build | Repository owner — approve publish of the reviewed artifact; engineering reruns the six journeys against it |
-| Live booking confirmation journey | Booking passes in `verify:db` and in the hermetic browser journey; no live booking has been made against the deployed site | Repository owner — approve publish; engineering captures the live booking after all browser tests pass |
+| Hosted booking confirmation journey | Owner/employee/patron role journeys pass 3/3; guarded fitting precondition is unmet and no booking has been made | Repository owner — authorize reset/recreation of only the script-owned synthetic fitting |
 | Current source build/type-check | `npm run lint` and `npm run build` pass using `vite.pilot.config.ts`; root config is also static and no TanStack plugin is used | Engineering |
-| Vercel production artifact | Project, production URL, and production variable names exist; deployed code is not verified against this checkout and fails hosted E2E | Repository owner — approve publish; engineering publishes and verifies the reviewed artifact |
+| Vercel source-build parity | Approved prebuilt artifact is READY; Vercel reports Node.js 26.x while `.nvmrc` specifies 20, and the prebuilt artifact used Node.js 22.22.1 | Repository owner — align Node.js versions and verify a source build |
 | Pilot backup/restore rehearsal | Local dump → restore → RLS rehearsal passes with self-controls; a live dump/restore of pilot data has not been made | Repository owner — provide `SOURCE_DB_URL` and the production database password |
 | Vercel commercial use | Project `stitchflow` is on the Hobby plan, which forbids commercial use | Repository owner — upgrade to Pro before a paid pilot |
 | Regional availability | Single region `iad1`; accepted for the supervised pilot without an uptime promise | **DEFERRED TO V2** — multi-region failover is not a one-atelier pilot prerequisite |
@@ -163,8 +176,8 @@ have a named human owner and are never reported as agent-verified.
   support operations.
 
 ### Highest-leverage Milestone 1 work
-1. Link and configure the Vercel project, publish the correct artifact, and run smoke against current Supabase target.
-2. Close tenant boundaries on writes and assert with regression tests.
-3. Provision identities and run hosted owner/staff/patron workflows.
-4. Lock the pilot support/rollback runbook.
-5. Keep partner integrations (media, email/WhatsApp, payments) out of the pilot path.
+1. Get owner approval to reset only the script-owned synthetic fitting, then complete the hosted booking journey.
+2. Align Vercel Node.js with `.nvmrc` and verify a source build.
+3. Obtain `SOURCE_DB_URL` and the production database password through an approved secret channel, then rehearse restore into a disposable target.
+4. Keep the supervised single-atelier support and rollback runbook current.
+5. Keep payments, SSR, guest booking, multi-region failover, and broad analytics deferred to v2.

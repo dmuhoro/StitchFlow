@@ -38,13 +38,20 @@ import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import {
+  PILOT_E2E_BOOKING_REQUEST_LABEL,
+  PILOT_E2E_DEFAULT_BASE_URL,
+  PILOT_E2E_FOREIGN_ORDER,
+  PILOT_E2E_OWN_ORDER,
+  pilotE2EConfigLines,
+} from './pilot-e2e-config.mjs';
 
 const URL_BASE = (process.env.SUPABASE_PILOT_URL ?? '').replace(/\/+$/, '');
 const SERVICE_ROLE_KEY = process.env.SUPABASE_PILOT_SERVICE_ROLE_KEY ?? '';
 const PROJECT_REF = process.env.SUPABASE_PILOT_PROJECT_REF ?? URL_BASE.replace(/^https?:\/\//, '').split('.')[0];
 const SECRETS_FILE = process.env.PILOT_SECRETS_FILE ?? '.env.pilot';
 const ADMIN_EMAIL = (process.env.PILOT_ADMIN_EMAIL ?? '').trim().toLowerCase();
-const DEPLOY_URL = process.env.STITCHFLOW_E2E_BASE_URL ?? 'https://stitchflow-12pv.netlify.app';
+const DEPLOY_URL = process.env.STITCHFLOW_E2E_BASE_URL ?? PILOT_E2E_DEFAULT_BASE_URL;
 const PUBLISHABLE_KEY = process.env.SUPABASE_PILOT_PUBLISHABLE_KEY ?? '';
 
 if (!URL_BASE || !SERVICE_ROLE_KEY) {
@@ -363,7 +370,7 @@ insert into public.orders (
 (
   ${sqlText(ORDER_A1)},
   ${sqlText(ATELIER_A)},
-  'PILOT-A-001',
+  ${sqlText(PILOT_E2E_OWN_ORDER)},
   ${sqlText(byKey('patronA'))},
   ${sqlText(byKey('employeeA'))},
   'stitching',
@@ -389,7 +396,7 @@ insert into public.orders (
 (
   ${sqlText(ORDER_B1)},
   ${sqlText(ATELIER_B)},
-  'PILOT-B-001',
+  ${sqlText(PILOT_E2E_FOREIGN_ORDER)},
   ${sqlText(byKey('patronB'))},
   ${sqlText(byKey('employeeB'))},
   'cutting',
@@ -543,7 +550,7 @@ insert into public.appointments (
   (${sqlText(fixtureDate + 'T09:00:00')}::timestamp at time zone 'Africa/Nairobi'),
   'pending',
   ${sqlText(byKey('employeeA'))},
-  'Ruracio bridal basted fitting',
+  ${sqlText(PILOT_E2E_BOOKING_REQUEST_LABEL)},
   'Account-linked pilot request for a Saturday morning fitting.',
   'pilot'
 )
@@ -717,11 +724,11 @@ const env = [
   envLine('STITCHFLOW_E2E_PASSWORD', passwords.invitee),
   envLine('STITCHFLOW_E2E_EXPECTED_ROLE', 'employee'),
   envLine('STITCHFLOW_E2E_INVITE_CODE', INVITE_CODE),
+  ...pilotE2EConfigLines(envLine),
   '',
   '# Protected fitting confirmation fixture',
   envLine('STITCHFLOW_E2E_BOOKING_REQUEST_NAME', FIXTURE_REQUEST_NAME),
   envLine('STITCHFLOW_E2E_BOOKING_RESOURCE_NAME', FIXTURE_RESOURCE_NAME),
-  envLine('STITCHFLOW_E2E_BOOKING_DATE', fixtureDate),
   envLine('STITCHFLOW_E2E_BOOKING_TIME', FIXTURE_TIME),
   '',
   '# IDs (not secret)',

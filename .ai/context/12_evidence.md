@@ -44,8 +44,8 @@ PASS / FAIL / BLOCKED
 | v1.4.0-rc.1 release checkpoint | `2026-11-08_v1.4.0-rc.1.md` | Prerelease; production schema was still missing |
 | v1.4.0-rc.2 hosted repair | `2026-11-08_v1.4.0-rc.2-hosted-repair.md` | Hosted schema parity PASS; artifact gate PASS; live publish BLOCKED on Netlify credits; browser journeys BLOCKED on identities |
 | Milestone 1 pilot hardening | `2026-11-08_milestone-1-pilot-hardening.md` | Local tenant/database/unit checks and fresh-artifact hosted journeys PASS; live publish and restore rehearsal BLOCKED |
-| Vercel pilot readiness | `2026-11-08_vercel-pilot-readiness.md` | Static Vercel config, local financial audit/RLS proof, build and browser smoke PASS; new migration apply, live deployment, live journeys, and restore rehearsal BLOCKED |
+| Vercel pilot readiness | `2026-11-08_vercel-pilot-readiness.md` | Historical checkpoint; current approved deployment and hosted read-only roles pass, booking awaits synthetic-fixture approval, and live restore remains blocked |
 | v1.4.0-rc.3 hosted recovery attempt | `2026-11-08_v1.4.0-rc.3-hosted-recovery.md` | Migration applied and hosted rollback proof PASS; remote E2E 1/6; backup/restore and release BLOCKED |
 | Hermetic E2E and restore harness | `2026-11-09_e2e-harness.md` | Local 6/6 journeys twice, 7/7 negative controls, truncated dump rejected and full 16-table restore/RLS PASS; live restore and deploy BLOCKED |
-| Pilot gate reconciliation | `2026-11-10_pilot-gate-reconciliation.md` | Local gates and corrected remote push/PR CI PASS; hosted deploy and live restore BLOCKED |
+| Pilot gate reconciliation | `2026-11-10_pilot-gate-reconciliation.md` | Local gates, corrected remote CI, approved hosted deployment and three read-only roles PASS; hosted booking fixture and live restore BLOCKED |
 | Live booking attempt | `booking-flow.md` | BLOCKED; remote UI mismatch prevented booking; no screenshot or confirmation |
