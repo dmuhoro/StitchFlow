@@ -74,6 +74,16 @@ npm run rehearse:restore:hosted         # exits 2, not 1, if the precondition is
 The wrapper distinguishes **exit 2** (a precondition is missing — not evidence the gate works) from
 **exit 1** (a gate rejected its input). Do not report an exit-2 run as a passing rehearsal.
 
+The rehearsal probes reachability and the credential from inside the same `postgres:16` container
+that runs `pg_dump`, before it dumps anything. A network, DNS, TLS, or credential failure is therefore
+reported as a precondition (exit 2) with its remedy — never as a restore gate rejection.
+
+The **direct** host (`db.<ref>.supabase.co`) is IPv6-only. If this network has no IPv6 route, the
+probe fails with `Network is unreachable`. Use the **Session pooler** URI instead — port `5432`, user
+`postgres.<ref>`, host `aws-0-<region>.pooler.supabase.com` — copy it from Supabase → Project
+Settings → Database → Connection string → **Session pooler**, and run `npm run ops:set-source-db`
+again. Do not use the transaction pooler (`:6543`); it cannot serve `pg_dump`.
+
 ### Adding an application secret (Vercel)
 
 Only for values the running app needs. The value comes from a hidden prompt and is piped to the CLI,

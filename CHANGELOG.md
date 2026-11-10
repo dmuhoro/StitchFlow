@@ -43,6 +43,12 @@ deployment and read-only role journeys pass; hosted booking and live restore rem
 
 ### Fixed
 
+- The hosted backup/restore rehearsal now probes reachability and the credential from inside the same
+  `postgres:16` container that runs `pg_dump`, before dumping anything. A network, DNS, TLS, or
+  credential failure is reported as a missing precondition (exit 2) with its remedy, instead of as a
+  restore failure (exit 1) that never tested the data. The direct Supabase host is IPv6-only, so the
+  remedy points at the Session pooler on port 5432. `scripts/ops/source-db.mjs` gained the read-only
+  `probe` operation that performs this classification.
 - Order-status, tailor-assignment, feedback-status, and invitation-revocation writes now require and
   include the resolved atelier in the database mutation boundary.
 - Production artifact verification rejects retired or mismatched Supabase project references.

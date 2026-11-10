@@ -130,9 +130,22 @@ else
       ;;
     hosted)
       command -v docker >/dev/null 2>&1 || blocked "docker is required for the hosted dump." ""
+      # Reachability and the credential are proven from inside the same
+      # container that will run pg_dump. Without this, an unreachable host is
+      # reported as "the dump failed" — which reads like a gate rejected the
+      # data when nothing about the data was tested.
+      step "probing the hosted source from the rehearsal container"
+      if ! node scripts/ops/source-db.mjs probe; then
+        # The probe classifies network, DNS, TLS, and credential failures,
+        # prints the remedy, and exits 2.
+        exit 2
+      fi
+
       step "dumping the hosted source named by SOURCE_DB_URL"
-      node scripts/ops/source-db.mjs dump >"$DUMP_FILE" \
-        || fail "pg_dump against SOURCE_DB_URL failed. Check the database password and network access."
+      if ! node scripts/ops/source-db.mjs dump >"$DUMP_FILE"; then
+        blocked "the source answered the reachability probe but pg_dump failed." \
+          "A reachable, authenticated source that cannot be dumped is a privilege or tooling limitation, not a verdict on the data. The pg_dump error above names the cause."
+      fi
       ;;
   esac
 fi

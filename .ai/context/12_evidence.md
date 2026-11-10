@@ -50,3 +50,4 @@ PASS / FAIL / BLOCKED
 | Pilot gate reconciliation | `2026-11-10_pilot-gate-reconciliation.md` | Local gates, corrected remote CI, approved hosted deployment and three read-only roles PASS; hosted booking fixture and live restore BLOCKED |
 | Live booking attempt | `booking-flow.md` | BLOCKED; remote UI mismatch prevented booking; no screenshot or confirmation |
 | Published-secret boundary | `2026-11-10_bundle-secret-boundary.md` | Build refuses credential-shaped `VITE_` names; 9/9 controls; no publication found; DB password and access token must be rotated |
+| Hosted rehearsal precondition | `2026-11-10_hosted-rehearsal-precondition.md` | Probe classifies network/credential failure as exit 2 with remedy; correct credential exits 0; local rehearsal PASS; live restore BLOCKED (IPv6, owner) |

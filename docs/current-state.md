@@ -13,7 +13,8 @@ passes all six browser journeys twice against a disposable Supabase stack, prove
 controls, and restores a local dump before running the RLS suite. The approved Vercel production
 deployment is READY and its owner, employee, and patron read-only journeys pass 3/3. Hosted booking
 is still blocked: the guarded fixture check did not find exactly one pending script-owned fitting,
-so no booking was made or fixture reset. Live backup/restore remains blocked on source credentials.
+so no booking was made or fixture reset. Live backup/restore remains blocked on network reachability:
+the direct Supabase host is IPv6-only, so the operator must supply the Session pooler URI.
 Payments and SSR are not implemented for this pilot.
 Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_sprint-0-audit.md).
 
@@ -60,7 +61,7 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
 | Approved hosted deployment | **PASS** — Vercel deployment `dpl_3psUv1F9c9Gq9FqKLx8bkdRXyp13` is READY; production alias returns HTTP 200 |
 | Hosted owner, employee, and patron journeys | **PASS** — 3/3 read-only journeys against the approved deployment |
 | Hosted booking confirmation | **BLOCKED** — guarded fixture check found no exactly-one pending script-owned fitting; no booking write or fixture reset occurred |
-| Live backup/restore | **BLOCKED** — requires `SOURCE_DB_URL` and the production database password through an approved secret channel |
+| Live backup/restore | **BLOCKED** — the direct Supabase host is IPv6-only and unreachable from this network; the operator must supply the Session pooler URI. The rehearsal reports this as a precondition (exit 2) |
 
 ## Verified on 2026-11-08
 

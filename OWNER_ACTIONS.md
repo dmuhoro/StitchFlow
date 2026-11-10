@@ -48,8 +48,12 @@ evidence log.
 
 ## Blocked on credentials / authorization
 
-- [ ] **Live backup/restore** — needs `SOURCE_DB_URL` and the production database password. Neither
-  was supplied; no live-source dump or restore was performed.
+- [ ] **Live backup/restore** — the hosted source is not reachable from the rehearsal container. The
+  **direct** host `db.<ref>.supabase.co` is IPv6-only and this network has no IPv6 route
+  (`Network is unreachable`). Copy the **Session pooler** URI (port `5432`, user `postgres.<ref>`,
+  host `aws-0-<region>.pooler.supabase.com`) from Supabase → Project Settings → Database → Connection
+  string → Session pooler, run `npm run ops:set-source-db`, then `npm run rehearse:restore:hosted`.
+  The rehearsal now classifies this as a precondition (exit 2), not a restore failure.
 
 ## Blocked on fixture approval
 
