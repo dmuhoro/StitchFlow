@@ -18,6 +18,12 @@
 # ---------------------------------------------------------------------------
 set -euo pipefail
 
+if [[ $# -ne 0 ]]; then
+  printf 'ERROR: this command takes no arguments; paste the URI at the hidden prompt.\n' >&2
+  printf 'Usage: npm run ops:set-source-db\n' >&2
+  exit 2
+fi
+
 OPS_ENV="${STITCHFLOW_OPS_ENV:-$HOME/.config/stitchflow/ops.env}"
 
 reject() {

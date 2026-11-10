@@ -6,7 +6,7 @@
 
 Production migration `20261108173000` is applied and remote migration parity is current. A hermetic
 verification harness now runs the six browser journeys against a disposable local Supabase stack with
-no production credentials: it passed 6/6 twice in a row, and its ten negative controls and
+no production credentials: it passed 6/6 twice in a row, and its eleven negative controls and
 `dump → restore → RLS` rehearsal pass locally. Evidence: `docs/evidence/2026-11-09_e2e-harness.md`.
 
 The approved Vercel deployment is READY and hosted owner/employee/patron read-only journeys pass
@@ -21,11 +21,13 @@ Current hard blockers:
 - Obtain owner approval to reset/recreate only the script-owned synthetic fitting, then complete
   the hosted booking journey.
 - Verify Vercel source-build parity with the repository's `.nvmrc` Node.js version.
-- Complete a backup/restore of pilot data. The protected credential is present, but the direct
-  database host is IPv6-only and the rehearsal container has no IPv6 route; the owner must use the
-  Session pooler URI on port 5432. The latest hosted attempt exited 2 before dumping.
-- Clear credential-shaped `VITE_*` names from the inherited shell environment and rotate the
-  corresponding credentials. The ordinary build correctly refuses; the loopback test build passes.
+- Complete a backup/restore of pilot data. The direct database host is IPv6-only and unreachable;
+  the Session pooler endpoint is reachable but rejected authentication. The owner must verify the
+  Dashboard-generated username and current database password, then re-enter the URI. The latest
+  hosted attempt exited 2 before dumping.
+- This agent shell still inherits two credential-shaped `VITE_*` names, while the owner's terminal
+  reports a clean environment. The production build passes when those unrelated exports are excluded
+  for that command; no value was printed. Any required credential rotation remains owner-controlled.
 - Move the Vercel project off the Hobby plan before a paid pilot (Hobby forbids commercial use; the
   selected supervised pilot is non-commercial).
   V2 scope, including multi-region failover, is deferred until the single-atelier pilot passes.

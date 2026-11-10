@@ -58,7 +58,8 @@ enters shell history:
 npm run ops:set-source-db
 ```
 
-Paste the **PostgreSQL** URI: Supabase → Project Settings → Database → Connection string (URI). It
+Run that command by itself; do not append instructions or prose as command arguments. Paste the
+**PostgreSQL** URI only after the hidden prompt appears. Supabase → Project Settings → Database → Connection string (URI). It
 must start with `postgresql://` and use the direct host (`db.<ref>.supabase.co:5432`) or the session
 pooler on `:5432`. The transaction pooler on `:6543` cannot serve `pg_dump`; the script rejects it,
 rejects the HTTPS API URL that sits next to it in the dashboard, and rejects a URI missing a user,
@@ -77,6 +78,9 @@ The wrapper distinguishes **exit 2** (a precondition is missing — not evidence
 The rehearsal probes reachability and the credential from inside the same `postgres:16` container
 that runs `pg_dump`, before it dumps anything. A network, DNS, TLS, or credential failure is therefore
 reported as a precondition (exit 2) with its remedy — never as a restore gate rejection.
+If the Session pooler is reachable but rejects authentication, verify the Dashboard-generated
+pooler username and current database password; reset the database password if uncertain, then
+re-enter the URI with `npm run ops:set-source-db`. Do not retry guessed passwords.
 
 The **direct** host (`db.<ref>.supabase.co`) is IPv6-only. If this network has no IPv6 route, the
 probe fails with `Network is unreachable`. Use the **Session pooler** URI instead — port `5432`, user

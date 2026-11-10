@@ -187,7 +187,7 @@ fi
 
 if [[ "$DOCKER_OK" == "1" && "$SUPABASE_OK" == "1" && "$CHROMIUM_OK" == "1" ]]; then
   runnable "npm run test:e2e:hermetic" "6 browser journeys"
-  runnable "npm run verify:controls" "10 negative controls"
+  runnable "npm run verify:controls" "11 negative controls"
 else
   MISSING=""
   [[ "$DOCKER_OK" == "1" ]] || MISSING+="docker "
@@ -198,7 +198,7 @@ else
 fi
 
 if [[ -n "${SOURCE_DB_URL:-}" ]] || env_present "$OPS_ENV" SOURCE_DB_URL; then
-  runnable "npm run rehearse:restore:hosted" "dumps the hosted source"
+  runnable "npm run rehearse:restore:hosted" "configured; reachability/auth probed at runtime"
 else
   blocked "npm run rehearse:restore:hosted" "SOURCE_DB_URL absent — owner-held"
 fi

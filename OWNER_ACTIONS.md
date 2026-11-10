@@ -12,21 +12,25 @@ evidence log.
 - [ ] **Revoke the Supabase personal access token.** It was found in `.env.local` as
   `VITE_SUPABASE_PERSONAL_ACCESS_TOKEN`; it is account-level, so it is broader than the database.
   Supabase → Account → Access Tokens → Revoke.
-- [ ] **Re-enter the new password** with `npm run ops:set-source-db` (validates the URI, writes mode
-  600, never echoes). The live dump/restore rehearsal stays BLOCKED until this is done.
+- [ ] **Set a valid Session-pooler connection** with `npm run ops:set-source-db` (run by itself,
+  then paste only the Dashboard-generated Session pooler URI at the hidden prompt). The pooler host
+  was reachable, but Supabase rejected the supplied authentication. Verify the exact pooler
+  username and current database password; reset the database password if uncertain, then rerun the
+  setter and `npm run rehearse:restore:hosted`. No dump or restore has run.
 
 ## Verified locally
 
 - [x] **Hermetic E2E** — six journeys pass on a disposable local Supabase stack, both on a clean run
   and immediate re-run. `npm run seed:pilot-fitting` rebuilds the pending request for each run.
-- [x] **Negative controls** — nine artifact, browser, and published-secret controls reject their
+- [x] **Negative controls** — eleven artifact, browser, published-secret, precondition, and
+  malformed-command controls reject their
   deliberately bad inputs, including demo-mode production artifact rejection and a build that sets a
   credential with a public prefix.
 - [x] **Local backup/restore** — a truncated local dump is rejected (exit 1), then a complete local
   dump is restored and the RLS isolation suite passes (exit 0).
 - [x] **Local engineering gates** — `npm run lint`, `npm run test:unit`, `npm run build`,
   `npm run verify:db`, and `npm run check:docs`; exact results are in
-  [`docs/evidence/2026-11-10_pilot-gate-reconciliation.md`](docs/evidence/2026-11-10_pilot-gate-reconciliation.md).
+  [`docs/evidence/2026-11-10_local-gate-rerun.md`](docs/evidence/2026-11-10_local-gate-rerun.md).
 - [x] **Remote migration audit and financial-audit migration** — historical remote verification
   through `20261108173000` is recorded in
   [`docs/evidence/2026-11-08_pilot-release-execution.md`](docs/evidence/2026-11-08_pilot-release-execution.md).
@@ -48,12 +52,11 @@ evidence log.
 
 ## Blocked on credentials / authorization
 
-- [ ] **Live backup/restore** — the hosted source is not reachable from the rehearsal container. The
-  **direct** host `db.<ref>.supabase.co` is IPv6-only and this network has no IPv6 route
-  (`Network is unreachable`). Copy the **Session pooler** URI (port `5432`, user `postgres.<ref>`,
-  host `aws-0-<region>.pooler.supabase.com`) from Supabase → Project Settings → Database → Connection
-  string → Session pooler, run `npm run ops:set-source-db`, then `npm run rehearse:restore:hosted`.
-  The rehearsal now classifies this as a precondition (exit 2), not a restore failure.
+- [ ] **Live backup/restore** — the direct host is unreachable over IPv6; the Session pooler endpoint
+  is reachable, but the latest rehearsal probe rejected authentication (exit 2). Verify the
+  Dashboard-generated Session pooler username and current database password; reset the password if
+  needed. Run `npm run ops:set-source-db` by itself and paste the full URI at the hidden prompt,
+  then rerun `npm run rehearse:restore:hosted`. No source dump or write occurred.
 
 ## Blocked on fixture approval
 

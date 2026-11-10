@@ -98,3 +98,26 @@ engineering. It is not reported as passing.
 **Classification PASS; live restore BLOCKED (owner).** An unreachable or unauthenticated source is
 now reported as a precondition with a specific remedy and exit `2`. The restore gate is only reached,
 and can only report `1`, after the source is proven reachable and authenticated.
+
+## Follow-up operator attempt
+
+The owner first re-entered the direct-host URI; as expected, the probe exited `2` because the
+endpoint is IPv6-only and unreachable from the rehearsal container. The owner then configured a
+Session-pooler endpoint. The rehearsal reached that endpoint, but the server rejected authentication;
+it again exited `2` before `pg_dump`. No source dump, restore, or write occurred.
+
+The required next action is to verify the exact Dashboard-generated Session pooler username and
+current database password. If the password is uncertain, reset it in the Supabase dashboard, then
+run `npm run ops:set-source-db` by itself and paste the complete URI only at the hidden prompt.
+Rerun `npm run rehearse:restore:hosted` only after that setup.
+
+The terminal command also included a Unicode em dash and explanatory prose as trailing arguments.
+Although npm printed a non-ASCII argument warning, the script proceeded to prompt and write the URI.
+The setter now rejects all command-line arguments before prompting, and a negative control covers
+this case. Correct invocation: run `npm run ops:set-source-db` alone, then paste the URI at its
+hidden prompt.
+
+The later clean invocation used the hidden prompt correctly. It confirmed the pooler host was
+selected, but the rehearsal server rejected authentication. This is an authentication
+precondition—not a dump or restore result—and the URI/password values are intentionally absent from
+this record.

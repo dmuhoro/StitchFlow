@@ -18,6 +18,7 @@
 #      because Vite would inline it into the browser bundle.
 #   5. The hosted-rehearsal probe classifies an unreachable source as a missing
 #      precondition (exit 2) and never as a restore-gate rejection (exit 1).
+#   6. The hidden credential prompt refuses trailing arguments before writing.
 #
 # Exit codes: 0 all controls behaved; 1 a control did not fire.
 # ============================================================================
@@ -192,6 +193,18 @@ run_case blocked "probe: unresolvable source host" \
   node scripts/ops/source-db.mjs probe
 if ! grep -Fq 'BLOCKED: the hosted source is not reachable for the rehearsal' "$LOG_DIR/case-$CASES.log"; then
   echo "FAIL: the probe exited 2 but did not print the precondition classification."
+  sed -n '1,8p' "$LOG_DIR/case-$CASES.log"
+  PROBLEMS=$((PROBLEMS + 1))
+fi
+
+# --- 6. reject prose passed as credential-setup arguments -------------------
+step "6. credential setup rejects trailing arguments"
+run_case blocked "hidden credential prompt with trailing prose" \
+  env STITCHFLOW_OPS_ENV="$LOG_DIR/should-not-be-written" \
+  bash scripts/ops/set-source-db.sh "— paste at the hidden prompt"
+if ! grep -Fq 'this command takes no arguments' "$LOG_DIR/case-$CASES.log" ||
+   [[ -e "$LOG_DIR/should-not-be-written" ]]; then
+  echo "FAIL: malformed invocation did not stop before the hidden prompt and file write."
   sed -n '1,8p' "$LOG_DIR/case-$CASES.log"
   PROBLEMS=$((PROBLEMS + 1))
 fi
