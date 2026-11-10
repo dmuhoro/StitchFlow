@@ -68,4 +68,12 @@ unset VALUE TMP
 
 printf 'PASS: wrote SOURCE_DB_URL to %s (mode 600).\n' "$OPS_ENV"
 printf '      host=%s database=%s user=%s password=***\n' "$HOSTPORT" "$DBNAME" "${USERINFO%%:*}"
+case "${HOSTPORT%%:*}" in
+  db.*.supabase.co)
+    printf '\nNOTE: that is the direct Supabase host, which is IPv6-only.\n'
+    printf '      If `npm run rehearse:restore:hosted` reports "Network is unreachable",\n'
+    printf '      replace it with the Session pooler URI (port 5432, user postgres.<ref>):\n'
+    printf '      Supabase -> Project Settings -> Database -> Connection string -> Session pooler.\n'
+    ;;
+esac
 printf 'Next: npm run preflight && npm run rehearse:restore:hosted\n'

@@ -77,6 +77,11 @@ The local path did not regress: `npm run rehearse:restore` exited `0` — the th
 were rejected (exit `1`), 258,355 bytes restored, all 16 row counts matched, the RLS isolation suite
 passed, and the structural RLS check passed.
 
+The classification is now a permanent negative control (`npm run verify:controls`, case 10). An
+unresolvable `.invalid` host must exit `2` and print the precondition banner; the control fails if
+the probe ever reports a gate rejection (`1`) instead. This keeps the distinction from regressing
+without needing a credential.
+
 ## Residual work — owner
 
 | Action | Why | Where |

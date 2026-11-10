@@ -31,7 +31,7 @@
 - The hermetic E2E harness starts a disposable Supabase stack with Auth and PostgREST, resets it
   from tracked migrations and `supabase/seed.sql`, and runs all six browser journeys twice. The
   pending fitting is recreated by `npm run seed:pilot-fitting` before each run.
-- Nine negative controls reject the configured demo/build failures, including a protected browser
+- Ten negative controls reject the configured demo/build failures, including a protected browser
   journey run against a demo artifact and a demo artifact checked in a Vercel production context.
 - The backup/restore script rejects a 1,000-byte truncated local dump with exit 1, then restores a
   complete local dump and runs `supabase/tests/rls_isolation_test.sql` successfully.

@@ -9,7 +9,7 @@ Production migration `20261108173000` was applied and reverified by
 local and remote migration IDs match. Six hosted identities
 exist across the supervised pilot and an isolation-only tenant.
 The rollback-only hosted RLS proof and local database/RLS tests pass. The local hermetic harness
-passes all six browser journeys twice against a disposable Supabase stack, proves nine negative
+passes all six browser journeys twice against a disposable Supabase stack, proves ten negative
 controls, and restores a local dump before running the RLS suite. The approved Vercel production
 deployment is READY and its owner, employee, and patron read-only journeys pass 3/3. Hosted booking
 is still blocked: the guarded fixture check did not find exactly one pending script-owned fitting,
@@ -56,7 +56,7 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
 | Gate | Verdict |
 |------|---------|
 | Hermetic owner, employee, patron, invitation, public-entry, and booking journeys | **PASS locally** — 6/6 twice using `npm run test:e2e:hermetic`; each run resets and re-seeds the disposable local stack |
-| Demo artifact rejected in production context; owner journey fails against demo artifact | **PASS negative controls** — `npm run verify:controls`, 9/9 controls observed |
+| Demo artifact rejected in production context; owner journey fails against demo artifact | **PASS negative controls** — `npm run verify:controls`, 10/10 controls observed |
 | Local backup → restore → RLS suite | **PASS locally** — real 1,000-byte truncated dump rejected (exit 1), full local dump restored and RLS suite passed (exit 0) |
 | Approved hosted deployment | **PASS** — Vercel deployment `dpl_3psUv1F9c9Gq9FqKLx8bkdRXyp13` is READY; production alias returns HTTP 200 |
 | Hosted owner, employee, and patron journeys | **PASS** — 3/3 read-only journeys against the approved deployment |

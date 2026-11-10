@@ -16,6 +16,8 @@
 #      reporting success or skipping.
 #   4. A credential with a public prefix is refused before an artifact exists,
 #      because Vite would inline it into the browser bundle.
+#   5. The hosted-rehearsal probe classifies an unreachable source as a missing
+#      precondition (exit 2) and never as a restore-gate rejection (exit 1).
 #
 # Exit codes: 0 all controls behaved; 1 a control did not fire.
 # ============================================================================
@@ -38,24 +40,36 @@ unset VITE_SUPABASE_PASSWORD VITE_POSTGRESQL_URL VITE_SUPABASE_PERSONAL_ACCESS_T
 unset CONTEXT NETLIFY_CONTEXT VERCEL_ENV STITCHFLOW_DEPLOY_CONTEXT
 unset STITCHFLOW_E2E_BASE_URL
 
-# run_case <expected: pass|fail> <label> <command...>
+# run_case <expected: pass|fail|blocked> <label> <command...>
+#   pass=0, fail=1, blocked=2. A blocked case proves a missing precondition is
+#   reported as exit 2, never confused with a gate rejecting its input (exit 1).
 run_case() {
   local expected="$1" label="$2"
   shift 2
   CASES=$((CASES + 1))
   local log="$LOG_DIR/case-$CASES.log"
+  local expected_code actual_code actual
+  case "$expected" in
+    pass) expected_code=0 ;;
+    fail) expected_code=1 ;;
+    blocked) expected_code=2 ;;
+    *) echo "FAIL: unknown expectation '$expected' for \"$label\"."; PROBLEMS=$((PROBLEMS + 1)); return ;;
+  esac
   if "$@" >"$log" 2>&1; then
-    actual="pass"
     actual_code=0
   else
     actual_code=$?
-    actual="fail"
   fi
+  case "$actual_code" in
+    0) actual="pass" ;;
+    2) actual="blocked" ;;
+    *) actual="fail" ;;
+  esac
 
-  if [[ "$actual" == "$expected" ]]; then
-    printf 'PASS  %-58s expected %-4s got %s (exit %s)\n' "$label" "$expected" "$actual" "$actual_code"
+  if [[ "$actual_code" == "$expected_code" ]]; then
+    printf 'PASS  %-58s expected %-7s got %s (exit %s)\n' "$label" "$expected" "$actual" "$actual_code"
   else
-    printf 'FAIL  %-58s expected %-4s got %s (exit %s)\n' "$label" "$expected" "$actual" "$actual_code"
+    printf 'FAIL  %-58s expected %-7s got %s (exit %s)\n' "$label" "$expected" "$actual" "$actual_code"
     sed -n '1,6p' "$log" | sed 's/^/        /'
     PROBLEMS=$((PROBLEMS + 1))
   fi
@@ -168,6 +182,19 @@ if ! grep -Fq 'Atelier sign in' "$LOG_DIR/case-$CASES.log"; then
 fi
 echo "Observed browser failure (expected, exit 1):"
 sed -n '1,18p' "$LOG_DIR/case-$CASES.log"
+
+# --- 5. a missing precondition is exit 2, never a gate rejection ------------
+# The hosted rehearsal must not report "FAIL" when it never reached the data.
+# A host that cannot resolve is a deterministic, credential-free precondition.
+step "5. hosted-rehearsal probe classification"
+run_case blocked "probe: unresolvable source host" \
+  env SOURCE_DB_URL="postgresql://probe:probe@nonexistent.invalid:5432/postgres" \
+  node scripts/ops/source-db.mjs probe
+if ! grep -Fq 'BLOCKED: the hosted source is not reachable for the rehearsal' "$LOG_DIR/case-$CASES.log"; then
+  echo "FAIL: the probe exited 2 but did not print the precondition classification."
+  sed -n '1,8p' "$LOG_DIR/case-$CASES.log"
+  PROBLEMS=$((PROBLEMS + 1))
+fi
 
 printf '\n'
 if [[ "$PROBLEMS" -gt 0 ]]; then

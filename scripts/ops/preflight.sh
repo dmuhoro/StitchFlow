@@ -187,7 +187,7 @@ fi
 
 if [[ "$DOCKER_OK" == "1" && "$SUPABASE_OK" == "1" && "$CHROMIUM_OK" == "1" ]]; then
   runnable "npm run test:e2e:hermetic" "6 browser journeys"
-  runnable "npm run verify:controls" "9 negative controls"
+  runnable "npm run verify:controls" "10 negative controls"
 else
   MISSING=""
   [[ "$DOCKER_OK" == "1" ]] || MISSING+="docker "
