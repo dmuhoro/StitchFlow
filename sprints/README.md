@@ -28,4 +28,4 @@
 | [03.6](sprint-03.6-live-pilot-integration.md) | Live-pilot booking integration checkpoint | IN PROGRESS — v1.4.0-rc.1 |
 | [03.7](sprint-03.7-supervised-pilot.md) | Supervised pilot hardening | Hosted deployment and three read-only roles PASS; booking fixture and live restore BLOCKED |
 | [03.8](sprint-03.8-vercel-pilot-deployment-readiness.md) | Vercel pilot deployment readiness | Deployment and three read-only roles PASS; booking fixture and live restore BLOCKED |
-| [03.9](sprint-03.9-e2e-backup-restore-harness.md) | Hermetic E2E and restore harness | Local harness and CI PASS; hosted booking fixture and live restore BLOCKED |
+| [03.9](sprint-03.9-e2e-backup-restore-harness.md) | Hermetic E2E and restore harness | Local harness and CI PASS; hosted booking retry, default build environment, and live restore BLOCKED |

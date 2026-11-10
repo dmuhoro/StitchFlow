@@ -12,10 +12,12 @@ The rollback-only hosted RLS proof and local database/RLS tests pass. The local 
 passes all six browser journeys twice against a disposable Supabase stack, proves eleven negative
 controls, and restores a local dump before running the RLS suite. The approved Vercel production
 deployment is READY and its owner, employee, and patron read-only journeys pass 3/3. Hosted booking
-is still blocked: the guarded fixture check did not find exactly one pending script-owned fitting,
-so no booking was made or fixture reset. Live backup/restore remains blocked on network reachability:
-the direct Supabase host is IPv6-only, so the operator must use the Session pooler. The latest Session-pooler attempt reached Supabase but
-authentication was rejected; no source dump ran.
+is still blocked: the owner-approved synthetic fixture reset succeeded, but the one browser attempt
+failed before a hold because the ignored `.env.pilot` contained a stale booking date. The request
+remains pending and its linked synthetic booking is cancelled; no new booking was confirmed. A retry
+requires clearing the override and renewed owner authorization. Live backup/restore remains blocked:
+the direct Supabase host is IPv6-only, and the Session-pooler attempt reached Supabase but
+authentication was rejected. No source dump ran.
 Payments and SSR are not implemented for this pilot.
 Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_sprint-0-audit.md).
 
@@ -61,7 +63,7 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
 | Local backup → restore → RLS suite | **PASS locally** — real 1,000-byte truncated dump rejected (exit 1), full local dump restored and RLS suite passed (exit 0) |
 | Approved hosted deployment | **PASS** — Vercel deployment `dpl_3psUv1F9c9Gq9FqKLx8bkdRXyp13` is READY; production alias returns HTTP 200 |
 | Hosted owner, employee, and patron journeys | **PASS** — 3/3 read-only journeys against the approved deployment |
-| Hosted booking confirmation | **BLOCKED** — guarded fixture check found no exactly-one pending script-owned fitting; no booking write or fixture reset occurred |
+| Hosted booking confirmation | **BLOCKED** — the approved fixture reset succeeded, but the one browser attempt failed before a hold because `.env.pilot` contained a stale date; the request is pending and its linked synthetic booking is cancelled |
 | Live backup/restore | **BLOCKED** — direct host is IPv6-unreachable; Session pooler is reachable but rejected authentication. No dump ran; rehearsal reports exit 2. |
 
 ## Verified on 2026-11-08
@@ -92,8 +94,11 @@ Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-
 ## Not shipped — do not assume
 
 - **BLOCKED / hosted booking confirmation** Owner booking flow is wired; local database booking
-  tests pass. The current deployment passes the owner, employee, and patron role journeys, but its
-  synthetic pending-fitting precondition is not satisfied. No booking was confirmed.
+  tests pass. The current deployment passes the owner, employee, and patron role journeys. The
+  owner-approved synthetic fixture reset succeeded, but one hosted browser attempt failed before a
+  hold because the private `.env.pilot` date override was stale. The request remains pending, its
+  linked synthetic booking is cancelled, and no new booking was confirmed. A retry requires clearing
+  the override and renewed owner authorization.
 - **ASPIRATIONAL** Guest booking via an edge function with per-IP/phone/tenant rate limits and a bot
   challenge (ADR-009 §8). Anonymous callers are explicitly denied execute on every booking RPC.
 - **ASPIRATIONAL** Resource capacity greater than one and `booking_slots` for group workshops.
@@ -126,7 +131,7 @@ Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-
 | Limitation | Impact | Owner |
 |------------|--------|-------|
 | Guest self-booking lacks rate limits and a bot challenge | Direct anon inserts and the visitor form are disabled pending the edge boundary | Engineering — before opening public booking |
-| Hosted booking confirmation has not passed | The guarded fitting fixture precondition is unmet; no live booking was created, while owner/employee/patron read-only journeys pass | Repository owner — authorize a narrowly scoped synthetic-fixture reset |
+| Hosted booking confirmation has not passed | One attempt failed before a hold because `.env.pilot` retained a stale date; the synthetic request is pending and its linked booking is cancelled, while owner/employee/patron read-only journeys pass | Repository owner — clear the stale override and authorize one retry |
 | No owner/employee `INSERT` policy on `appointments`; staff booking uses `hold_slot` instead | Legacy staff-screen work cannot write `appointments` directly | Accepted boundary; do not write legacy appointment rows |
 | `booking_resources.capacity` is constrained to `1`; no `booking_slots` | Group workshops cannot be modelled yet | Engineering — Sprint 3 follow-up |
 | `idempotency_keys` retains the original hold token to make replay possible | A database reader could recover a live token for its short hold window; client roles are denied by RLS | Engineering — Security review |

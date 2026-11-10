@@ -1,7 +1,7 @@
 # Sprint 3.9 — Hermetic E2E and backup/restore harness
 
-**Status:** Local harness and CI DONE; hosted deployment and role journeys PASS; hosted booking,
-default build environment, and live restore remain BLOCKED.
+**Status:** Local harness and CI DONE; hosted deployment and role journeys PASS; hosted booking
+retry, default build environment, and live restore remain BLOCKED.
 
 ## Goal
 
@@ -40,16 +40,20 @@ Exact commands and observed exit codes are recorded in
 
 ## Remaining
 
-- Live backup/restore is BLOCKED on network reachability. The protected source credential is present,
-  but the direct host is IPv6-only and the rehearsal container has no IPv6 route. The owner must
-  configure the Session pooler URI on port 5432 and rerun `npm run rehearse:restore:hosted`.
+- Live backup/restore is BLOCKED on authentication. The direct host is IPv6-only and unreachable
+  from the rehearsal container; the configured Session pooler is reachable but Supabase rejects
+  authentication before dumping. The owner must verify the generated pooler username and current
+  database password, then rerun `npm run rehearse:restore:hosted`.
 - The production build passes when unrelated credential-shaped public-prefixed shell exports are
   excluded for that command. The unfiltered agent shell still correctly fails closed; the user's
   terminal reports a clean environment. See
   [`../docs/evidence/2026-11-10_local-gate-rerun.md`](../docs/evidence/2026-11-10_local-gate-rerun.md).
 - Hosted owner/employee/patron read-only role verification is PASS 3/3 on the approved Vercel
-  deployment. Booking confirmation remains blocked until the synthetic fixture is authorized for
-  reset.
+  deployment. The owner-approved synthetic fixture reset succeeded, but the one booking attempt
+  failed before a hold because `.env.pilot` retained the stale date `2026-11-09`; the current
+  computed date was `2026-11-13`. The request remains pending and its linked synthetic booking is
+  cancelled. A retry requires clearing the override and renewed owner authorization; details are
+  in [`../docs/evidence/2026-11-10_pilot-gate-reconciliation.md`](../docs/evidence/2026-11-10_pilot-gate-reconciliation.md).
 - Remote CI was observed for `6f64cbd`: migration and hermetic E2E passed; quality failed because
   the landing-page smoke ran against the demo build instead of the Supabase-mode artifact. The
   smoke now runs through the hermetic job against the correct Supabase-mode artifact. The local
@@ -58,6 +62,7 @@ Exact commands and observed exit codes are recorded in
   the corrected push and PR runs both passed on `ac22102`.
 - Paid commercial use is BLOCKED on the Vercel Hobby plan; Pro is required. The selected
   non-commercial supervised pilot is not blocked by this tier.
-- The hosted booking remains blocked on owner approval to reset only the script-owned synthetic
-  fitting fixture. No production fixture was reset and no booking was created.
-- Live backup/restore remains blocked on `SOURCE_DB_URL` and the production database password.
+- The hosted booking remains blocked on a corrected-date retry. The approved change was limited to
+  the exact script-owned fitting and its one linked synthetic booking; no new booking was created.
+- Live backup/restore remains blocked on the rejected Session-pooler credentials; no source dump
+  has run.

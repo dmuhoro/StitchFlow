@@ -155,9 +155,12 @@ See [`rollback.md`](rollback.md).
 ## Status
 
 As of 2026-11-10, the approved Vercel deployment is READY and owner/employee/patron read-only
-journeys pass 3/3. Hosted booking remains blocked until the owner authorizes a narrowly scoped reset
-of the synthetic pending-fitting fixture; no booking was created. Live backup/restore remains
-blocked on `SOURCE_DB_URL` and the production database password. The project is Hobby, so Pro is
+journeys pass 3/3. The owner-approved synthetic fitting reset succeeded, but the one hosted booking
+attempt failed before a hold because the ignored `.env.pilot` retained a stale booking date. The
+request is pending and its linked synthetic booking is cancelled. Clear the override and obtain
+renewed owner authorization before retrying; the browser flow can create a booking. Live
+backup/restore remains blocked: the direct host is IPv6-unreachable and the Session pooler rejected
+authentication before any dump. The project is Hobby, so Pro is
 required before a commercial pilot; the selected supervised pilot is non-commercial. Details:
 [`../evidence/2026-11-10_pilot-gate-reconciliation.md`](../evidence/2026-11-10_pilot-gate-reconciliation.md)
 and [release gates](../release-readiness.md).

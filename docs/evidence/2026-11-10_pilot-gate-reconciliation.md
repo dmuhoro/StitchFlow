@@ -137,6 +137,42 @@ before the approved one-time hosted confirmation.
 - The project is on Vercel Hobby. Pro is required before commercial use; the selected supervised
   pilot is non-commercial.
 
+## Owner-approved synthetic booking reset and hosted attempt
+
+The repository owner authorized resetting only the script-owned synthetic fitting and making one
+hosted booking confirmation attempt. No broad pilot seed, deployment, or live backup was run.
+
+Read-only precondition inspection exited **0** and found exactly one fitting scoped to the selected
+atelier and `source=pilot`, linked to the expected patron, with status `confirmed`; exactly one
+linked booking had status `confirmed` and matched the same tenant and patron.
+
+The owner authenticated through PostgREST and called `cancel_booking` for that one verified
+synthetic booking. The guarded operation exited **0**. Its post-check found the fitting `pending`
+and the linked booking `cancelled`. The script-specific verifier then passed:
+
+```sh
+npm run seed:pilot-fitting
+```
+
+Exit **0**; the pending fitting was patron-linked and visible through patron RLS.
+
+The single hosted Playwright attempt was:
+
+```sh
+set -a; . ./.env.pilot; set +a; STITCHFLOW_E2E_BASE_URL=https://stitchflow-coral.vercel.app npm run test:e2e -- --workers=1 e2e/booking-confirm.spec.ts
+```
+
+Exit **1** before a slot was selected or held. The expected `09:00` availability button did not
+appear within 15 seconds. The private `.env.pilot` contains the non-secret override
+`STITCHFLOW_E2E_BOOKING_DATE=2026-11-09`, while the current fixture calculation for 2026-11-10 is
+`2026-11-13`. A read-only post-check exited **0** and confirmed the fitting is still `pending` and
+its only linked booking is still `cancelled`; the browser attempt created no booking.
+
+The hosted booking gate therefore remains **BLOCKED**, now on a corrected-date rerun rather than
+fixture availability. The next run must clear the stale date override so Playwright computes the
+date, and requires renewed owner authorization because it can create one synthetic confirmed
+booking. No production credential value is recorded here.
+
 ## Hosted fixture configuration and final local verification
 
 The pilot seed configuration now emits the same hosted order codes and fitting label consumed by
