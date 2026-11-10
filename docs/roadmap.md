@@ -26,12 +26,12 @@ audit trail for orders/measurements/settings/roles, production artifact gate, te
 repository writes, hosted identity fixtures, and the controlled owner/staff/patron browser journeys
 against the fresh static build and hosted Supabase.
 
-- Owner must restore Netlify deploy credits and publish the current artifact; the live site still
-  targets the retired Supabase project.
+- Repository owner must confirm the Vercel project/domain and authorize publication of the reviewed
+  artifact; the current hosted deployment has not been verified against this checkout.
 - Run live-site role and booking-confirmation verification after the publish. Do not mark the pilot
   complete before this check passes.
-- Complete and record a disposable-project backup/restore rehearsal before non-synthetic atelier
-  data is accepted.
+- Complete and record an owner-authorized live-source restore to a disposable target before
+  non-synthetic atelier data is accepted.
 - Partner integrations remain out of Milestone 1: media storage signed URLs, transactional
   email/WhatsApp, payments, guest edge-function, capacity > one booking.
 
@@ -49,7 +49,7 @@ Shipped:
 
 Remaining for the booking engine:
 
-- Live-Netlify verification of the owner UI and status-guard migration. Local database and
+- Live-Vercel verification of the owner UI and status-guard migration. Local database and
   hosted-schema checks pass; role UI checks pass against the fresh local build.
 - Guest edge-function boundary with per-IP/phone/tenant rate limits and a bot challenge. Until it
   exists, direct anonymous appointment inserts and the live visitor booking form are disabled.
@@ -71,12 +71,14 @@ Remaining for the booking engine:
 - Monitoring, alerting, and an operations dashboard.
 - Multi-atelier membership if pilot demand proves it.
 
-## Milestone 2 — Public-ready product (later)
+## v2 — Public-ready product (later)
 
 Guest booking with a rate-limited edge boundary, payments, transactional communications, public
 tenant resolution/SSR, media storage, multi-atelier support, broader operational monitoring, and
-public launch hardening remain future scope. These are not prerequisites to finishing the
-supervised pilot.
+multi-region failover remain future scope. **Payments, SSR, guest booking, multi-region failover,
+and broad operational analytics are explicitly deferred to v2.** These are not prerequisites to
+finishing the supervised pilot. Do not start this scope until the single-atelier pilot has passed
+its hosted workflow and recovery acceptance criteria.
 
 ## Explicit non-goals
 
