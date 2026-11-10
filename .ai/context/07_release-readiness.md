@@ -11,7 +11,8 @@ no production credentials: it passed 6/6 twice in a row, and its nine negative c
 
 The approved Vercel deployment is READY and hosted owner/employee/patron read-only journeys pass
 3/3. Hosted booking has not been confirmed because the guarded script-owned fitting precondition is
-unmet; no fixture reset or booking write occurred. Live backup/restore remains credential-blocked.
+unmet; no fixture reset or booking write occurred. Live backup/restore is network-blocked: the
+direct source host is IPv6-only and the rehearsal container has no IPv6 route.
 Remote push and PR CI both pass on `ac22102` after moving the production-landing smoke out of the
 demo build context and leaving it in the hermetic Supabase-mode browser suite.
 
@@ -20,8 +21,11 @@ Current hard blockers:
 - Obtain owner approval to reset/recreate only the script-owned synthetic fitting, then complete
   the hosted booking journey.
 - Verify Vercel source-build parity with the repository's `.nvmrc` Node.js version.
-- Complete a backup/restore of pilot data using `SOURCE_DB_URL` and the production database
-  password. The local-source rehearsal is proven; the hosted restore is credential-blocked.
+- Complete a backup/restore of pilot data. The protected credential is present, but the direct
+  database host is IPv6-only and the rehearsal container has no IPv6 route; the owner must use the
+  Session pooler URI on port 5432. The latest hosted attempt exited 2 before dumping.
+- Clear credential-shaped `VITE_*` names from the inherited shell environment and rotate the
+  corresponding credentials. The ordinary build correctly refuses; the loopback test build passes.
 - Move the Vercel project off the Hobby plan before a paid pilot (Hobby forbids commercial use; the
   selected supervised pilot is non-commercial).
   V2 scope, including multi-region failover, is deferred until the single-atelier pilot passes.

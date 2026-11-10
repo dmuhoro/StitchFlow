@@ -1,8 +1,8 @@
 # Release Readiness
 
 > The authoritative to-do list. A gate is DONE only with cited evidence.
-> Last updated: 2026-11-10 (hosted deployment and three read-only roles pass; booking fixture and
-> live restore remain blocked).
+> Last updated: 2026-11-10 (hosted deployment and three read-only roles pass; booking fixture,
+> default build environment, and live restore remain blocked).
 
 ## Launch gates
 
@@ -21,7 +21,7 @@
 | L10 | Production deploy fails closed on a demo-mode artifact | DONE — source + CI | `scripts/ci/verify-build.mjs` (`VERCEL_ENV=production`), `postbuild`, CI negative proof; `docs/evidence/2026-11-08_v1.4.0-rc.1.md` |
 | L11 | Tenant-safe human-key writes and missing-atelier fail-closed guard | **PASS locally; hosted role/RLS proof PASS, hosted duplicate-code SQL not run** | `npm run test:unit`, `npm run verify:db` (including duplicate `order_code` across tenants), and `npm run verify:pilot` (30/30); hosted SQL fixture: `supabase/tests/hosted_rls_e2e.sql` |
 | L12 | Owner/staff/patron hosted workflows | **Local hermetic PASS 6/6 twice; hosted roles PASS 3/3; booking BLOCKED** | The hosted role journeys pass against the approved Vercel deployment. Booking confirmation stopped before any booking write because the guarded script-owned pending-fitting fixture was unavailable. |
-| L13 | Pilot support, rollback, and backup/restore rehearsal | **Local-source rehearsal PASS; hosted restore BLOCKED** | `npm run rehearse:restore` rejects a real truncated local dump (exit 1), then restores a full dump and passes the RLS suite (exit 0). A live dump/restore needs `SOURCE_DB_URL` and the production database password. `docs/runbooks/pilot-operations.md`, `docs/evidence/2026-11-09_e2e-harness.md` |
+| L13 | Pilot support, rollback, and backup/restore rehearsal | **Local-source rehearsal PASS; hosted restore BLOCKED on network route** | `npm run rehearse:restore` rejects a real truncated local dump (exit 1), then restores a full dump and passes the RLS suite (exit 0). The hosted rehearsal probe exits 2 because the direct host is IPv6-only and unreachable from the rehearsal container; use the Session pooler URI. See `docs/evidence/2026-11-10_hosted-rehearsal-precondition.md` and `docs/evidence/2026-11-10_local-gate-rerun.md`. |
 | L14 | Owner financial edits audited without exposing snapshots to staff/patrons | **Migration applied; hosted general RLS + local trigger proof PASS** | Remote migration list reverified current through `20261108173000`; see `docs/evidence/2026-11-08_pilot-release-execution.md`, `STITCHFLOW_ALLOW_HOSTED_VERIFY=1 npm run verify:hosted`, and `npm run verify:db` |
 
 ## Verification boundary — 2026-11-10
@@ -31,11 +31,16 @@
 - The hermetic E2E harness starts a disposable Supabase stack with Auth and PostgREST, resets it
   from tracked migrations and `supabase/seed.sql`, and runs all six browser journeys twice. The
   pending fitting is recreated by `npm run seed:pilot-fitting` before each run.
-- Seven negative controls reject the configured demo/build failures, including a protected browser
+- Nine negative controls reject the configured demo/build failures, including a protected browser
   journey run against a demo artifact and a demo artifact checked in a Vercel production context.
 - The backup/restore script rejects a 1,000-byte truncated local dump with exit 1, then restores a
   complete local dump and runs `supabase/tests/rls_isolation_test.sql` successfully.
 - These checks use loopback-only configuration and no hosted database credential.
+- The latest local rerun passed lint, unit, documentation links, database, hermetic browser,
+  negative-control, and local restore checks. A loopback-only Supabase-mode build passed. A plain
+  `npm run build` correctly refuses because the inherited shell environment still contains two
+  credential-shaped public-prefixed variable names; the guard reports names only. See
+  [`evidence/2026-11-10_local-gate-rerun.md`](evidence/2026-11-10_local-gate-rerun.md).
 - The CI failure is reproduced by `VITE_DATA_MODE=demo npm run build` followed by
   `npm run test:e2e -- --grep "public entry renders"`: the smoke expects the Supabase-mode
   production landing page, while a demo build renders the demo portfolio. This is a CI wiring
@@ -59,10 +64,16 @@
 - The prebuilt deployment used Node.js 22.22.1; Vercel project settings reported Node.js 26.x while
   `.nvmrc` specifies 20. A Vercel source-build using the repository version is not yet verified.
 
-### Blocked on credentials / authorization
+### Blocked on environment / authorization
 
-- A live backup/restore needs `SOURCE_DB_URL` and the production database password. Neither was
-  supplied or used.
+- The protected source credential is present, but `npm run rehearse:restore:hosted` exits 2 before
+  dumping because the direct database host resolves to IPv6 and the rehearsal container has no
+  IPv6 route. The owner must use the Supabase Session pooler URI (port 5432) via
+  `npm run ops:set-source-db`, then rerun the hosted rehearsal.
+- The ordinary `npm run build` is blocked by credential-shaped public-prefixed variable names in
+  the inherited shell environment. The build guard correctly refuses to proceed. Remove the names
+  from the environment and rotate the corresponding credentials before attempting an ordinary
+  build; the loopback test-mode build passed separately.
 
 ### Blocked on fixture approval
 

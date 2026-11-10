@@ -29,6 +29,7 @@
 | 2026-11-10 | Pilot gate reconciliation | `2026-11-10_pilot-gate-reconciliation.md` | Local gates, corrected push/PR CI, approved hosted deployment, and three read-only roles PASS; hosted booking fixture and live restore BLOCKED |
 | 2026-11-10 | Published-secret boundary | `2026-11-10_bundle-secret-boundary.md` | Guard PASS (build refusal, artifact gate, preflight, 9/9 controls); no evidence of publication; credential rotation PENDING |
 | 2026-11-10 | Hosted rehearsal precondition classification | `2026-11-10_hosted-rehearsal-precondition.md` | Probe classifies network/credential failures as exit 2 with remedy; correct credential exits 0; local rehearsal PASS; live restore BLOCKED (IPv6, owner) |
+| 2026-11-10 | Local gate rerun | `2026-11-10_local-gate-rerun.md` | Lint, unit, docs, DB, hermetic E2E, controls, loopback build and local restore PASS; default build and hosted restore BLOCKED on environment and network preconditions |
 | 2026-11-08 | Live booking attempt | `booking-flow.md` | BLOCKED; remote UI mismatch prevented booking; no screenshot or booking confirmation |
 
 ## Format

@@ -1,7 +1,7 @@
 # Sprint 3.9 — Hermetic E2E and backup/restore harness
 
-**Status:** Local harness and CI DONE; hosted deployment and role journeys PASS; hosted booking and
-live restore remain BLOCKED.
+**Status:** Local harness and CI DONE; hosted deployment and role journeys PASS; hosted booking,
+default build environment, and live restore remain BLOCKED.
 
 ## Goal
 
@@ -33,13 +33,18 @@ Exact commands and observed exit codes are recorded in
 [`../docs/evidence/2026-11-09_e2e-harness.md`](../docs/evidence/2026-11-09_e2e-harness.md).
 
 - `npm run test:e2e:hermetic` — 6/6 journeys passed, then 6/6 on immediate re-run.
-- `npm run verify:controls` — all 7 controls passed; expected negative cases exited 1.
+- `npm run verify:controls` — all 9 controls passed; expected negative cases exited 1.
 - Truncated local dump — rehearsal exited 1; full local dump restore and RLS suite exited 0.
 - Local lint, unit, build, DB, and docs gates are reported individually in the evidence record.
 
 ## Remaining
 
-- Live backup/restore is BLOCKED on `SOURCE_DB_URL` and the production database password.
+- Live backup/restore is BLOCKED on network reachability. The protected source credential is present,
+  but the direct host is IPv6-only and the rehearsal container has no IPv6 route. The owner must
+  configure the Session pooler URI on port 5432 and rerun `npm run rehearse:restore:hosted`.
+- The ordinary build is BLOCKED while credential-shaped public-prefixed variables remain in the
+  inherited shell environment. The latest loopback-only test build passes; see
+  [`../docs/evidence/2026-11-10_local-gate-rerun.md`](../docs/evidence/2026-11-10_local-gate-rerun.md).
 - Hosted owner/employee/patron read-only role verification is PASS 3/3 on the approved Vercel
   deployment. Booking confirmation remains blocked until the synthetic fixture is authorized for
   reset.
