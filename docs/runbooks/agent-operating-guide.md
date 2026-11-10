@@ -51,14 +51,18 @@ rehearsal is an operator action, and its credential lives on the operator's mach
 
 ### Adding the live-restore credential
 
-Run on the operator machine only. The value is typed at a prompt, is never echoed, and never enters
-shell history:
+Run on the operator machine only. The value is typed at a hidden prompt, is never echoed, and never
+enters shell history:
 
 ```sh
-install -d -m 700 ~/.config/stitchflow
-( umask 077; read -rsp 'SOURCE_DB_URL: ' v; echo; printf 'SOURCE_DB_URL=%s\n' "$v" > ~/.config/stitchflow/ops.env )
-chmod 600 ~/.config/stitchflow/ops.env
+npm run ops:set-source-db
 ```
+
+Paste the **PostgreSQL** URI: Supabase → Project Settings → Database → Connection string (URI). It
+must start with `postgresql://` and use the direct host (`db.<ref>.supabase.co:5432`) or the session
+pooler on `:5432`. The transaction pooler on `:6543` cannot serve `pg_dump`; the script rejects it,
+rejects the HTTPS API URL that sits next to it in the dashboard, and rejects a URI missing a user,
+password, host, or database name. A rejected value writes nothing.
 
 Then, and only then:
 
@@ -83,7 +87,9 @@ vercel env ls production
 ```
 
 A `VITE_*` variable is baked into the browser bundle and is public. It may hold a publishable key,
-never a service-role key or a database password.
+never a service-role key, a password, an access token, or a database URL. The build refuses a
+public-prefixed credential by name (`vite.pilot.config.ts`) and the artifact gate refuses it again
+(`scripts/ci/verify-build.mjs`), so this is enforced at the build boundary rather than by review.
 
 ## 4. What an agent may and may not do
 

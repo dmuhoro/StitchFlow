@@ -26,6 +26,9 @@ deployment and read-only role journeys pass; hosted booking and live restore rem
   gate.
 - Hosted pilot E2E configuration now emits the deployed fixture identifiers and booking request
   label, omits the stale date override, and defaults to the approved Vercel alias.
+- `npm run ops:set-source-db` validates the operator database URI (scheme, user, password, host,
+  database, and pooler port) before writing it to a mode-600 file, and rejects the HTTPS API URL that
+  sits next to the Postgres URI in the Supabase dashboard.
 
 ### Security
 

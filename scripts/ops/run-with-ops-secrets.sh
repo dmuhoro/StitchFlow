@@ -34,10 +34,7 @@ fi
 
 [[ -f "$OPS_ENV" ]] || blocked \
   "the operator secret file is missing: ${OPS_ENV}" \
-  "Owner/operator setup (the value is typed at a prompt and never echoed):
-    install -d -m 700 \"\$(dirname '${OPS_ENV}')\"
-    ( umask 077; read -rsp 'SOURCE_DB_URL: ' v; echo; printf 'SOURCE_DB_URL=%s\\n' \"\$v\" > '${OPS_ENV}' )
-    chmod 600 '${OPS_ENV}'"
+  "Run: npm run ops:set-source-db   (validates the value and writes it with mode 600)"
 
 PERMS="$(stat -c '%a' "$OPS_ENV" 2>/dev/null || echo unknown)"
 [[ "$PERMS" == "600" ]] || blocked \
