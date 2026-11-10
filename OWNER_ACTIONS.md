@@ -13,7 +13,7 @@ evidence log.
   dump is restored and the RLS isolation suite passes (exit 0).
 - [x] **Local engineering gates** — `npm run lint`, `npm run test:unit`, `npm run build`,
   `npm run verify:db`, and `npm run check:docs`; exact results are in
-  [`docs/evidence/2026-11-09_e2e-harness.md`](docs/evidence/2026-11-09_e2e-harness.md).
+  [`docs/evidence/2026-11-10_pilot-gate-reconciliation.md`](docs/evidence/2026-11-10_pilot-gate-reconciliation.md).
 - [x] **Remote migration audit and financial-audit migration** — historical remote verification
   through `20261108173000` is recorded in
   [`docs/evidence/2026-11-08_pilot-release-execution.md`](docs/evidence/2026-11-08_pilot-release-execution.md).
@@ -29,8 +29,10 @@ evidence log.
   `bb751ad`; this was not independently revalidated here. See
   [`docs/evidence/2026-11-09_preview-deploy-blocked.md`](docs/evidence/2026-11-09_preview-deploy-blocked.md)
   and [issue #6](https://github.com/dmuhoro/StitchFlow/issues/6).
-- [ ] **Remote CI run for the changed workflow** — pending harness changes are not pushed, and the
-  available GitHub token lacks the `workflow` scope. No push or remote workflow run was attempted.
+- [ ] **Green remote CI rerun** — GitHub Actions ran push and PR checks for `6f64cbd`. Migration
+  and hermetic E2E jobs passed; the quality job failed because a production-landing smoke ran
+  against a demo artifact. The smoke is covered by the hermetic job; a corrected workflow rerun
+  needs an authorized push (the available GitHub token lacks `workflow` scope).
 
 ## Blocked on plan tier
 
@@ -39,7 +41,8 @@ evidence log.
 
 ## Remaining owner decisions
 
-- [ ] **Regional availability** — the project runs in one region (`iad1`) with no failover. Do not
-  promise uptime above the single-region architecture.
+- [ ] **Regional availability** — the project runs in one region (`iad1`) with no failover; do not
+  promise uptime beyond that architecture. Multi-region failover is deferred to v2, not a blocker
+  for the supervised one-atelier pilot.
 - [ ] **Payment and messaging integrations** — credentials and approval are not present; these are
   outside the supervised pilot.

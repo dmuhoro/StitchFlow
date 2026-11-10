@@ -1,8 +1,8 @@
 # Release Readiness
 
 > The authoritative to-do list. A gate is DONE only with cited evidence.
-> Last updated: 2026-11-09 (hermetic E2E harness: 6/6 browser journeys twice, 7/7 negative
-> controls, local restore rehearsal; hosted deploy and live restore remain blocked).
+> Last updated: 2026-11-10 (local CI smoke correction and readiness verification complete;
+> corrected remote run, hosted deploy, and live restore remain blocked).
 
 ## Launch gates
 
@@ -13,7 +13,7 @@
 | L2 | RLS isolation suite green | DONE | 12 scenarios + structural assertions: `docs/evidence/2026-11-05_sprint-0-verification.md` |
 | L3 | Local imagery bundled with hashed URLs | DONE | `docs/evidence/2026-11-01_build_artifacts.md` |
 | L4 | Persistence wired for every supported action | DONE | `docs/evidence/2026-11-01_persistence.md`; scope limits in the Sprint 0 audit |
-| L5 | CI runs lint, unit, browser smoke, build, docs, DB verification | DONE — source; remote run BLOCKED | `.github/workflows/ci.yml` (all-branch push/PR, credential-free hermetic `e2e` job); pending harness changes are not pushed, and the available GitHub token lacks `workflow` scope |
+| L5 | CI runs lint, unit, browser smoke, build, docs, DB verification | **REMOTE RUN RED — local correction complete; rerun pending** | Run [42625315493](https://github.com/dmuhoro/StitchFlow/actions/runs/42625315493) on `6f64cbd`: DB and hermetic E2E passed; quality job ran the production-landing smoke against a demo artifact and failed. The wrongly-contextualized step is removed; the same smoke remains in the hermetic job against the correct Supabase-mode artifact. See [`evidence/2026-11-10_pilot-gate-reconciliation.md`](evidence/2026-11-10_pilot-gate-reconciliation.md). |
 | L6 | Release versioned, tagged, pushed | DONE | `docs/evidence/2026-11-01_release.md` (tag `v1.0.0`, remote ref verified) |
 | L7 | Cleanup complete, lockfile committed, tree clean | DONE | `npm ci` succeeded on 2026-11-05; dead dependencies removed in `1bd06bb` |
 | L8 | README, CHANGELOG, sprints updated | DONE | `CHANGELOG.md` 1.0.0/1.0.1, sprint records, evidence index |
@@ -24,7 +24,7 @@
 | L13 | Pilot support, rollback, and backup/restore rehearsal | **Local-source rehearsal PASS; hosted restore BLOCKED** | `npm run rehearse:restore` rejects a real truncated local dump (exit 1), then restores a full dump and passes the RLS suite (exit 0). A live dump/restore needs `SOURCE_DB_URL` and the production database password. `docs/runbooks/pilot-operations.md`, `docs/evidence/2026-11-09_e2e-harness.md` |
 | L14 | Owner financial edits audited without exposing snapshots to staff/patrons | **Migration applied; hosted general RLS + local trigger proof PASS** | Remote migration list reverified current through `20261108173000`; see `docs/evidence/2026-11-08_pilot-release-execution.md`, `STITCHFLOW_ALLOW_HOSTED_VERIFY=1 npm run verify:hosted`, and `npm run verify:db` |
 
-## Verification boundary — 2026-11-09
+## Verification boundary — 2026-11-10
 
 ### Verified locally
 
@@ -36,11 +36,20 @@
 - The backup/restore script rejects a 1,000-byte truncated local dump with exit 1, then restores a
   complete local dump and runs `supabase/tests/rls_isolation_test.sql` successfully.
 - These checks use loopback-only configuration and no hosted database credential.
+- The CI failure is reproduced by `VITE_DATA_MODE=demo npm run build` followed by
+  `npm run test:e2e -- --grep "public entry renders"`: the smoke expects the Supabase-mode
+  production landing page, while a demo build renders the demo portfolio. This is a CI wiring
+  mismatch; the same smoke is part of the credential-free hermetic suite.
+- The CI workflow now runs that public-entry smoke only through the hermetic E2E job. On 2026-11-10,
+  the clean-stack suite passed 6/6; lint, unit, build, DB, docs, controls, and local restore gates
+  also passed. Exact commands and exits: [`evidence/2026-11-10_pilot-gate-reconciliation.md`](evidence/2026-11-10_pilot-gate-reconciliation.md).
 
 ### Blocked on credentials / authorization
 
-- The pending harness changes are not pushed. The available GitHub token lacks the `workflow`
-  scope needed to publish the modified Actions workflow; no remote CI run is claimed.
+- A remote push and PR run exist for `6f64cbd`; both ran the migration and hermetic E2E jobs
+  successfully, but failed in the quality job at the demo-artifact/public-landing mismatch. The
+  local workflow correction has not been pushed; a corrected remote rerun is blocked because the
+  available GitHub token lacks the `workflow` scope.
 - A live backup/restore needs `SOURCE_DB_URL` and the production database password. Neither was
   supplied or used.
 - Hosted E2E requires an owner-approved deployment of the reviewed source. The owner reports the
@@ -137,7 +146,7 @@ Full prioritized list: `docs/audit/2026-11-05_sprint-0-audit.md`.
 | Vercel production artifact | Project, production URL, and production variable names exist; deployed code is not verified against this checkout and fails hosted E2E | Repository owner — approve publish; engineering publishes and verifies the reviewed artifact |
 | Pilot backup/restore rehearsal | Local dump → restore → RLS rehearsal passes with self-controls; a live dump/restore of pilot data has not been made | Repository owner — provide `SOURCE_DB_URL` and the production database password |
 | Vercel commercial use | Project `stitchflow` is on the Hobby plan, which forbids commercial use | Repository owner — upgrade to Pro before a paid pilot |
-| Regional availability | Single region `iad1`; no secondary region or failover configured | Repository owner — decide whether the pilot needs multi-region |
+| Regional availability | Single region `iad1`; accepted for the supervised pilot without an uptime promise | **DEFERRED TO V2** — multi-region failover is not a one-atelier pilot prerequisite |
 | Payment gateway credentials | Must live in a server-side secret store; no credentials provided | Repository owner |
 | WhatsApp Business API sender and templates | Meta approval required | Atelier operator |
 | Kenya/Nigeria data-protection review | Human legal/privacy decision | Repository owner |
@@ -151,7 +160,9 @@ have a named human owner and are never reported as agent-verified.
 ## Milestone definition (2026-11-08)
 
 - **Milestone 1 (target now):** one boutique atelier, supervised pilot, controlled staff/owner workflows; no guest self-booking, no payments, no media/trans actional communications yet.
-- **Milestone 2 (public-ready):** any atelier/customer flow, including guest booking boundary, payments, transactional comms, SSR, monitoring, backups, and support operations.
+- **v2 (public-ready):** any atelier/customer flow, including guest booking boundary, payments,
+  transactional comms, SSR, broad operational analytics, multi-region failover, backups, and
+  support operations.
 
 ### Highest-leverage Milestone 1 work
 1. Link and configure the Vercel project, publish the correct artifact, and run smoke against current Supabase target.

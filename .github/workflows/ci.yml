@@ -49,12 +49,6 @@ jobs:
       - name: Assert demo build artifacts
         run: npm run verify:build
 
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-
-      - name: Public-entry browser smoke test
-        run: npm run test:e2e -- --grep "public entry renders"
-
       # Exercise the production mode branch without a real project. These are
       # non-secret synthetic values; they are never deployed.
       - name: Build (supabase mode branch)
@@ -155,7 +149,8 @@ jobs:
 
       # The suite runs against a disposable local Supabase stack. It needs no
       # project ref, no publishable key, and no hosted database password, so it
-      # gates a work branch even before the owner provisions anything.
+      # gates a work branch even before the owner provisions anything. It also
+      # runs the public-entry smoke against the correct Supabase-mode artifact.
       - uses: supabase/setup-cli@v1
         with:
           version: 3.0.0

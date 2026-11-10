@@ -26,6 +26,7 @@
 | 2026-11-08 | Local Vercel preview / E2E attempt | `2026-11-08_pilot-e2e-failure.md` | BLOCKED before E2E; installed Vercel CLI has no `preview` command |
 | 2026-11-09 | Vercel preview deployment attempt | `2026-11-09_preview-deploy-blocked.md` | Branch push PASS; production-target build cannot be deployed as preview; stopped at Step 2 |
 | 2026-11-09 | Hermetic E2E and restore-verification harness | `2026-11-09_e2e-harness.md` | Local E2E PASS (6/6 twice); 7/7 negative controls PASS; truncated dump rejected and full local restore PASS; live restore, deploy and remote CI BLOCKED |
+| 2026-11-10 | Pilot gate reconciliation | `2026-11-10_pilot-gate-reconciliation.md` | Local gates PASS; remote CI red on a fixed workflow-context mismatch, rerun/deploy/live restore BLOCKED |
 | 2026-11-08 | Live booking attempt | `booking-flow.md` | BLOCKED; remote UI mismatch prevented booking; no screenshot or booking confirmation |
 
 ## Format

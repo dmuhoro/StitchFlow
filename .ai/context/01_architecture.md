@@ -12,8 +12,9 @@
 - **Backend:** Supabase Postgres + Auth + PostgREST, called from the browser with the publishable key.
 - **Data access:** raw `@supabase/supabase-js` queries in `src/lib/atelier-repository.ts`. No ORM.
 - **Hosting:** static build published to Vercel (`vercel.json`) per ADR-012; `netlify.toml` is legacy.
-- **CI:** `.github/workflows/ci.yml` (lint, build, docs links, database verification) — added in
-  release layer L5.
+- **CI:** `.github/workflows/ci.yml` gates all branch pushes and pull requests with lint, unit,
+  docs, build/artifact, database, and credential-free hermetic browser jobs. The latest remote
+  run's demo-artifact smoke mismatch is corrected locally; a green remote rerun is pending.
 
 ## Request lifecycle
 
