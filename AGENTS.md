@@ -8,7 +8,12 @@ If this file and the Constitution disagree, the Constitution wins.
 
 ## 1. Read before you build
 
-Before starting any task, read:
+Run `npm run preflight` first. It prints, per capability, whether the checkout can run it and whether
+the credential it needs is present — no secret value is ever printed. Anything it reports as `BLOCKED`
+is a state to report, not to work around. The operating map is
+[`docs/runbooks/agent-operating-guide.md`](docs/runbooks/agent-operating-guide.md).
+
+Then read:
 
 1. [`docs/current-state.md`](docs/current-state.md) — what is true today.
 2. [`docs/architecture.md`](docs/architecture.md) — where code lives and how it flows.

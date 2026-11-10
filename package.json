@@ -23,7 +23,9 @@
     "test:e2e": "playwright test",
     "test:e2e:hermetic": "bash scripts/e2e/hermetic.sh",
     "verify:controls": "bash scripts/ci/negative-controls.sh",
-    "rehearse:restore": "bash scripts/ops/backup-restore-rehearsal.sh"
+    "rehearse:restore": "bash scripts/ops/backup-restore-rehearsal.sh",
+    "rehearse:restore:hosted": "bash scripts/ops/run-with-ops-secrets.sh bash scripts/ops/backup-restore-rehearsal.sh",
+    "preflight": "bash scripts/ops/preflight.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

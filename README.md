@@ -69,6 +69,7 @@ npm run build          # Production bundle
 npm run verify:build   # Artifact assertions (paths and placeholders)
 npm run verify:db      # Disposable postgres:16 + RLS, E2E, booking RPC and concurrency suites
 npm run test:e2e       # Public-entry smoke plus configured hosted journeys
+npm run preflight          # What this checkout can run, and which credentials are present
 npm run test:e2e:hermetic  # Six browser journeys against a disposable local Supabase stack
 npm run verify:controls    # Negative controls: each artifact/demo gate must reject its failure
 npm run rehearse:restore   # Dump -> restore -> RLS rehearsal, with corrupt-archive self-controls

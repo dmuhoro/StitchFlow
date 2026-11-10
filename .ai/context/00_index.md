@@ -30,6 +30,9 @@ the summary must be corrected in the same change.
 
 ## Agent boot sequence
 
+0. Run `npm run preflight` — it reports, per capability, runnable or blocked, and whether the
+   credential each gate needs is present. It never prints a secret value. The operating map is
+   [`docs/runbooks/agent-operating-guide.md`](../../docs/runbooks/agent-operating-guide.md).
 1. Read `00_index.md` (this file).
 2. Read `11_workflow-rules.md` — the rules that govern how you may act.
 3. Read `01_architecture.md` and `02_system-map.md` — where things are.
