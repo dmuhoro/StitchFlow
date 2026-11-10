@@ -6,7 +6,7 @@
 
 Production migration `20261108173000` is applied and remote migration parity is current. A hermetic
 verification harness now runs the six browser journeys against a disposable local Supabase stack with
-no production credentials: it passed 6/6 twice in a row, and its seven negative controls and
+no production credentials: it passed 6/6 twice in a row, and its nine negative controls and
 `dump → restore → RLS` rehearsal pass locally. Evidence: `docs/evidence/2026-11-09_e2e-harness.md`.
 
 The approved Vercel deployment is READY and hosted owner/employee/patron read-only journeys pass

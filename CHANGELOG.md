@@ -64,7 +64,7 @@ deployment and read-only role journeys pass; hosted booking and live restore rem
 ### Verification
 
 - `npm run test:e2e:hermetic` passed all six browser journeys twice; `npm run verify:controls`
-  passed 7/7 controls. A real truncated local dump was rejected (exit 1), then the complete
+  passed 9/9 controls. A real truncated local dump was rejected (exit 1), then the complete
   local-source restore and RLS suite passed (exit 0).
 - `npm run test:unit`, `npm run verify:db`, `npm run lint`, `npm run build`, and
   `npm run check:docs` are the required local gates; exact observed results are recorded in
