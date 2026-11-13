@@ -155,10 +155,10 @@ See [`rollback.md`](rollback.md).
 ## Status
 
 As of 2026-11-10, the approved Vercel deployment is READY and owner/employee/patron read-only
-journeys pass 3/3. The owner-approved synthetic fitting reset succeeded, but the one hosted booking
-attempt failed before a hold because the ignored `.env.pilot` retained a stale booking date. The
-request is pending and its linked synthetic booking is cancelled. Clear the override and obtain
-renewed owner authorization before retrying; the browser flow can create a booking. Live
+journeys pass 3/3. The hosted booking confirmation journey passed 1/1 after clearing the stale
+booking-date override for that command.
+The script-owned request is now confirmed, with one prior cancelled booking retained. Obtain renewed
+owner authorization before another write-capable test. Live
 backup/restore remains blocked: the direct host is IPv6-unreachable and the Session pooler rejected
 authentication before any dump. The project is Hobby, so Pro is
 required before a commercial pilot; the selected supervised pilot is non-commercial. Details:

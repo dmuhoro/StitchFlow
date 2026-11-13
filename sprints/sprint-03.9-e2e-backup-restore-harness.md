@@ -1,7 +1,7 @@
 # Sprint 3.9 — Hermetic E2E and backup/restore harness
 
-**Status:** Local harness and CI DONE; hosted deployment and role journeys PASS; hosted booking
-retry, default build environment, and live restore remain BLOCKED.
+**Status:** Local harness and CI DONE; hosted deployment, role journeys, and one booking confirmation
+PASS; default build environment and live restore remain BLOCKED.
 
 ## Goal
 
@@ -49,10 +49,10 @@ Exact commands and observed exit codes are recorded in
   terminal reports a clean environment. See
   [`../docs/evidence/2026-11-10_local-gate-rerun.md`](../docs/evidence/2026-11-10_local-gate-rerun.md).
 - Hosted owner/employee/patron read-only role verification is PASS 3/3 on the approved Vercel
-  deployment. The owner-approved synthetic fixture reset succeeded, but the one booking attempt
-  failed before a hold because `.env.pilot` retained the stale date `2026-11-09`; the current
-  computed date was `2026-11-13`. The request remains pending and its linked synthetic booking is
-  cancelled. A retry requires clearing the override and renewed owner authorization; details are
+- Hosted owner/employee/patron read-only role verification is PASS 3/3 on the approved Vercel
+  deployment. The protected hosted booking confirmation journey passed 1/1 after clearing a stale
+  `.env.pilot` date override for the command. The request is now confirmed, with one prior cancelled
+  booking retained; any further write-capable run requires renewed owner authorization. Details are
   in [`../docs/evidence/2026-11-10_pilot-gate-reconciliation.md`](../docs/evidence/2026-11-10_pilot-gate-reconciliation.md).
 - Remote CI was observed for `6f64cbd`: migration and hermetic E2E passed; quality failed because
   the landing-page smoke ran against the demo build instead of the Supabase-mode artifact. The
@@ -62,7 +62,7 @@ Exact commands and observed exit codes are recorded in
   the corrected push and PR runs both passed on `ac22102`.
 - Paid commercial use is BLOCKED on the Vercel Hobby plan; Pro is required. The selected
   non-commercial supervised pilot is not blocked by this tier.
-- The hosted booking remains blocked on a corrected-date retry. The approved change was limited to
-  the exact script-owned fitting and its one linked synthetic booking; no new booking was created.
+- The hosted booking verification passed; the synthetic fixture is now consumed in its confirmed
+  state. Any additional hosted write requires renewed owner authorization.
 - Live backup/restore remains blocked on the rejected Session-pooler credentials; no source dump
   has run.

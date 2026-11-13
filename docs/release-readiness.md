@@ -1,9 +1,8 @@
 # Release Readiness
 
 > The authoritative to-do list. A gate is DONE only with cited evidence.
-> Last updated: 2026-11-10 (hosted deployment and three read-only roles pass; the authorized booking
-> attempt failed before holding a slot because `.env.pilot` retained a stale date; hosted restore
-> authentication and inherited build-shell environment remain blocked).
+> Last updated: 2026-11-10 (hosted deployment, three read-only roles, and one hosted booking journey
+> pass; hosted restore authentication and inherited build-shell environment remain blocked).
 
 ## Launch gates
 
@@ -21,7 +20,7 @@
 | L9 | Deployment verified | **PASS — approved production deployment READY** | Deployment `dpl_3psUv1F9c9Gq9FqKLx8bkdRXyp13`, alias `https://stitchflow-coral.vercel.app`, HTTP 200; hosted evidence in [`evidence/2026-11-10_pilot-gate-reconciliation.md`](evidence/2026-11-10_pilot-gate-reconciliation.md). |
 | L10 | Production deploy fails closed on a demo-mode artifact | DONE — source + CI | `scripts/ci/verify-build.mjs` (`VERCEL_ENV=production`), `postbuild`, CI negative proof; `docs/evidence/2026-11-08_v1.4.0-rc.1.md` |
 | L11 | Tenant-safe human-key writes and missing-atelier fail-closed guard | **PASS locally; hosted role/RLS proof PASS, hosted duplicate-code SQL not run** | `npm run test:unit`, `npm run verify:db` (including duplicate `order_code` across tenants), and `npm run verify:pilot` (30/30); hosted SQL fixture: `supabase/tests/hosted_rls_e2e.sql` |
-| L12 | Owner/staff/patron hosted workflows | **Local hermetic PASS 6/6 twice; hosted roles PASS 3/3; booking BLOCKED** | The approved deployment passes the hosted role journeys. The owner-approved synthetic fixture reset succeeded, but the one browser attempt failed before hold because `.env.pilot` supplied the stale date `2026-11-09`; the current computed date is `2026-11-13`. The request remains pending, its linked synthetic booking is cancelled, and no new booking was created. See [`evidence/2026-11-10_pilot-gate-reconciliation.md`](evidence/2026-11-10_pilot-gate-reconciliation.md). |
+| L12 | Owner/staff/patron hosted workflows | **Local hermetic PASS 6/6 twice; hosted roles PASS 3/3; booking PASS 1/1** | The approved deployment passes the hosted role journeys and the protected booking confirmation flow. The first attempt failed before a hold because `.env.pilot` supplied the stale date `2026-11-09`; after clearing that override for the command, the corrected-date retry passed. The fixture is now confirmed and its linked synthetic booking history is one cancelled and one confirmed row. See [`evidence/2026-11-10_pilot-gate-reconciliation.md`](evidence/2026-11-10_pilot-gate-reconciliation.md). |
 | L13 | Pilot support, rollback, and backup/restore rehearsal | **Local-source rehearsal PASS; hosted restore BLOCKED on authentication** | `npm run rehearse:restore` rejects malformed local dumps, restores a full dump, and passes the RLS suite. Direct host is IPv6-unreachable; Session pooler is reachable but rejected authentication (exit 2 before dump). See `docs/evidence/2026-11-10_hosted-rehearsal-precondition.md` and `docs/evidence/2026-11-10_local-gate-rerun.md`. |
 | L14 | Owner financial edits audited without exposing snapshots to staff/patrons | **Migration applied; hosted general RLS + local trigger proof PASS** | Remote migration list reverified current through `20261108173000`; see `docs/evidence/2026-11-08_pilot-release-execution.md`, `STITCHFLOW_ALLOW_HOSTED_VERIFY=1 npm run verify:hosted`, and `npm run verify:db` |
 
@@ -60,12 +59,12 @@
 - Owner, employee, and patron read-only journeys passed 3/3 using the hosted pilot order codes.
   The exact command and outcome are in
   [`evidence/2026-11-10_pilot-gate-reconciliation.md`](evidence/2026-11-10_pilot-gate-reconciliation.md).
-- Hosted booking confirmation is **BLOCKED** after one owner-approved attempt. The exact synthetic
-  fitting was safely reset through the owner cancellation path, then verified pending and visible
-  through patron RLS. The browser attempt failed before a hold because the ignored `.env.pilot`
-  retained `STITCHFLOW_E2E_BOOKING_DATE=2026-11-09`; the dynamic date for that run is 2026-11-13.
-  The request remains pending and its linked synthetic booking remains cancelled. A retry requires
-  clearing the stale date override and renewed owner authorization because it may create a booking.
+- Hosted booking confirmation is **PASS 1/1** after the owner-approved synthetic fixture reset.
+  The first attempt failed before a hold because the ignored `.env.pilot` retained
+  `STITCHFLOW_E2E_BOOKING_DATE=2026-11-09`; the corrected-date retry passed with the override
+  cleared for that command. The request and one linked booking are now confirmed; a prior synthetic
+  booking remains cancelled. The fixture is consumed, so further write-capable tests require a new
+  explicit owner authorization.
 - The prebuilt deployment used Node.js 22.22.1; Vercel project settings reported Node.js 26.x while
   `.nvmrc` specifies 20. A Vercel source-build using the repository version is not yet verified.
 
@@ -82,13 +81,11 @@
   tracked files. The production build passed with those unrelated exported names excluded for the
   command, and no secret value was read or printed.
 
-### Blocked on hosted booking retry authorization
+### Hosted booking fixture state
 
-- The owner-approved reset completed through the owner-scoped `cancel_booking` RPC for the one
-  verified synthetic booking. The fitting is now pending and the booking is cancelled. The browser
-  attempt failed before a hold because the ignored `.env.pilot` still sets the stale
-  `STITCHFLOW_E2E_BOOKING_DATE=2026-11-09`; the current computed date is `2026-11-13`. Before a
-  retry, clear that override and obtain renewed owner authorization for one attempt. Do not run
+- The hosted booking journey passed after clearing the stale date override for that command. The
+  synthetic fitting is confirmed, with one cancelled and one confirmed booking linked to it. Do not
+  reset or rerun this production fixture without renewed owner authorization; do not run
   `npm run seed:pilot` against production.
 
 ### Blocked on plan tier
@@ -120,7 +117,7 @@
 | B4 | Expiry sweep and idempotent replay/conflict semantics | DONE | RPC suite B13, B16–B20 |
 | B5 | 200 attempts / 50 concurrent on one slot: 1 success, 199 `slot_unavailable`, 0 duplicates | DONE — local and CI | `docs/evidence/2026-11-07-booking-engine.md`; CI run [42371377892](https://github.com/dmuhoro/StitchFlow/actions/runs/42371377892) |
 | B6 | Confirmed fitting must have a protected resource booking | **DONE — local and hosted schema** | Status guard applied; `npm run verify:db`; hosted migration apply in `docs/evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md` |
-| B7 | Owner UI calls availability, hold, confirm, cancel, and resource setup | **Local database proof PASS; hosted role journeys PASS; hosted booking BLOCKED** | Local `npm run verify:db` and hosted owner/employee/patron read-only journeys pass. The approved synthetic fixture is pending; one hosted attempt failed before hold because of a stale private date override. No new booking was confirmed. |
+| B7 | Owner UI calls availability, hold, confirm, cancel, and resource setup | **Local database proof PASS; hosted role journeys and booking confirmation PASS** | Local `npm run verify:db`, hosted owner/employee/patron read-only journeys, and the hosted booking confirmation journey (1/1) pass. |
 | B8 | Guest rate limits and bot challenge | **CLOSED BY FAIL-CLOSED DISABLEMENT** | Anonymous appointment inserts and the live visitor booking form are disabled until the edge boundary is deployed |
 | B9 | Client and staff cannot mint a confirmed appointment outside the booking RPCs | **DONE — local and hosted schema** | `20261107220000_restrict_client_appointment_insert.sql`; RLS tests 13–14, staff S7a–S7d; applied to production in rc.2 |
 | B10 | Production migration history matches the tracked chain | **PASS — current** | `CI=1 supabase migration list --remote` shows local and remote through `20261108173000`; `CI=1 supabase db push --dry-run --remote` returned `upToDate: true` |
@@ -133,11 +130,10 @@ retired/mismatched project refs. The booking staff UI, insert boundary, fail-clo
 and financial audit boundary pass local database verification. Production schema parity is verified
 through `20261108173000`; the financial audit migration is applied. Tenant-safe human-key writes
 pass unit and local database tests. The approved Vercel deployment is READY and hosted
-owner/employee/patron read-only journeys pass 3/3. Hosted booking confirmation remains blocked:
-the owner-approved fixture reset succeeded, but the one browser attempt failed before a hold because
-the private `.env.pilot` date override was stale. The fixture is pending, its linked synthetic
-booking is cancelled, and no new booking was confirmed. The hermetic harness passes all six browser
-journeys twice, seven artifact/demo-mode negative controls, and the local dump → restore → RLS rehearsal; see
+owner/employee/patron read-only journeys pass 3/3, and the protected hosted booking confirmation
+journey passed 1/1 after clearing the stale date override for that command. The script-owned fixture
+is now confirmed, with its prior cancelled booking retained. The hermetic harness passes all six
+browser journeys twice, seven artifact/demo-mode negative controls, and the local dump → restore → RLS rehearsal; see
 `docs/evidence/2026-11-09_e2e-harness.md`. A restore of live pilot data has not been made:
 
 1. `S0-P0-01` — **closed in source and at the deploy boundary**. Supabase-mode build and
@@ -153,9 +149,8 @@ journeys twice, seven artifact/demo-mode negative controls, and the local dump �
    `pending` request with no assigned tailor. The owner UI uses
    `hold_slot`/`confirm_booking`/`cancel_booking`. All seven pending migrations are now applied to
    production with a matched history; the browser confirmation journey passes against the fresh
-   local artifact. The current hosted role journeys pass; the approved synthetic fixture reset
-   succeeded, but the one booking attempt failed before a hold because `.env.pilot` retained a
-   stale date.
+   local artifact. The current hosted role journeys pass, and the protected hosted booking
+   confirmation journey passed 1/1 after clearing the stale date override for that command.
    Evidence: `docs/evidence/2026-11-08_v1.4.0-rc.2-hosted-repair.md`.
 
 Full prioritized list: `docs/audit/2026-11-05_sprint-0-audit.md`.
@@ -174,7 +169,6 @@ Full prioritized list: `docs/audit/2026-11-05_sprint-0-audit.md`.
 | Item | Blocker | Owner |
 |------|---------|-------|
 | Hosted Supabase schema parity / remote migration apply | Applied and verified current through `20261108173000` by remote list and dry-run | Engineering; hosted migration issue resolved |
-| Hosted booking confirmation journey | Owner/employee/patron role journeys pass 3/3; one attempt failed before a hold because `.env.pilot` retained a stale date; the synthetic request is pending and its prior booking is cancelled | Repository owner — clear the stale date override and authorize one retry |
 | Current source build/type-check | `npm run lint` and `npm run build` pass using `vite.pilot.config.ts`; root config is also static and no TanStack plugin is used | Engineering |
 | Vercel source-build parity | Approved prebuilt artifact is READY; Vercel reports Node.js 26.x while `.nvmrc` specifies 20, and the prebuilt artifact used Node.js 22.22.1 | Repository owner — align Node.js versions and verify a source build |
 | Pilot backup/restore rehearsal | Local dump → restore → RLS rehearsal passes with self-controls; hosted Session pooler is reachable but rejected authentication before any dump | Repository owner — verify the Dashboard-generated pooler username and current database password, then reconfigure the protected URI |
@@ -198,9 +192,8 @@ have a named human owner and are never reported as agent-verified.
   support operations.
 
 ### Highest-leverage Milestone 1 work
-1. Clear the stale `.env.pilot` booking-date override and obtain renewed owner authorization for
-   one hosted booking confirmation attempt.
-2. Align Vercel Node.js with `.nvmrc` and verify a source build.
-3. Obtain `SOURCE_DB_URL` and the production database password through an approved secret channel, then rehearse restore into a disposable target.
-4. Keep the supervised single-atelier support and rollback runbook current.
-5. Keep payments, SSR, guest booking, multi-region failover, and broad analytics deferred to v2.
+1. Align Vercel Node.js with `.nvmrc` and verify a source build.
+2. Verify the Session-pooler username and database password, then complete a hosted restore rehearsal
+   into a disposable target.
+3. Keep the supervised single-atelier support and rollback runbook current.
+4. Keep payments, SSR, guest booking, multi-region failover, and broad analytics deferred to v2.

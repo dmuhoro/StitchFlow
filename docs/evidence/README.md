@@ -26,7 +26,7 @@
 | 2026-11-08 | Local Vercel preview / E2E attempt | `2026-11-08_pilot-e2e-failure.md` | BLOCKED before E2E; installed Vercel CLI has no `preview` command |
 | 2026-11-09 | Vercel preview deployment attempt | `2026-11-09_preview-deploy-blocked.md` | Branch push PASS; production-target build cannot be deployed as preview; stopped at Step 2 |
 | 2026-11-09 | Hermetic E2E and restore-verification harness | `2026-11-09_e2e-harness.md` | Local E2E PASS (6/6 twice); 7/7 negative controls PASS; truncated dump rejected and full local restore PASS; live restore, deploy and remote CI BLOCKED |
-| 2026-11-10 | Pilot gate reconciliation | `2026-11-10_pilot-gate-reconciliation.md` | Local gates, corrected push/PR CI, approved hosted deployment, and three read-only roles PASS; hosted booking attempt failed before hold because `.env.pilot` had a stale date; live restore BLOCKED |
+| 2026-11-10 | Pilot gate reconciliation | `2026-11-10_pilot-gate-reconciliation.md` | Local gates, corrected push/PR CI, approved hosted deployment, three read-only roles, and one hosted booking journey PASS; live restore BLOCKED |
 | 2026-11-10 | Published-secret boundary | `2026-11-10_bundle-secret-boundary.md` | Guard PASS (build refusal, artifact gate, preflight, 9/9 controls); no evidence of publication; credential rotation PENDING |
 | 2026-11-10 | Hosted rehearsal precondition classification | `2026-11-10_hosted-rehearsal-precondition.md` | Direct host IPv6-unreachable; Session pooler reachable but authentication rejected (exit 2 before dump); local restore PASS |
 | 2026-11-10 | Credential-free local gate rerun | `2026-11-10_local-gate-rerun.md` | Build, lint, unit, DB, hermetic E2E, 11/11 controls, docs, and local restore PASS; live restore BLOCKED on IPv6 route |

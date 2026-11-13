@@ -137,10 +137,12 @@ before the approved one-time hosted confirmation.
 - The project is on Vercel Hobby. Pro is required before commercial use; the selected supervised
   pilot is non-commercial.
 
-## Owner-approved synthetic booking reset and hosted attempt
+## Owner-approved synthetic booking reset and hosted confirmation
 
-The repository owner authorized resetting only the script-owned synthetic fitting and making one
-hosted booking confirmation attempt. No broad pilot seed, deployment, or live backup was run.
+The repository owner authorized resetting only the script-owned synthetic fitting and making a
+hosted booking confirmation attempt. After the first attempt exposed a stale private date override,
+the owner authorized one corrected-date retry. No broad pilot seed, deployment, or live backup was
+run.
 
 Read-only precondition inspection exited **0** and found exactly one fitting scoped to the selected
 atelier and `source=pilot`, linked to the expected patron, with status `confirmed`; exactly one
@@ -156,22 +158,32 @@ npm run seed:pilot-fitting
 
 Exit **0**; the pending fitting was patron-linked and visible through patron RLS.
 
-The single hosted Playwright attempt was:
+The first hosted Playwright attempt was:
 
 ```sh
 set -a; . ./.env.pilot; set +a; STITCHFLOW_E2E_BASE_URL=https://stitchflow-coral.vercel.app npm run test:e2e -- --workers=1 e2e/booking-confirm.spec.ts
 ```
 
 Exit **1** before a slot was selected or held. The expected `09:00` availability button did not
-appear within 15 seconds. The private `.env.pilot` contains the non-secret override
-`STITCHFLOW_E2E_BOOKING_DATE=2026-11-09`, while the current fixture calculation for 2026-11-10 is
-`2026-11-13`. A read-only post-check exited **0** and confirmed the fitting is still `pending` and
-its only linked booking is still `cancelled`; the browser attempt created no booking.
+appear within 15 seconds because the private `.env.pilot` contained the non-secret override
+`STITCHFLOW_E2E_BOOKING_DATE=2026-11-09`; the current fixture calculation for 2026-11-10 is
+`2026-11-13`. A read-only post-check exited **0** and confirmed the fitting remained `pending` and
+its only linked booking remained `cancelled`.
 
-The hosted booking gate therefore remains **BLOCKED**, now on a corrected-date rerun rather than
-fixture availability. The next run must clear the stale date override so Playwright computes the
-date, and requires renewed owner authorization because it can create one synthetic confirmed
-booking. No production credential value is recorded here.
+A read-only availability precheck exited **0** and confirmed the same pending fixture, its one
+cancelled booking, the selected active resource, and a 09:00 slot on 2026-11-13. The corrected-date
+retry cleared the stale override only for this process:
+
+```sh
+set -a; . ./.env.pilot; set +a; STITCHFLOW_E2E_BOOKING_DATE= STITCHFLOW_E2E_BASE_URL=https://stitchflow-coral.vercel.app npm run test:e2e -- --workers=1 e2e/booking-confirm.spec.ts
+```
+
+Exit **0**; the hosted booking confirmation journey passed **1/1**. The final owner-scoped
+read-only post-check exited **0**: the fitting is `confirmed`, and its two linked synthetic booking
+rows are one `cancelled` and one `confirmed`, with both rows matching the same tenant and patron.
+The hosted booking gate is **PASS** for this one journey. The test fixture is now consumed; no
+additional hosted booking test is authorized by this result. No production credential value is
+recorded here.
 
 ## Hosted fixture configuration and final local verification
 

@@ -48,7 +48,10 @@ evidence log.
 - [x] **Approved Vercel deployment** — deployment `dpl_3psUv1F9c9Gq9FqKLx8bkdRXyp13` is READY at
   `https://stitchflow-coral.vercel.app`; HTTP HEAD returned 200.
 - [x] **Owner, employee, and patron roles** — 3/3 read-only journeys pass against that deployment.
-  No new booking was confirmed in the separate booking attempt.
+- [x] **Synthetic booking confirmation** — the protected hosted flow passed 1/1 after the stale
+  date override was cleared for the command. The script-owned request is now confirmed; one prior
+  synthetic booking remains cancelled. See
+  [`docs/evidence/2026-11-10_pilot-gate-reconciliation.md`](docs/evidence/2026-11-10_pilot-gate-reconciliation.md).
 
 ## Blocked on credentials / authorization
 
@@ -57,15 +60,6 @@ evidence log.
   Dashboard-generated Session pooler username and current database password; reset the password if
   needed. Run `npm run ops:set-source-db` by itself and paste the full URI at the hidden prompt,
   then rerun `npm run rehearse:restore:hosted`. No source dump or write occurred.
-
-## Blocked on hosted booking retry authorization
-
-- [ ] **Hosted booking confirmation** — the owner-approved, exact synthetic fixture reset succeeded:
-  the owner-scoped `cancel_booking` operation left the request pending and its linked booking
-  cancelled. The one authorized browser attempt exited 1 before a slot hold because the ignored
-  `.env.pilot` still specifies the stale date `2026-11-09` (current computed date: `2026-11-13`).
-  Clear the override and authorize one more attempt; it may create a synthetic confirmed booking.
-  Do not run the broad `npm run seed:pilot` command against production.
 
 ## Blocked on source-build parity
 

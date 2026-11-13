@@ -85,7 +85,7 @@ to expose an RPC surface.
 | Demo identities, PIN `1234` and credential cards in the Supabase-mode bundle | **P0** | Source aliases exclude demo modules; `postbuild` `verify:build` rejects demo strings, and a production deploy context fails unless `VITE_DATA_MODE=supabase` with real Supabase values. CI proves the gate rejects a demo artifact. |
 | Legacy appointment requests can overlap as requested times | **Not a booking** | Pending rows are proposals only. Direct anonymous inserts are revoked; staff confirmation requires a protected booking and resource exclusion. Production carries the matched booking/insert migrations. |
 | A client could insert a `confirmed` appointment without a protected booking | **P1 — closed** | The client insert policy allows only an own-tenant `pending` request with no assigned tailor; the update guard still applies. RLS tests 13–14, staff S7. |
-| Live-site booking confirmation has not been exercised successfully in a browser | **Pilot blocker** | Hosted owner/employee/patron read-only journeys pass. The owner-approved synthetic fixture reset succeeded, but the one browser attempt failed before a hold because `.env.pilot` retained a stale date. The request remains pending and its linked synthetic booking is cancelled; clear the override and obtain renewed authorization before another write-capable attempt. |
+| Live-site booking confirmation has not been exercised successfully in a browser | **Resolved for the supervised pilot** | Hosted owner/employee/patron read-only journeys pass, and the protected booking confirmation journey passed 1/1 after clearing the stale `.env.pilot` date override for that command. The script-owned synthetic request is now confirmed; further write-capable tests require renewed owner authorization. |
 | `idempotency_keys` retains the original hold token for replay | Medium | Client roles are denied by RLS; only definer RPCs read it. Short hold window. |
 | No owner/employee `INSERT` policy on `appointments` | Intentional boundary | Staff booking belongs to the protected `hold_slot` workflow, not legacy appointment insertion. |
 | Guest self-booking has no rate limit or bot challenge | Medium | Direct anonymous writes are disabled in the migration and live visitor UI; implement the edge boundary before reopening. |
@@ -93,10 +93,9 @@ to expose an RPC surface.
 
 Production schema parity was verified on 2026-11-08 through `20261108173000`. Six hosted identities
 and synthetic fixtures exist. The hosted rollback-only RLS proof passed, the approved Vercel
-deployment is READY, and owner/employee/patron read-only browser journeys pass 3/3. Hosted booking
-remains blocked after one attempt failed before a hold because `.env.pilot` retained a stale date;
-the synthetic request is pending and its linked booking is cancelled. A retry requires renewed
-owner authorization.
+deployment is READY, owner/employee/patron read-only browser journeys pass 3/3, and the protected
+hosted booking confirmation journey passed 1/1. The script-owned synthetic request is now confirmed;
+another write-capable test requires renewed owner authorization.
 
 ## How to verify
 
