@@ -67,6 +67,11 @@ passed 1/1 with its synthetic fixture now consumed; live restore remains blocked
 
 ### Fixed
 
+- The crash screen no longer mislabels a production workspace as a demo or offers a destructive
+  "reset demo data" action there. Clearing local storage in Supabase mode also drops the
+  authenticated session, so a real patron could be signed out while trying to recover. Production now
+  shows a plain refresh plus a contact-the-owner remedy; the reset action remains available in demo
+  mode only. The rule is a pure helper with five unit tests.
 - The hosted backup/restore rehearsal now probes reachability and the credential from inside the same
   `postgres:16` container that runs `pg_dump`, before dumping anything. A network, DNS, TLS, or
   credential failure is reported as a missing precondition (exit 2) with its remedy, instead of as a
