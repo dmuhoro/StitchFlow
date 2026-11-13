@@ -138,8 +138,9 @@ pass unit and local database tests. The approved Vercel deployment is READY and 
 owner/employee/patron read-only journeys pass 3/3, and the protected hosted booking confirmation
 journey passed 1/1 after clearing the stale date override for that command. The script-owned fixture
 is now confirmed, with its prior cancelled booking retained. The hermetic harness passes all six
-browser journeys twice, seven artifact/demo-mode negative controls, and the local dump → restore → RLS rehearsal; see
-`docs/evidence/2026-11-09_e2e-harness.md`. A restore of live pilot data has not been made:
+browser journeys twice, all fourteen negative controls fire, and the local dump → restore → RLS
+rehearsal passes; see `docs/evidence/2026-11-09_e2e-harness.md` and
+`docs/evidence/2026-11-13_node-version-contract.md`. A restore of live pilot data has not been made:
 
 1. `S0-P0-01` — **closed in source and at the deploy boundary**. Supabase-mode build and
    `verify:build` reject demo identities, PIN, credential cards, tenant slugs, and demo lookbook

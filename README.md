@@ -68,6 +68,7 @@ Open [http://localhost:3000](http://localhost:3000). The repository includes an 
 
 ```bash
 npm ci                 # Reproducible install from package-lock.json
+npm run check:node     # Assert .nvmrc and package.json#engines.node agree
 npm run lint           # TypeScript validation
 npm run test:unit      # Repository write-boundary regressions
 npm run check:docs     # Relative Markdown link check
