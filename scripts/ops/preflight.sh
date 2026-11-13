@@ -91,7 +91,7 @@ else
 fi
 
 if [[ -f .vercel/project.json ]]; then
-  ok "vercel project" "linked: $(sed -nE 's/.*"projectName": "([^"]+)".*/\1/p' .vercel/project.json)"
+  ok "vercel project" "linked: $(sed -nE 's/.*"projectName"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' .vercel/project.json)"
 else
   ok "vercel project" "not linked"
 fi
@@ -215,7 +215,7 @@ fi
 
 if [[ "$DOCKER_OK" == "1" && "$SUPABASE_OK" == "1" && "$CHROMIUM_OK" == "1" ]]; then
   runnable "npm run test:e2e:hermetic" "6 browser journeys"
-  runnable "npm run verify:controls" "11 negative controls"
+  runnable "npm run verify:controls" "negative controls; each must reject its failure"
 else
   MISSING=""
   [[ "$DOCKER_OK" == "1" ]] || MISSING+="docker "

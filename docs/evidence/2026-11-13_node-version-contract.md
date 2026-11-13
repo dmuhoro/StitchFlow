@@ -27,7 +27,9 @@ mismatch is decoration.
   actually installed.
 - CI runs the guard in both the `quality` and `e2e` jobs.
 - `npm run preflight` reports declaration agreement, the running major, and the
-  Vercel node version recorded at link time.
+  Vercel Node.js setting when it is cached locally, pointing at
+  `vercel project inspect` when the cached value is absent (a fresh `vercel link`
+  rewrites `.vercel/project.json` without settings).
 - The Vercel project setting was moved from `26.x` to `22.x` to match.
 
 ## Commands and results
