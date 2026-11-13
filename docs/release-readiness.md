@@ -1,8 +1,10 @@
 # Release Readiness
 
 > The authoritative to-do list. A gate is DONE only with cited evidence.
-> Last updated: 2026-11-10 (hosted deployment, three read-only roles, and one hosted booking journey
-> pass; hosted restore authentication and inherited build-shell environment remain blocked).
+> Last updated: 2026-11-13 (Node.js runtime contract aligned and guarded; a remote Vercel source
+> build is still unproven). Hosted deployment, three read-only roles, and one hosted booking journey
+> last passed on 2026-11-10; hosted restore authentication and the inherited build-shell environment
+> remain blocked.
 
 ## Launch gates
 
@@ -65,8 +67,11 @@
   cleared for that command. The request and one linked booking are now confirmed; a prior synthetic
   booking remains cancelled. The fixture is consumed, so further write-capable tests require a new
   explicit owner authorization.
-- The prebuilt deployment used Node.js 22.22.1; Vercel project settings reported Node.js 26.x while
-  `.nvmrc` specifies 20. A Vercel source-build using the repository version is not yet verified.
+- The prebuilt deployment used Node.js 22.22.1. `.nvmrc` and `package.json#engines.node` now both
+  declare major 22, the Vercel project setting was moved from `26.x` to `22.x`, and a
+  production-target `vercel build` passes on that toolchain. A Vercel-hosted **remote** source build
+  is still unverified because `vercel build` runs locally; see
+  [`evidence/2026-11-13_node-version-contract.md`](evidence/2026-11-13_node-version-contract.md).
 
 ### Blocked on environment / authorization
 
@@ -170,7 +175,7 @@ Full prioritized list: `docs/audit/2026-11-05_sprint-0-audit.md`.
 |------|---------|-------|
 | Hosted Supabase schema parity / remote migration apply | Applied and verified current through `20261108173000` by remote list and dry-run | Engineering; hosted migration issue resolved |
 | Current source build/type-check | `npm run lint` and `npm run build` pass using `vite.pilot.config.ts`; root config is also static and no TanStack plugin is used | Engineering |
-| Vercel source-build parity | Approved prebuilt artifact is READY; Vercel reports Node.js 26.x while `.nvmrc` specifies 20, and the prebuilt artifact used Node.js 22.22.1 | Repository owner — align Node.js versions and verify a source build |
+| Vercel source-build parity | Versions now agree: `.nvmrc` and `engines.node` declare major 22, the Vercel project reports `22.x`, and a local production-target `vercel build` passes. Vercel's own build runtime is untested because no source deploy was performed | Repository owner — authorize one source deploy to close the remote half |
 | Pilot backup/restore rehearsal | Local dump → restore → RLS rehearsal passes with self-controls; hosted Session pooler is reachable but rejected authentication before any dump | Repository owner — verify the Dashboard-generated pooler username and current database password, then reconfigure the protected URI |
 | Vercel commercial use | Project `stitchflow` is on the Hobby plan, which forbids commercial use | Repository owner — upgrade to Pro before a paid pilot |
 | Regional availability | Single region `iad1`; accepted for the supervised pilot without an uptime promise | **DEFERRED TO V2** — multi-region failover is not a one-atelier pilot prerequisite |
@@ -192,7 +197,9 @@ have a named human owner and are never reported as agent-verified.
   support operations.
 
 ### Highest-leverage Milestone 1 work
-1. Align Vercel Node.js with `.nvmrc` and verify a source build.
+1. ~~Align Vercel Node.js with `.nvmrc` and verify a source build.~~ **Declared and applied versions
+   aligned on major 22 and guarded; local production-target build proven. Authorize one source
+   deploy to prove the remote build** (see `evidence/2026-11-13_node-version-contract.md`).
 2. Verify the Session-pooler username and database password, then complete a hosted restore rehearsal
    into a disposable target.
 3. Keep the supervised single-atelier support and rollback runbook current.

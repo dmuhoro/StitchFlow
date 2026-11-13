@@ -109,6 +109,34 @@ else
   ok "remote sync" "no upstream configured"
 fi
 
+section "runtime contract"
+# The declared runtime must match in both tracked places, and this shell should
+# actually run it. A mismatch is a capability report, never a silent pass: a
+# build on an unproven Node.js major is not evidence.
+DECLARED_NODE="$(tr -d '[:space:]' < .nvmrc 2>/dev/null || true)"
+DECLARED_ENGINE="$(node -p "require('./package.json').engines?.node||''" 2>/dev/null || true)"
+RUNNING_NODE="$(node -p "process.versions.node" 2>/dev/null || echo unknown)"
+if node scripts/ci/check-node-version.mjs >/dev/null 2>&1; then
+  ok "declarations agree" ".nvmrc=${DECLARED_NODE:-absent} engines=${DECLARED_ENGINE:-absent}"
+else
+  blocked "node declarations" "drift — run npm run check:node"
+fi
+if [[ -n "$DECLARED_NODE" && "${RUNNING_NODE%%.*}" == "${DECLARED_NODE#v}" ]]; then
+  ok "running node" "${RUNNING_NODE}"
+else
+  blocked "running node" "${RUNNING_NODE} != declared ${DECLARED_NODE:-unknown} (npm run check:node)"
+fi
+if command -v vercel >/dev/null 2>&1; then
+  LINKED_NODE="$(node -p "require('./.vercel/project.json').settings?.nodeVersion||''" 2>/dev/null || true)"
+  if [[ -n "$LINKED_NODE" ]]; then
+    ok "vercel project node" "${LINKED_NODE} (recorded at link time)"
+  else
+    ok "vercel project node" "unknown — run vercel project inspect"
+  fi
+else
+  ok "vercel cli" "not installed"
+fi
+
 section "credentials (presence only; values are never printed)"
 OPS_ENV="${STITCHFLOW_OPS_ENV:-$HOME/.config/stitchflow/ops.env}"
 if [[ -f "$OPS_ENV" ]]; then

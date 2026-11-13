@@ -67,9 +67,12 @@ In Vercel Project Settings → Environment Variables, configure:
 | Production | `VITE_DATA_MODE=supabase`, `VITE_SUPABASE_URL=https://<project-ref>.supabase.co`, and `VITE_SUPABASE_PUBLISHABLE_KEY=<publishable-key>` |
 | Preview and Development | `VITE_DATA_MODE=demo` |
 
-Never set a service-role key; Vite variables are included in browser assets. Use Node.js 20 as
-declared by `.nvmrc`. In Supabase Auth, allowlist the final production and preview callback URLs
-that are actually used; do not guess the final domain.
+Never set a service-role key; Vite variables are included in browser assets. Set the project's
+**Node.js Version** to `22.x`, matching `.nvmrc` and `package.json#engines.node`. Do not choose a
+different major in the dashboard: `npm run check:node` guards the tracked declarations, but the
+Vercel setting is external and can only be read back with `vercel project inspect`. In Supabase Auth,
+allowlist the final production and preview callback URLs that are actually used; do not guess the
+final domain.
 
 `vercel.json` declares `npm ci`, `npm run build`, `dist`, the SPA rewrite, and security/cache
 headers. Production builds receive `VERCEL_ENV=production`; the postbuild artifact gate rejects a

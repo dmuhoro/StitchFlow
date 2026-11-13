@@ -6,21 +6,26 @@
 
 Production migration `20261108173000` is applied and remote migration parity is current. A hermetic
 verification harness now runs the six browser journeys against a disposable local Supabase stack with
-no production credentials: it passed 6/6 twice in a row, and its eleven negative controls and
+no production credentials: it passed 6/6 twice in a row, and its fourteen negative controls and
 `dump → restore → RLS` rehearsal pass locally. Evidence: `docs/evidence/2026-11-09_e2e-harness.md`.
 
 The approved Vercel deployment is READY and hosted owner/employee/patron read-only journeys pass
-3/3. Hosted booking has not been confirmed because the guarded script-owned fitting precondition is
-unmet; no fixture reset or booking write occurred. Live backup/restore is network-blocked: the
-direct source host is IPv6-only and the rehearsal container has no IPv6 route.
+3/3. The protected hosted booking confirmation journey passed 1/1 after clearing a stale date
+override; the script-owned fixture is now consumed, so any further write-capable run needs renewed
+owner authorization. Live backup/restore is blocked: the direct source host is IPv6-only and
+unreachable from the rehearsal container, and the reachable Session pooler rejected authentication.
 Remote push and PR CI both pass on `ac22102` after moving the production-landing smoke out of the
 demo build context and leaving it in the hermetic Supabase-mode browser suite.
 
+Node.js is now declared once: `.nvmrc` and `package.json#engines.node` both say major 22,
+`npm run check:node` fails on drift, CI enforces it in strict mode, and the Vercel project reports
+`22.x`. A local production-target `vercel build` passes, but a Vercel-hosted remote source build is
+still unproven because `vercel build` runs locally. Evidence:
+`docs/evidence/2026-11-13_node-version-contract.md`.
+
 Current hard blockers:
 
-- Obtain owner approval to reset/recreate only the script-owned synthetic fitting, then complete
-  the hosted booking journey.
-- Verify Vercel source-build parity with the repository's `.nvmrc` Node.js version.
+- Authorize one source deploy so Vercel's own build runtime is exercised.
 - Complete a backup/restore of pilot data. The direct database host is IPv6-only and unreachable;
   the Session pooler endpoint is reachable but rejected authentication. The owner must verify the
   Dashboard-generated username and current database password, then re-enter the URI. The latest

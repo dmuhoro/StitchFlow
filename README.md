@@ -49,7 +49,8 @@ StitchFlow is still a staged production migration. Demo mode remains the default
 
 ### Prerequisites
 
-Use Node.js 20 or newer and npm 10 or newer.
+Use Node.js 22 (the version in `.nvmrc` and `package.json#engines.node`) and npm 10 or newer.
+`npm run check:node` fails if the two declarations drift apart.
 
 ```bash
 npm install

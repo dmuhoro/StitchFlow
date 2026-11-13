@@ -2,14 +2,15 @@
 
 > What is true today. Aspirational work is labelled **ASPIRATIONAL** and must not be assumed.
 
-Last verified: 2026-11-10 (hosted pilot deployment and read-only role journeys).
+Last verified: 2026-11-13 (Node.js runtime contract). Hosted pilot deployment and read-only role
+journeys were last verified on 2026-11-10.
 Production migration `20261108173000` was applied and reverified by
 `CI=1 supabase migration list --remote` in
 [`evidence/2026-11-08_pilot-release-execution.md`](evidence/2026-11-08_pilot-release-execution.md);
 local and remote migration IDs match. Six hosted identities
 exist across the supervised pilot and an isolation-only tenant.
 The rollback-only hosted RLS proof and local database/RLS tests pass. The local hermetic harness
-passes all six browser journeys twice against a disposable Supabase stack, proves eleven negative
+passes all six browser journeys twice against a disposable Supabase stack, proves fourteen negative
 controls, and restores a local dump before running the RLS suite. The approved Vercel production
 deployment is READY and its owner, employee, and patron read-only journeys pass 3/3. The protected
 hosted booking confirmation journey passed 1/1 after clearing a stale `.env.pilot` date override for
@@ -59,12 +60,24 @@ Authoritative findings: [`audit/2026-11-05_sprint-0-audit.md`](audit/2026-11-05_
 | Gate | Verdict |
 |------|---------|
 | Hermetic owner, employee, patron, invitation, public-entry, and booking journeys | **PASS locally** — 6/6 twice using `npm run test:e2e:hermetic`; each run resets and re-seeds the disposable local stack |
-| Demo artifact rejected in production context; owner journey fails against demo artifact | **PASS negative controls** — `npm run verify:controls`, 11/11 controls observed |
+| Demo artifact rejected in production context; owner journey fails against demo artifact | **PASS negative controls** — `npm run verify:controls`, 14/14 controls observed |
 | Local backup → restore → RLS suite | **PASS locally** — real 1,000-byte truncated dump rejected (exit 1), full local dump restored and RLS suite passed (exit 0) |
 | Approved hosted deployment | **PASS** — Vercel deployment `dpl_3psUv1F9c9Gq9FqKLx8bkdRXyp13` is READY; production alias returns HTTP 200 |
 | Hosted owner, employee, and patron journeys | **PASS** — 3/3 read-only journeys against the approved deployment |
 | Hosted booking confirmation | **PASS 1/1** — the protected flow confirmed the script-owned synthetic request after clearing the stale date override for the command; further test writes require renewed owner authorization |
 | Live backup/restore | **BLOCKED** — direct host is IPv6-unreachable; Session pooler is reachable but rejected authentication. No dump ran; rehearsal reports exit 2. |
+
+## Verified on 2026-11-13
+
+| Gate | Verdict |
+|------|---------|
+| Declared Node.js version matches in `.nvmrc` and `package.json#engines` | **PASS** — both declare major 22; `npm run check:node` exits 0 in `NODE_CONTRACT_STRICT=1` |
+| The version guard rejects drift | **PASS** — `npm run verify:controls` 14/14, including a `.nvmrc`/`engines` mismatch (exit 1) and a missing `engines.node` (exit 1) |
+| Vercel project runtime matches the declared major | **PASS** — `vercel project inspect` reports `Node.js Version 22.x` after the project was updated from `26.x` |
+| Production-target source build on the declared toolchain | **PASS locally** — `vercel build --prod` exits 0 and passes the artifact gate on Node 22.22.1 |
+| Vercel-hosted remote source build | **NOT PROVEN** — `vercel build` runs locally; no source deploy was performed |
+
+Evidence: [`evidence/2026-11-13_node-version-contract.md`](evidence/2026-11-13_node-version-contract.md).
 
 ## Verified on 2026-11-08
 
@@ -140,8 +153,8 @@ Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-
 | Audit coverage exists for orders, measurements, settings, roles, and bookings, but not payments | Payment disputes cannot be investigated | Engineering — Sprint 4 |
 | Guest booking has no rate limit or bot challenge | Direct anon inserts are disabled until the edge boundary exists | Engineering — before public booking |
 | Playwright invite flow is present but hosted credentials are not stored in the repository | Live browser proof requires a deliberate local/CI secret setup | Repository owner — Sprint 1 |
-| Production has six hosted identities across pilot and isolation-only tenants | Approved Vercel deployment and hosted owner/employee/patron role journeys pass; remote source-build parity remains unverified | Repository owner — align the Vercel Node.js version with `.nvmrc` and verify a source build |
-| Vercel project uses Node.js 26.x while `.nvmrc` specifies Node.js 20 | The successful prebuilt deployment used Node.js 22.22.1; remote source-build parity is unverified | Repository owner — align Vercel Node.js with `.nvmrc` and verify a source build |
+| Production has six hosted identities across pilot and isolation-only tenants | Approved Vercel deployment and hosted owner/employee/patron role journeys pass; the remote source build is still unproven | Repository owner — authorize one source deploy to prove remote parity |
+| Remote Vercel source build is unproven even though the runtime now matches | Declared and applied Node.js majors both equal `22.x`, and a local production-target `vercel build` passes; `vercel build` runs locally, so Vercel's own build runtime is untested | Repository owner — authorize one source deploy; see [`evidence/2026-11-13_node-version-contract.md`](evidence/2026-11-13_node-version-contract.md) |
 | Financial edit audit migration is applied remotely | Local trigger/RLS assertions pass; remote migration chain is current; hosted rollback-only proof passed | Engineering — retain as release evidence |
 
 ## Decisions awaiting approval

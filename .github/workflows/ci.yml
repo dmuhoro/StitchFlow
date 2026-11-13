@@ -34,6 +34,11 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Assert the declared Node.js version
+        env:
+          NODE_CONTRACT_STRICT: '1'
+        run: npm run check:node
+
       - name: Types
         run: npm run lint
 
@@ -162,6 +167,11 @@ jobs:
 
       - name: Install
         run: npm ci
+
+      - name: Assert the declared Node.js version
+        env:
+          NODE_CONTRACT_STRICT: '1'
+        run: npm run check:node
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium

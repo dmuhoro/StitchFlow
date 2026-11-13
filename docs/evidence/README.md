@@ -31,6 +31,7 @@
 | 2026-11-10 | Hosted rehearsal precondition classification | `2026-11-10_hosted-rehearsal-precondition.md` | Direct host IPv6-unreachable; Session pooler reachable but authentication rejected (exit 2 before dump); local restore PASS |
 | 2026-11-10 | Credential-free local gate rerun | `2026-11-10_local-gate-rerun.md` | Build, lint, unit, DB, hermetic E2E, 11/11 controls, docs, and local restore PASS; live restore BLOCKED on IPv6 route |
 | 2026-11-10 | Local gate rerun | `2026-11-10_local-gate-rerun.md` | Lint, unit, docs, DB, hermetic E2E, controls, loopback build and local restore PASS; default build and hosted restore BLOCKED on environment and network preconditions |
+| 2026-11-13 | Node.js version contract and Vercel runtime alignment | `2026-11-13_node-version-contract.md` | Declared and Vercel-applied versions aligned on major 22 with a drifting declaration rejected by a guard (14/14 controls); local production-target build PASS; remote source build NOT PROVEN |
 | 2026-11-08 | Live booking attempt | `booking-flow.md` | BLOCKED; remote UI mismatch prevented booking; no screenshot or booking confirmation |
 
 ## Format

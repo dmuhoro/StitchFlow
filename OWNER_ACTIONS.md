@@ -22,8 +22,8 @@ evidence log.
 
 - [x] **Hermetic E2E** — six journeys pass on a disposable local Supabase stack, both on a clean run
   and immediate re-run. `npm run seed:pilot-fitting` rebuilds the pending request for each run.
-- [x] **Negative controls** — eleven artifact, browser, published-secret, precondition, and
-  malformed-command controls reject their
+- [x] **Negative controls** — fourteen artifact, browser, published-secret, precondition, Node.js
+  contract, and malformed-command controls reject their
   deliberately bad inputs, including demo-mode production artifact rejection and a build that sets a
   credential with a public prefix.
 - [x] **Local backup/restore** — a truncated local dump is rejected (exit 1), then a complete local
@@ -63,9 +63,13 @@ evidence log.
 
 ## Blocked on source-build parity
 
-- [ ] **Vercel Node.js alignment** — `.nvmrc` specifies Node.js 20, while Vercel project settings
-  reported 26.x and the successful prebuilt deployment used 22.22.1. Align the project and verify a
-  Vercel source-build before relying on remote build parity.
+- [x] **Vercel Node.js alignment** — `.nvmrc` and `package.json#engines.node` now both declare major
+  22, the Vercel project reports `Node.js Version 22.x`, and a production-target `vercel build`
+  passes on that toolchain. `npm run check:node` fails on drift and CI enforces it in strict mode.
+  See [`docs/evidence/2026-11-13_node-version-contract.md`](docs/evidence/2026-11-13_node-version-contract.md).
+- [ ] **Remote source deploy** — `vercel build` runs on the local machine, so Vercel's own build
+  runtime is still untested. Authorize one source deploy from the work branch (or after merge) and
+  record its READY state to close the remote half.
 
 ## Blocked on plan tier
 

@@ -9,10 +9,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 This is an untagged engineering checkpoint, not a production release. The hermetic local browser
 suite, negative controls, and local-source backup/restore rehearsal pass. The approved hosted
-deployment and read-only role journeys pass; hosted booking and live restore remain blocked.
+deployment and read-only role journeys pass, and the protected hosted booking confirmation journey
+passed 1/1 with its synthetic fixture now consumed; live restore remains blocked on credentials.
 
 ### Added
 
+- A Node.js version contract: `.nvmrc` and `package.json#engines.node` both declare major 22,
+  `npm run check:node` fails when they disagree or when `engines.node` is missing, and CI runs it in
+  strict mode so the installed runtime must equal the declared one. Three negative controls prove the
+  guard accepts agreement and rejects drift. This replaces a three-way split (`.nvmrc` 20, Vercel
+  `26.x`, proven artifact `22.22.1`) where Node.js 20 was already end-of-life.
 - Patron portal visibility for the authenticated patron's own fitting requests.
 - Deterministic owner-provisioned pilot and fitting-fixture scripts, plus a pilot operations and
   backup/restore rehearsal runbook.
@@ -32,7 +38,7 @@ deployment and read-only role journeys pass; hosted booking and live restore rem
   Supabase host, which is IPv6-only.
 - A tenth negative control proves the hosted-rehearsal probe reports an unreachable source as a
   missing precondition (exit 2) and never as a restore-gate rejection (exit 1). An unresolvable host
-  is the credential-free fixture.
+  is the credential-free fixture. The suite now holds fourteen controls in total.
 - The operator database-URI prompt rejects trailing command-line arguments before prompting or
   writing, preventing copied explanatory text from being mistaken for a valid setup invocation.
 
@@ -70,8 +76,8 @@ deployment and read-only role journeys pass; hosted booking and live restore rem
 ### Verification
 
 - `npm run test:e2e:hermetic` passed all six browser journeys twice; `npm run verify:controls`
-  passed 11/11 controls. A real truncated local dump was rejected (exit 1), then the complete
-  local-source restore and RLS suite passed (exit 0).
+  passed 14/14 controls on 2026-11-13. A real truncated local dump was rejected (exit 1), then the
+  complete local-source restore and RLS suite passed (exit 0).
 - `npm run test:unit`, `npm run verify:db`, `npm run lint`, `npm run build`, and
   `npm run check:docs` are the required local gates; exact observed results are recorded in
   `docs/evidence/2026-11-09_e2e-harness.md`.

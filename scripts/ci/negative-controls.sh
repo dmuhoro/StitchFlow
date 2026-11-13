@@ -19,6 +19,8 @@
 #   5. The hosted-rehearsal probe classifies an unreachable source as a missing
 #      precondition (exit 2) and never as a restore-gate rejection (exit 1).
 #   6. The hidden credential prompt refuses trailing arguments before writing.
+#   7. The Node.js version guard accepts agreement and refuses drifted
+#      declarations, so the build cannot silently run an unproven runtime.
 #
 # Exit codes: 0 all controls behaved; 1 a control did not fire.
 # ============================================================================
@@ -208,6 +210,34 @@ if ! grep -Fq 'this command takes no arguments' "$LOG_DIR/case-$CASES.log" ||
   sed -n '1,8p' "$LOG_DIR/case-$CASES.log"
   PROBLEMS=$((PROBLEMS + 1))
 fi
+
+# --- 7. the Node.js contract must reject drift, not just print it -----------
+# The three declarations drifted before (20 in `.nvmrc`, 26.x on Vercel, 22.22.1
+# in the proven artifact). Fixtures keep this credential-free and independent of
+# the real tracked values.
+step "7. Node.js version contract"
+NODE_FIXTURES="$LOG_DIR/node-contract"
+mkdir -p "$NODE_FIXTURES"
+printf '22\n' >"$NODE_FIXTURES/agree.nvmrc"
+printf '{"engines":{"node":"22.x"}}\n' >"$NODE_FIXTURES/agree.package.json"
+printf '20\n' >"$NODE_FIXTURES/drift.nvmrc"
+printf '{"engines":{"node":"22.x"}}\n' >"$NODE_FIXTURES/drift.package.json"
+printf '{"name":"no-engines"}\n' >"$NODE_FIXTURES/no-engines.package.json"
+
+run_case pass "node contract: matching declarations" \
+  node scripts/ci/check-node-version.mjs \
+  "$NODE_FIXTURES/agree.nvmrc" "$NODE_FIXTURES/agree.package.json"
+run_case fail "node contract: .nvmrc and engines disagree" \
+  node scripts/ci/check-node-version.mjs \
+  "$NODE_FIXTURES/drift.nvmrc" "$NODE_FIXTURES/drift.package.json"
+if ! grep -Fq 'declared versions disagree' "$LOG_DIR/case-$CASES.log"; then
+  echo "FAIL: the node guard refused for a reason other than declaration drift."
+  sed -n '1,8p' "$LOG_DIR/case-$CASES.log"
+  PROBLEMS=$((PROBLEMS + 1))
+fi
+run_case fail "node contract: missing engines.node" \
+  node scripts/ci/check-node-version.mjs \
+  "$NODE_FIXTURES/agree.nvmrc" "$NODE_FIXTURES/no-engines.package.json"
 
 printf '\n'
 if [[ "$PROBLEMS" -gt 0 ]]; then

@@ -52,3 +52,4 @@ PASS / FAIL / BLOCKED
 | Published-secret boundary | `2026-11-10_bundle-secret-boundary.md` | Build refuses credential-shaped `VITE_` names; 9/9 controls; no publication found; DB password and access token must be rotated |
 | Hosted rehearsal precondition | `2026-11-10_hosted-rehearsal-precondition.md` | Probe classifies network/authentication failure as exit 2; direct host IPv6-unreachable; Session pooler reachable but authentication rejected; no dump |
 | Credential-free local gate rerun | `2026-11-10_local-gate-rerun.md` | Build, lint, unit, DB, hermetic E2E, 11/11 controls, docs, and local restore PASS; hosted restore blocked on Session-pooler authentication |
+| Node.js version contract | `2026-11-13_node-version-contract.md` | `.nvmrc`, `engines.node`, and the Vercel project all declare major 22 with a guard that rejects drift (14/14 controls); local production-target build PASS; remote source build NOT PROVEN |
