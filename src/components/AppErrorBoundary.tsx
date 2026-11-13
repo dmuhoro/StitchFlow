@@ -1,4 +1,5 @@
 import React from 'react';
+import { emit } from '../lib/telemetry';
 
 interface AppErrorBoundaryState {
   hasError: boolean;
@@ -14,6 +15,8 @@ export class AppErrorBoundary extends React.Component<React.PropsWithChildren, A
 
   componentDidCatch(error: Error) {
     console.error('[StitchFlow] Unhandled application error', error);
+    // A fixed enum only: the message and stack stay in the browser.
+    emit('app_error', { error_kind: 'render' });
   }
 
   private recover = () => {

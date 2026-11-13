@@ -127,8 +127,11 @@ Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-
 - **ASPIRATIONAL** Media storage with signed URLs; imagery is bundled or remote.
 - **ASPIRATIONAL** Multi-atelier membership per user.
 - **ASPIRATIONAL** Measurement version history and garment specification snapshots.
-- **ASPIRATIONAL** Monitoring, alerting, and automated backups. The append-only `audit_log` exists
-  for orders, measurements, settings, and roles; booking transitions are now appended too.
+- **ASPIRATIONAL** Monitoring, alerting, and automated backups. A redacted telemetry seam
+  (`src/lib/telemetry.ts`) now emits four allowlisted funnel/crash events and page views are
+  configured on the Vercel project, but custom-event capture requires Vercel Pro and the running
+  artifact predates the change; no alerting or scheduled backup exists. The append-only `audit_log`
+  exists for orders, measurements, settings, and roles; booking transitions are now appended too.
 - **PARTIAL** Owner onboarding and invitation redemption are implemented; transactional delivery and
   unrestricted self-service sign-up are not.
 - **Approved but not implemented** SSR, per-tenant metadata, sitemap, robots, OG tags or structured

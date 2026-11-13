@@ -24,6 +24,10 @@ StitchFlow is a browser-based product prototype for African bespoke ateliers cre
 
 The product includes a cultural lookbook, a fitting-request flow, an atelier director view, an artisan workbench, a patron portal with the patron's own fitting requests, namespaced browser persistence, system/light/dark themes, KES/USD display formatting, mobile-friendly touch targets, and WhatsApp click-to-chat handoffs. Garment-specific concepts such as Agbada wingspan, Fila cap circumference, Sokoto taper, Kitenge print alignment, Kanzu robe drop, textile provenance, and posture/drape notes remain explicit in the product language and design briefs.
 
+## Observability
+
+The app emits four allowlisted events (`landing_view`, `auth_signed_in`, `booking_confirmed`, and `app_error`) through a provider-agnostic seam in `src/lib/telemetry.ts`. Payloads cannot carry personal data: properties are restricted to enumerated values, and page-view URLs are stripped of query strings and fragments so an invite code is never sent. Web Analytics page views are configured on the Vercel project; custom events require a Pro plan, and the running artifact predates this change, so no production capture is claimed yet. See [`docs/evidence/2026-11-13_observability-seam.md`](docs/evidence/2026-11-13_observability-seam.md).
+
 ## Demo access
 
 Protected views are presentation-oriented role demos, not production authentication. Select a seeded profile from the access modal to explore the Atelier Director Suite, Master Artisan Bench, or VIP Patron Portal. The demo PIN is `1234`.

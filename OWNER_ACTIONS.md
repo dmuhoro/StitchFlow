@@ -75,6 +75,10 @@ evidence log.
 
 - [ ] **Commercial pilot** — Vercel project `stitchflow` is on Hobby, which forbids commercial use.
   Upgrade to Pro before a paid pilot; the selected non-commercial supervised pilot is not blocked.
+- [ ] **Custom funnel and crash events** — `src/lib/telemetry.ts` emits four allowlisted events and
+  the project has Web Analytics configured, but Vercel captures custom events only on Pro/Enterprise,
+  so they are dropped on Hobby. Page views start with the next deploy. Upgrading to Pro for the
+  commercial pilot also turns these events on; no code change is needed.
 
 ## Remaining owner decisions
 

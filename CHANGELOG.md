@@ -14,6 +14,15 @@ passed 1/1 with its synthetic fixture now consumed; live restore remains blocked
 
 ### Added
 
+- A redacted observability seam. `src/lib/telemetry.ts` allowlists four events
+  (`landing_view`, `auth_signed_in`, `booking_confirmed`, `app_error`) and accepts only five
+  enumerated property keys, so a name, email, phone, order code, atelier id, note, or amount cannot
+  be attached. Page-view URLs lose their query and fragment. The default sink is a no-op and a
+  throwing sink cannot escape. It is wired at the real boundaries: the landing page after the
+  atelier resolves, Supabase sign-in after credentials are accepted, booking only after
+  `status === 'confirmed'`, and React plus global crash handlers. Page views are configured on the
+  Vercel project; custom-event capture requires Pro and the running artifact predates the change, so
+  no production capture is claimed. See `docs/evidence/2026-11-13_observability-seam.md`.
 - A Node.js version contract: `.nvmrc` and `package.json#engines.node` both declare major 22,
   `npm run check:node` fails when they disagree or when `engines.node` is missing, and CI runs it in
   strict mode so the installed runtime must equal the declared one. Three negative controls prove the

@@ -5,6 +5,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { clearStitchFlowStorage, readStorage, readStorageString, writeStorage } from '../lib/storage';
+import { emit } from '../lib/telemetry';
 import { 
   UserRole, 
   ThemeMode,
@@ -758,6 +759,9 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setAuthError(error.message);
       throw error;
     }
+    // Credentials were accepted. No identity is attached: the sink only receives
+    // the enumerated data mode.
+    emit('auth_signed_in', { data_mode: 'supabase', outcome: 'success' });
   };
 
   const sendMagicLink = async (email: string, redirectTo?: string) => {

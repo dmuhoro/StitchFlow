@@ -13,6 +13,7 @@ import {
 } from '../lib/atelier-booking-repository';
 import { Appointment } from '../types';
 import { AvailabilitySlot } from '../types/booking';
+import { emit } from '../lib/telemetry';
 
 const serviceMinutes: Record<Appointment['service_type'], number> = {
   grand_agbada: 45,
@@ -170,6 +171,10 @@ export const BookingWorkspace: React.FC = () => {
       const confirmed = await confirmBooking(hold.hold_token);
       if (confirmed.error) throw new Error(confirmed.error);
       if (confirmed.status !== 'confirmed') throw new Error('The fitting was not confirmed by the booking service.');
+
+      // Only a confirmed booking counts; a hold or a failed confirm must not
+      // reach the funnel.
+      emit('booking_confirmed', { data_mode: 'supabase', outcome: 'success' });
 
       idempotencyKeys.current.delete(keyScope);
       await refreshAtelier();

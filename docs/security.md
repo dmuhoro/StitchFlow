@@ -78,6 +78,14 @@ to expose an RPC surface.
 - `.env.local` is gitignored; `.env.example` is placeholders only.
 - Evidence files redact credentials as `***REDACTED***`.
 
+## Telemetry
+
+- The browser may send only allowlisted event names and enumerated property values.
+  `src/lib/telemetry.ts` drops free text, numbers, objects, and unknown keys, so identity, tenant,
+  order, note, and money fields cannot be attached even by mistake.
+- Page-view URLs are stripped of query strings and fragments, so an invitation code is never sent.
+- A telemetry failure never blocks an action: the default sink is a no-op and every call is wrapped.
+
 ## Residual risks
 
 | Risk | Severity | Status / mitigation |

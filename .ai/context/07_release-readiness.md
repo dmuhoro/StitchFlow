@@ -34,7 +34,8 @@ Current hard blockers:
   reports a clean environment. The production build passes when those unrelated exports are excluded
   for that command; no value was printed. Any required credential rotation remains owner-controlled.
 - Move the Vercel project off the Hobby plan before a paid pilot (Hobby forbids commercial use; the
-  selected supervised pilot is non-commercial).
+  selected supervised pilot is non-commercial). Custom analytics events are Pro-only as well, so the
+  redacted telemetry seam stays uncaptured on Hobby; page views start with the next deploy.
   V2 scope, including multi-region failover, is deferred until the single-atelier pilot passes.
 
 See `docs/release-readiness.md`, `docs/evidence/2026-11-09_e2e-harness.md`,
