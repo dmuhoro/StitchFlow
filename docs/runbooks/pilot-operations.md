@@ -60,10 +60,14 @@ Before accepting non-synthetic atelier data:
    pass/fail, and row counts in the evidence record.
 3. If the owner authorizes a live rehearsal, store `SOURCE_DB_URL` through
    `npm run ops:set-source-db`; never place it in shell history, command arguments, output, or
-   evidence. Run `npm run rehearse:restore:hosted`. The script probes and dumps read-only, restores
-   into a local disposable container, and never writes to the source. If the direct host is
-   unreachable over IPv6, use the Supabase Session pooler URI on port `5432`, then update the
-   protected value with `npm run ops:set-source-db`.
+   evidence. The setter probes the value immediately (read-only `select 1` from inside the same
+   `postgres:16` container that runs `pg_dump`) and exits 2 with the remedy when the host or the
+   credential is wrong, so a saved URI is never mistaken for a working one. Set
+   `STITCHFLOW_SKIP_SOURCE_PROBE=1` to write without probing when offline. Then run
+   `npm run rehearse:restore:hosted`. The rehearsal probes and dumps read-only, restores into a local
+   disposable container, and never writes to the source. If the direct host is unreachable over IPv6,
+   use the Supabase Session pooler URI on port `5432`, then update the protected value with
+   `npm run ops:set-source-db`.
 4. If the hosted plan requires its dashboard restore flow, use a separate disposable project as the
    target. Never overwrite the production pilot to test a restore.
 5. Point a private `.env.pilot`/`PILOT_SECRETS_FILE` at the restored project and run
@@ -73,9 +77,11 @@ Before accepting non-synthetic atelier data:
    time. Do not include database URLs, keys, passwords, email addresses, or patron details.
 7. Remove the disposable projects and local backup files through approved, targeted cleanup.
 
-The local-source rehearsal passes. The live-source probe is **BLOCKED** because the direct source
-host is IPv6-only and the rehearsal container has no IPv6 route; the owner must configure the
-Session pooler URI and rerun the hosted rehearsal. This does not count as a restore pass. See
+The local-source rehearsal passes. The live-source probe is **BLOCKED**: the direct source host is
+IPv6-only and unreachable from the rehearsal container, and the Session pooler endpoint is reachable
+but Supabase rejected the supplied authentication. The owner must confirm the Dashboard-generated
+pooler username and the current database password, then re-enter the URI with
+`npm run ops:set-source-db`, which probes it immediately. This does not count as a restore pass. See
 [`../evidence/2026-11-10_hosted-rehearsal-precondition.md`](../evidence/2026-11-10_hosted-rehearsal-precondition.md)
 and [`../evidence/2026-11-10_local-gate-rerun.md`](../evidence/2026-11-10_local-gate-rerun.md).
 

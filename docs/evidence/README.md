@@ -33,6 +33,7 @@
 | 2026-11-10 | Local gate rerun | `2026-11-10_local-gate-rerun.md` | Lint, unit, docs, DB, hermetic E2E, controls, loopback build and local restore PASS; default build and hosted restore BLOCKED on environment and network preconditions |
 | 2026-11-13 | Node.js version contract and Vercel runtime alignment | `2026-11-13_node-version-contract.md` | Declared and Vercel-applied versions aligned on major 22 with a drifting declaration rejected by a guard (14/14 controls); local production-target build PASS; remote source build NOT PROVEN |
 | 2026-11-13 | Observability seam: funnel events and crash reporting | `2026-11-13_observability-seam.md` | Redacted, allowlisted telemetry wired at four real boundaries and unit-proven (21 tests); Web Analytics configured; page views armed but not live; custom events BLOCKED on Hobby |
+| 2026-11-13 | Live-restore source verified at credential save | `2026-11-13_source-db-setup-probe.md` | Setter probes read-only and exits 2 with the remedy when the source is unusable; write path unchanged; live restore still BLOCKED on the owner credential |
 | 2026-11-08 | Live booking attempt | `booking-flow.md` | BLOCKED; remote UI mismatch prevented booking; no screenshot or booking confirmation |
 
 ## Format

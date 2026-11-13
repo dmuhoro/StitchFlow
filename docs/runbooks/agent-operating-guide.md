@@ -65,6 +65,11 @@ pooler on `:5432`. The transaction pooler on `:6543` cannot serve `pg_dump`; the
 rejects the HTTPS API URL that sits next to it in the dashboard, and rejects a URI missing a user,
 password, host, or database name. A rejected value writes nothing.
 
+A value that passes validation is then probed immediately with a read-only `select 1` from inside the
+same `postgres:16` container that will run `pg_dump`. Exit 2 means the URI was saved but the host or
+credential is wrong, and the remedy is printed; a saved URI is not the same as a working one. Use
+`STITCHFLOW_SKIP_SOURCE_PROBE=1` only when offline.
+
 Then, and only then:
 
 ```sh

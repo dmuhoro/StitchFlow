@@ -13,10 +13,12 @@ evidence log.
   `VITE_SUPABASE_PERSONAL_ACCESS_TOKEN`; it is account-level, so it is broader than the database.
   Supabase → Account → Access Tokens → Revoke.
 - [ ] **Set a valid Session-pooler connection** with `npm run ops:set-source-db` (run by itself,
-  then paste only the Dashboard-generated Session pooler URI at the hidden prompt). The pooler host
-  was reachable, but Supabase rejected the supplied authentication. Verify the exact pooler
-  username and current database password; reset the database password if uncertain, then rerun the
-  setter and `npm run rehearse:restore:hosted`. No dump or restore has run.
+  then paste only the Dashboard-generated Session pooler URI at the hidden prompt). The command now
+  probes the value immediately, read-only, and exits 2 with the remedy if the host or credential is
+  wrong — a saved URI is not a working one. The pooler host was reachable, but Supabase rejected the
+  supplied authentication. Verify the exact pooler username and current database password; reset the
+  database password if uncertain, then rerun the setter and `npm run rehearse:restore:hosted`. No dump
+  or restore has run.
 
 ## Verified locally
 
@@ -58,8 +60,9 @@ evidence log.
 - [ ] **Live backup/restore** — the direct host is unreachable over IPv6; the Session pooler endpoint
   is reachable, but the latest rehearsal probe rejected authentication (exit 2). Verify the
   Dashboard-generated Session pooler username and current database password; reset the password if
-  needed. Run `npm run ops:set-source-db` by itself and paste the full URI at the hidden prompt,
-  then rerun `npm run rehearse:restore:hosted`. No source dump or write occurred.
+  needed. Run `npm run ops:set-source-db` by itself and paste the full URI at the hidden prompt; it
+  now probes the value before returning, so a success there means the credential works. Then rerun
+  `npm run rehearse:restore:hosted`. No source dump or write occurred.
 
 ## Blocked on source-build parity
 

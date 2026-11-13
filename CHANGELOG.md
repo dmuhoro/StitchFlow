@@ -49,7 +49,10 @@ passed 1/1 with its synthetic fixture now consumed; live restore remains blocked
   missing precondition (exit 2) and never as a restore-gate rejection (exit 1). An unresolvable host
   is the credential-free fixture. The suite now holds fourteen controls in total.
 - The operator database-URI prompt rejects trailing command-line arguments before prompting or
-  writing, preventing copied explanatory text from being mistaken for a valid setup invocation.
+  writing, preventing copied explanatory text from being mistaken for a valid setup invocation. After
+  a valid URI is written, the setter probes it read-only from inside the `postgres:16` container and
+  exits 2 with the classified remedy when the host or credential is wrong, so a saved URI is never
+  mistaken for a working one. `STITCHFLOW_SKIP_SOURCE_PROBE=1` writes without probing when offline.
 
 ### Security
 

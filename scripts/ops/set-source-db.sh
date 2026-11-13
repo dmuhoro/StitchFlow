@@ -13,8 +13,12 @@
 # The value is typed at a hidden prompt. It never appears in argv, shell
 # history, the terminal, or this script's output.
 #
-# Exit codes: 0 written; 1 the value was rejected (nothing was written);
-# 2 the destination could not be prepared.
+# Exit codes: 0 written (and, when docker is available, proven reachable);
+# 1 the value was rejected (nothing was written); 2 the destination could not be
+# prepared, or the value was written but the source cannot be reached or
+# authenticated yet.
+#
+# Set STITCHFLOW_SKIP_SOURCE_PROBE=1 to write without probing (offline use).
 # ---------------------------------------------------------------------------
 set -euo pipefail
 
@@ -77,9 +81,40 @@ printf '      host=%s database=%s user=%s password=***\n' "$HOSTPORT" "$DBNAME" 
 case "${HOSTPORT%%:*}" in
   db.*.supabase.co)
     printf '\nNOTE: that is the direct Supabase host, which is IPv6-only.\n'
-    printf '      If `npm run rehearse:restore:hosted` reports "Network is unreachable",\n'
-    printf '      replace it with the Session pooler URI (port 5432, user postgres.<ref>):\n'
+    printf '      If the probe below reports "Network is unreachable", replace it with the\n'
+    printf '      Session pooler URI (port 5432, user postgres.<ref>):\n'
     printf '      Supabase -> Project Settings -> Database -> Connection string -> Session pooler.\n'
     ;;
 esac
-printf 'Next: npm run preflight && npm run rehearse:restore:hosted\n'
+
+# Probe now rather than three commands later. A credential that saves cleanly but
+# cannot connect is the failure mode that has cost the most retries: the file
+# looks configured, and the operator only learns the truth when the rehearsal
+# runs. This probe is read-only (`select 1`) and runs from inside the same
+# postgres:16 container that will run pg_dump.
+if [[ "${STITCHFLOW_SKIP_SOURCE_PROBE:-0}" == "1" ]]; then
+  printf '\nSKIPPED: source probe disabled by STITCHFLOW_SKIP_SOURCE_PROBE=1.\n'
+elif ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
+  printf '\nUNVERIFIED: docker is not reachable, so the source was not probed.\n'
+  printf '      The rehearsal still probes it before dumping anything.\n'
+else
+  printf '\nProbing the source from inside the postgres:16 container (read-only)...\n'
+  PROBE_STATUS=0
+  bash scripts/ops/run-with-ops-secrets.sh node scripts/ops/source-db.mjs probe || PROBE_STATUS=$?
+  case "$PROBE_STATUS" in
+    0)
+      printf '\nPASS: the source is reachable and accepts the credential.\n'
+      printf 'Next: npm run rehearse:restore:hosted\n'
+      ;;
+    2)
+      printf '\nBLOCKED: the source cannot be used yet; the remedy is printed above.\n'
+      printf '      The URI is saved, so after fixing it, rerun: npm run ops:set-source-db\n'
+      exit 2
+      ;;
+    *)
+      printf '\nFAIL: the probe exited %s without a known classification.\n' "$PROBE_STATUS"
+      printf '      The URI is saved. Run: npm run rehearse:restore:hosted\n'
+      exit "$PROBE_STATUS"
+      ;;
+  esac
+fi
