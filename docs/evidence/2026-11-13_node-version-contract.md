@@ -74,6 +74,13 @@ Local gates after the change: `check:node` 0, `lint` 0, `test:unit` 0 (9 tests),
 `check:docs` 0 (175 links / 105 files), `build` 0, `verify:controls` 0
 (**14/14** controls, three of them new for this guard).
 
+## Remote confirmation (CI)
+
+GitHub Actions push run [43449174766](https://github.com/dmuhoro/StitchFlow/actions/runs/43449174766)
+passed all jobs for `3dd58ea`, including the new `npm run check:node` step under
+`NODE_CONTRACT_STRICT=1`. CI therefore installed the declared major and asserted it, rather than only
+declaring it in a file.
+
 ## Verdict
 
 **PARTIAL — declared and applied versions now agree; remote source build not yet

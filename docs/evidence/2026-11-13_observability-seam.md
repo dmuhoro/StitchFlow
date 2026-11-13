@@ -91,6 +91,20 @@ leave the caller untouched.
 
 No production event has been observed. Nothing in this change makes that claim.
 
+## Remote confirmation (CI)
+
+GitHub Actions push run [43451484122](https://github.com/dmuhoro/StitchFlow/actions/runs/43451484122)
+passed all three jobs for `44d8adc`, which contains this change: `Types, docs and bundle`,
+`Migration chain and RLS`, and `Hermetic browser journey`. The hermetic job is the same six
+browser journeys, run on a clean GitHub runner.
+
+## Hardening found during review
+
+`key in ALLOWED_VALUES` also matches inherited names (`constructor`, `toString`, `__proto__`), whose
+"allowed values" are not a list. It is now `Object.hasOwn`, and a test with a `__proto__`/
+`constructor` payload proves the fix: the test fails against the `in` version and passes against
+`Object.hasOwn`.
+
 ## Verdict
 
 **PARTIAL — the seam is correct and proven; remote custom-event capture is plan-gated.**

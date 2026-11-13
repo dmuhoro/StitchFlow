@@ -57,6 +57,15 @@ describe('telemetry redaction', () => {
     expect(sanitizeProperties({ data_mode: null })).toEqual({});
   });
 
+  it('ignores inherited object keys such as __proto__ and constructor', () => {
+    const hostile = JSON.parse('{"__proto__": "polluted", "constructor": "x"}') as Record<
+      string,
+      unknown
+    >;
+    expect(sanitizeProperties(hostile)).toEqual({});
+    expect(sanitizeProperties({ toString: 'x', hasOwnProperty: 'y' })).toEqual({});
+  });
+
   it('bounds the number of properties it accepts', () => {
     const sanitized = sanitizeProperties({
       data_mode: 'supabase',

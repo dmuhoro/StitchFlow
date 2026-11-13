@@ -154,9 +154,7 @@ Evidence: [`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-
 | Hosted Playwright onboarding still requires configured invite credentials to run against the live app | Browser proof is opt-in and cannot run from a clean checkout without a fixture | Repository owner — Sprint 1 |
 | No payment ledger or provider reconciliation | Order deposits/balances are displayed as order terms, not payment receipts | Engineering — later payment sprint |
 | Audit coverage exists for orders, measurements, settings, roles, and bookings, but not payments | Payment disputes cannot be investigated | Engineering — Sprint 4 |
-| Guest booking has no rate limit or bot challenge | Direct anon inserts are disabled until the edge boundary exists | Engineering — before public booking |
-| Playwright invite flow is present but hosted credentials are not stored in the repository | Live browser proof requires a deliberate local/CI secret setup | Repository owner — Sprint 1 |
-| Production has six hosted identities across pilot and isolation-only tenants | Approved Vercel deployment and hosted owner/employee/patron role journeys pass; the remote source build is still unproven | Repository owner — authorize one source deploy to prove remote parity |
+| Production has six hosted identities across pilot and isolation-only tenants | Approved Vercel deployment and hosted owner/employee/patron role journeys pass against it | Repository owner — keep hosted identities aligned with the pilot roster |
 | Remote Vercel source build is unproven even though the runtime now matches | Declared and applied Node.js majors both equal `22.x`, and a local production-target `vercel build` passes; `vercel build` runs locally, so Vercel's own build runtime is untested | Repository owner — authorize one source deploy; see [`evidence/2026-11-13_node-version-contract.md`](evidence/2026-11-13_node-version-contract.md) |
 | Financial edit audit migration is applied remotely | Local trigger/RLS assertions pass; remote migration chain is current; hosted rollback-only proof passed | Engineering — retain as release evidence |
 

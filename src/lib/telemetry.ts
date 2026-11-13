@@ -79,7 +79,9 @@ export function sanitizeProperties(
   let accepted = 0;
   for (const [key, value] of Object.entries(input)) {
     if (accepted >= MAX_PROPERTIES) break;
-    if (!(key in ALLOWED_VALUES)) continue;
+    // `in` would also match inherited names such as `constructor` or `__proto__`,
+    // whose "allowed values" are not a list. Only own keys are legitimate.
+    if (!Object.hasOwn(ALLOWED_VALUES, key)) continue;
     if (typeof value !== 'string') continue;
     const allowed = ALLOWED_VALUES[key as keyof TelemetryProperties];
     if (!allowed.includes(value)) continue;
