@@ -9,9 +9,20 @@
  *   - no service-role key marker
  *   - at least one bundled image asset is emitted
  *
- * When the build ran with VITE_DATA_MODE=supabase:
+ * When the build ran with VITE_DATA_MODE=supabase, or when Netlify reports a
+ * production deploy context:
  *   - the Supabase client is present (the bundle is not demo-only)
  *   - the runtime guards that refuse demo sign-in and demo reset are present
+ *   - no demo identity, PIN, credential card, slug, or lookbook copy is present
+ *
+ * When the deploy context is production (Netlify sets CONTEXT=production,
+ * Vercel sets VERCEL_ENV=production):
+ *   - VITE_DATA_MODE must be supabase; a demo-mode production deploy FAILS
+ *   - VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY must be configured, non-placeholder values
+ *
+ * This runs as `postbuild`, so the deploy boundary itself fails closed. It is
+ * not enough for CI to run a separate assertion that a misconfigured deploy can
+ * skip.
  */
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, resolve, dirname, extname } from 'node:path';
@@ -65,16 +76,145 @@ if (/service_role/i.test(corpus)) {
   fail('bundle contains a service_role marker. A service-role key must never reach the browser.');
 }
 
+// --- published secrets ------------------------------------------------------
+// Vite inlines every `VITE_*` value into the bundle. A credential with a public
+// prefix is therefore a credential that ships. The config-time guard refuses
+// this build, but a gate that only exists in one config can be bypassed by a
+// second config, so the artifact gate checks the same invariant independently.
+const PUBLIC_PREFIX = /^(VITE_|NEXT_PUBLIC_|REACT_APP_)/;
+const SECRET_SHAPED =
+  /(PASSWORD|PASSPHRASE|SECRET|SERVICE_ROLE|SERVICE_KEY|PRIVATE_KEY|ACCESS_KEY|CREDENTIAL|TOKEN|DATABASE_URL|POSTGRES|_DB_URL)/i;
+
+const envSources = [
+  ...Object.keys(process.env).map((key) => ({ where: 'the process environment', key })),
+  ...readdirSync(ROOT)
+    .filter((name) => name === '.env' || name.startsWith('.env.'))
+    .flatMap((name) => {
+      let body = '';
+      try {
+        body = readFileSync(join(ROOT, name), 'utf8');
+      } catch {
+        return [];
+      }
+      return body
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('#'))
+        .map((line) => line.replace(/^export\s+/, '').split('=')[0].trim())
+        .filter(Boolean)
+        .map((key) => ({ where: name, key }));
+    }),
+];
+
+for (const { where, key } of envSources) {
+  if (PUBLIC_PREFIX.test(key) && SECRET_SHAPED.test(key.replace(PUBLIC_PREFIX, ''))) {
+    fail(
+      `${where} defines ${key}, which looks like a credential but carries a public prefix; ` +
+        `Vite would inline it into the browser bundle. Remove it from every .env* file.`,
+    );
+  }
+}
+
 const imageAssets = files.filter((file) => /\/assets\/.*\.(jpe?g|png|webp|avif|gif)$/i.test(file));
 if (imageAssets.length === 0) {
   fail('no bundled image assets were emitted under dist/assets.');
 }
 
 const mode = process.env.VITE_DATA_MODE;
-if (mode === 'supabase') {
-  if (!/GoTrueClient|createClient/.test(corpus)) {
-    fail('VITE_DATA_MODE=supabase build does not include the Supabase client.');
+const productionContext = [
+  process.env.CONTEXT,
+  process.env.NETLIFY_CONTEXT,
+  process.env.VERCEL_ENV,
+  process.env.STITCHFLOW_DEPLOY_CONTEXT,
+].some((value) => value === 'production');
+const enforceProductionArtifact = mode === 'supabase' || productionContext;
+
+// The hermetic browser suite builds the real Supabase-mode bundle against a
+// disposable loopback stack. It must still be scanned for demo artifacts, but it
+// cannot carry a hosted project ref. This exception is narrow on purpose:
+//   - it is opt-in and named,
+//   - it is ignored during a production deploy context,
+//   - it only accepts a loopback URL.
+// Anything else fails, so it cannot be used to relax a production build.
+const localSupabaseBuild =
+  !productionContext && process.env.STITCHFLOW_LOCAL_SUPABASE_BUILD === '1';
+
+if (localSupabaseBuild) {
+  const url = process.env.VITE_SUPABASE_URL ?? '';
+  if (!/^http:\/\/(127\.0\.0\.1|localhost):\d{2,5}\/?$/.test(url)) {
+    fail(
+      `STITCHFLOW_LOCAL_SUPABASE_BUILD=1 requires a loopback VITE_SUPABASE_URL, got "${url || '(unset)'}". ` +
+        'This flag must never be used for a hosted build.'
+    );
   }
+}
+
+const enforceHostedProjectRefs = enforceProductionArtifact && !localSupabaseBuild;
+
+if (productionContext) {
+  if (mode !== 'supabase') {
+    fail(
+      `production deploy built with VITE_DATA_MODE=${mode ?? '(unset)'}; it must be "supabase". ` +
+        'A demo-mode production bundle contains demo identities and the demo PIN.'
+    );
+  }
+  const url = process.env.VITE_SUPABASE_URL ?? '';
+  const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '';
+  if (!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(url) || /your-project|example|localhost|127\.0\.0\.1/i.test(url)) {
+    fail('production deploy needs a configured VITE_SUPABASE_URL (https://<ref>.supabase.co), not a placeholder.');
+  }
+  if (!key || key.length < 20 || /your_key_here|local_verification_only|placeholder|example/i.test(key)) {
+    fail('production deploy needs a configured VITE_SUPABASE_PUBLISHABLE_KEY, not a placeholder.');
+  }
+}
+
+if (enforceProductionArtifact) {
+  if (!/GoTrueClient|createClient/.test(corpus)) {
+    fail('production build does not include the Supabase client.');
+  }
+
+  // Compare the project refs actually embedded in the bundle with the ref the
+  // build was supposed to use. Without this, a stale `.env.local` or a reused
+  // `dist/` can ship a bundle pointed at a different backend while every other
+  // assertion still passes.
+  const artifactRefs = [...new Set(
+    [...corpus.matchAll(/https:\/\/([a-z0-9-]+)\.supabase\.co/g)].map((match) => match[1])
+  )];
+  const configuredRef = /^https:\/\/([a-z0-9-]+)\.supabase\.co\/?$/.exec(
+    process.env.VITE_SUPABASE_URL ?? ''
+  )?.[1];
+
+  let linkedRef = null;
+  try {
+    linkedRef = readFileSync(join(ROOT, 'supabase/.temp/project-ref'), 'utf8').trim() || null;
+  } catch {
+    linkedRef = null;
+  }
+
+  if (enforceHostedProjectRefs) {
+    if (artifactRefs.length === 0) {
+      fail('production build does not embed a Supabase project URL.');
+    }
+    if (artifactRefs.length > 1) {
+      fail(`production build embeds multiple Supabase project refs: ${artifactRefs.join(', ')}.`);
+    }
+    if (artifactRefs.includes('vpathqzkaqdtbykumxeo')) {
+      fail('production build still targets the retired Supabase project.');
+    }
+    if (configuredRef && !artifactRefs.includes(configuredRef)) {
+      fail(
+        `production build embeds Supabase project(s) ${artifactRefs.join(', ')} but ` +
+          `VITE_SUPABASE_URL names ${configuredRef}; rebuild with the deployed environment.`
+      );
+    }
+    if (linkedRef && !artifactRefs.includes(linkedRef)) {
+      fail(
+        `production build does not embed the linked project ref ${linkedRef}; ` +
+          `it embeds ${artifactRefs.join(', ') || '(none)'}.`
+      );
+    }
+  }
+
   if (!corpus.includes('Demo role sign-in is disabled in production')) {
     fail('production build is missing the runtime guard that refuses demo role sign-in.');
   }
@@ -91,6 +231,10 @@ if (mode === 'supabase') {
     'StitchFlow Atelier Nairobi',
     'Aso-Oke Heritage House Lagos',
     'Kenyan Coastal Kikoy & East African Heritage',
+    'PILOT-A-001',
+    'PILOT-A-002',
+    'PILOT-B-001',
+    'PILOT-EMP-A-9F3K',
   ]) {
     if (corpus.includes(forbidden)) fail(`production build still contains demo-only artifact: ${forbidden}`);
   }

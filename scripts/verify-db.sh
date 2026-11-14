@@ -19,9 +19,19 @@ DB_PASSWORD="stitchflow_local_only"
 
 if [[ "$MODE" == "docker" ]]; then
   command -v docker >/dev/null 2>&1 || { echo "ERROR: docker is required for docker mode."; exit 1; }
-  CONTAINER="stitchflow-verify-$$"
+  CONTAINER="${VERIFY_DB_CONTAINER_NAME:-stitchflow-verify-$$}"
+  # The backup/restore rehearsal needs the built database after verification, so
+  # a caller can ask for the container name and suppress automatic removal. The
+  # default behaviour (remove on exit) is unchanged.
+  if [[ -n "${VERIFY_DB_CONTAINER_FILE:-}" ]]; then
+    printf '%s\n' "$CONTAINER" > "$VERIFY_DB_CONTAINER_FILE"
+  fi
   cleanup() { docker rm -f "$CONTAINER" >/dev/null 2>&1 || true; }
-  trap cleanup EXIT
+  if [[ "${VERIFY_DB_KEEP:-0}" == "1" ]]; then
+    trap - EXIT
+  else
+    trap cleanup EXIT
+  fi
 
   echo "==> starting disposable postgres:16 ($CONTAINER)"
   docker run -d --name "$CONTAINER" \
@@ -85,6 +95,7 @@ run_file "$ROOT/supabase/seed.sql"
 run_file "$ROOT/supabase/tests/rls_isolation_test.sql"
 run_file "$ROOT/supabase/tests/hosted_rls_e2e.sql"
 run_file "$ROOT/supabase/tests/booking_engine_test.sql"
+run_file "$ROOT/supabase/tests/booking_staff_slice_test.sql"
 bash "$ROOT/scripts/db/booking_concurrency_test.sh"
 
 echo "==> structural assertions"

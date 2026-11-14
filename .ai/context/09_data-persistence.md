@@ -32,12 +32,16 @@ Every supported action has a `persist*` function. The context calls it only in `
 then reloads the snapshot or patches state from the confirmed result. A failed write throws; the
 context surfaces a toast and does not claim success.
 
-Writes covered at this release: order create, order status, tailor assignment, measurement upsert,
-appointment create (member or anonymous), appointment status, feedback create, feedback resolution,
-lookbook create, atelier settings update.
+Writes covered: order create/status, tailor assignment, measurement upsert, authenticated fitting
+request create, feedback create/resolution, lookbook create, atelier settings update, invitations,
+and onboarding. Owner booking confirmation uses the separate booking repository and protected RPCs.
 
 Anonymous visitors use `loadPublicAtelierSnapshot` to read the public atelier profile and published
-lookbook. Supabase mode never seeds demo orders, measurements, appointments, feedback, or lookbook.
+lookbook. Their fitting form is disabled in Supabase mode because no rate-limited guest boundary is
+deployed. Supabase mode never seeds demo orders, measurements, appointments, feedback, or lookbook.
+Owner booking setup, availability, hold, confirm, cancel, and request synchronization use the
+separate booking repository and protected RPCs; these paths pass local database proof and their
+migrations are applied to production. Hosted browser proof still needs a provisioned owner identity.
 
 Writes deliberately not offered in `supabase` mode: tenant switching (the switcher is demo-only),
 reset-to-defaults against a live tenant (destructive), and role escalation.

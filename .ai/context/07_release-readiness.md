@@ -2,29 +2,46 @@
 
 > Canonical: `docs/release-readiness.md`. This list is the authoritative to-do.
 
-## Launch gates
+## Milestone 1 — supervised one-atelier pilot
 
-| ID | Gate | Status | Evidence |
-|----|------|--------|----------|
-| L0 | Operating scaffold (docs, ADRs, sprints, agents) | DONE | `sprints/sprint-00-operating-scaffold.md` |
-| L1 | Reproducible migration chain on an empty database | DONE | `docs/evidence/2026-11-01_database_chain.md`; re-proven 2026-11-05 |
-| L2 | RLS isolation suite passes in CI | DONE | 12 scenarios: `docs/evidence/2026-11-05_sprint-0-verification.md` |
-| L3 | Local imagery bundles with hashed URLs | DONE | `docs/evidence/2026-11-01_build_artifacts.md` |
-| L4 | Persistence wired for every supported action | DONE | `docs/evidence/2026-11-01_persistence.md` |
-| L5 | CI runs lint, build, docs links, DB verification | DONE | `docs/evidence/2026-11-01_ci.md` |
-| L6 | Release versioned, tagged, pushed | DONE | `docs/evidence/2026-11-01_release.md` (tag `v1.0.0`) |
-| L7 | Cleanup (dead deps, lockfile, tree) | DONE | `npm ci` 2026-11-05; commit `1bd06bb` |
-| L8 | README, CHANGELOG, sprints updated | DONE | `CHANGELOG.md`, sprint records |
-| L9 | Deployment verified | DONE (deploy only) | `docs/evidence/2026-11-01_deployment.md`; artifact contains demo code |
+Production migration `20261108173000` is applied and remote migration parity is current. A hermetic
+verification harness now runs the six browser journeys against a disposable local Supabase stack with
+no production credentials: it passed 6/6 twice in a row, and its fourteen negative controls and
+`dump → restore → RLS` rehearsal pass locally. Evidence: `docs/evidence/2026-11-09_e2e-harness.md`.
 
-## Sprint 0a result
+The approved Vercel deployment is READY and hosted owner/employee/patron read-only journeys pass
+3/3. The protected hosted booking confirmation journey passed 1/1 after clearing a stale date
+override; the script-owned fixture is now consumed, so any further write-capable run needs renewed
+owner authorization. Live backup/restore is blocked: the direct source host is IPv6-only and
+unreachable from the rehearsal container, and the reachable Session pooler rejected authentication.
+Remote push and PR CI both pass on `ac22102` after moving the production-landing smoke out of the
+demo build context and leaving it in the hermetic Supabase-mode browser suite.
 
-7 PASS / 1 FAIL across the eight verification gates. Gate 8 (appointment capacity and
-double-booking) fails: `exclusion_constraints=0`, overlapping rows accepted, no staff `INSERT`
-policy.
+Node.js is now declared once: `.nvmrc` and `package.json#engines.node` both say major 22,
+`npm run check:node` fails on drift, CI enforces it in strict mode, and the Vercel project reports
+`22.x`. A local production-target `vercel build` passes, but a Vercel-hosted remote source build is
+still unproven because `vercel build` runs locally. Evidence:
+`docs/evidence/2026-11-13_node-version-contract.md`.
 
-Two P0 defects are open: demo code in the production bundle (`S0-P0-01`) and booking concurrency
-(`S0-P0-02`). Full list: `docs/audit/2026-11-05_sprint-0-audit.md`.
+Current hard blockers:
+
+- Authorize one source deploy so Vercel's own build runtime is exercised.
+- Complete a backup/restore of pilot data. The direct database host is IPv6-only and unreachable;
+  the Session pooler endpoint is reachable but rejected authentication. The owner must verify the
+  Dashboard-generated username and current database password, then re-enter the URI. The latest
+  hosted attempt exited 2 before dumping.
+- This agent shell still inherits two credential-shaped `VITE_*` names, while the owner's terminal
+  reports a clean environment. The production build passes when those unrelated exports are excluded
+  for that command; no value was printed. Any required credential rotation remains owner-controlled.
+- Move the Vercel project off the Hobby plan before a paid pilot (Hobby forbids commercial use; the
+  selected supervised pilot is non-commercial). Custom analytics events are Pro-only as well, so the
+  redacted telemetry seam stays uncaptured on Hobby; page views start with the next deploy.
+  V2 scope, including multi-region failover, is deferred until the single-atelier pilot passes.
+
+See `docs/release-readiness.md`, `docs/evidence/2026-11-09_e2e-harness.md`,
+`docs/evidence/2026-11-10_pilot-gate-reconciliation.md`,
+`docs/evidence/2026-11-08_v1.4.0-rc.3-hosted-recovery.md`, and
+`docs/runbooks/pilot-operations.md`.
 
 ## P0 definitions
 

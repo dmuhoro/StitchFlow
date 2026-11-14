@@ -42,6 +42,10 @@ DO $$
 DECLARE
   v_own INT;
   v_leak INT;
+  v_financial_order uuid;
+  v_financial_audit INT;
+  v_other_financial_audit INT;
+  v_updated INT;
 BEGIN
   SELECT count(*) INTO v_own FROM public.orders
   WHERE atelier_id = '11111111-1111-1111-1111-111111111111';
@@ -51,6 +55,34 @@ BEGIN
 
   ASSERT v_own >= 3, 'Tenant A owner should see their own atelier orders';
   ASSERT v_leak = 0, 'CRITICAL: Tenant A owner can see Tenant B orders';
+
+  SELECT order_id INTO v_financial_order
+  FROM public.order_financials
+  WHERE atelier_id = '11111111-1111-1111-1111-111111111111'
+  ORDER BY order_id
+  LIMIT 1;
+  ASSERT v_financial_order IS NOT NULL, 'Tenant A fixture must have order financials';
+
+  UPDATE public.order_financials
+  SET balance_due = balance_due + 0.01
+  WHERE order_id = v_financial_order;
+  GET DIAGNOSTICS v_updated = ROW_COUNT;
+  ASSERT v_updated = 1, 'Owner must be able to update their order financials';
+
+  SELECT count(*) INTO v_financial_audit
+  FROM public.audit_log
+  WHERE atelier_id = '11111111-1111-1111-1111-111111111111'
+    AND table_name = 'order_financials'
+    AND record_id = v_financial_order
+    AND action = 'update'
+    AND actor_user_id = auth.uid()
+    AND before_data ->> 'balance_due' <> after_data ->> 'balance_due';
+  ASSERT v_financial_audit = 1, 'Owner financial edit must record before/after values and actor';
+  SELECT count(*) INTO v_other_financial_audit
+  FROM public.audit_log
+  WHERE atelier_id = '22222222-2222-2222-2222-222222222222'
+    AND table_name = 'order_financials';
+  ASSERT v_other_financial_audit = 0, 'CRITICAL: Owner can read another atelier financial audit';
   RAISE NOTICE 'PASS [1] owner order isolation: own=%, leaked=%', v_own, v_leak;
 END $$;
 
@@ -81,6 +113,7 @@ DECLARE
   v_other_tenant INT;
   v_other_measurements INT;
   v_financials INT;
+  v_financial_audit INT;
   v_members INT;
 BEGIN
   SELECT count(*) INTO v_assigned FROM public.orders
@@ -94,6 +127,9 @@ BEGIN
 
   SELECT count(*) INTO v_financials FROM public.order_financials;
 
+  SELECT count(*) INTO v_financial_audit FROM public.audit_log
+  WHERE table_name = 'order_financials';
+
   SELECT count(*) INTO v_members FROM public.members
   WHERE atelier_id = '11111111-1111-1111-1111-111111111111';
 
@@ -101,9 +137,10 @@ BEGIN
   ASSERT v_other_tenant = 0, 'Artisan intercepted another atelier';
   ASSERT v_other_measurements = 0, 'CRITICAL: Artisan intercepted another atelier''s measurements';
   ASSERT v_financials = 0, 'CRITICAL: Artisan can read order financials';
+  ASSERT v_financial_audit = 0, 'CRITICAL: Artisan can read financial audit values';
   ASSERT v_members >= 4, 'Artisan should resolve patron/artisan names in their atelier';
-  RAISE NOTICE 'PASS [3] artisan scope: assigned=%, otherOrders=%, otherMeasurements=%, financials=%, members=%',
-    v_assigned, v_other_tenant, v_other_measurements, v_financials, v_members;
+  RAISE NOTICE 'PASS [3] artisan scope: assigned=%, otherOrders=%, otherMeasurements=%, financials=%, financialAudit=%, members=%',
+    v_assigned, v_other_tenant, v_other_measurements, v_financials, v_financial_audit, v_members;
 END $$;
 
 -- ----------------------------------------------------------------------------
@@ -121,6 +158,7 @@ DECLARE
   v_other_client_appointments INT;
   v_own_financials INT;
   v_other_tenant_financials INT;
+  v_financial_audit INT;
   v_client_rows INT;
   v_other_patron_row INT;
   v_staff_rows INT;
@@ -151,6 +189,9 @@ BEGIN
   SELECT count(*) INTO v_other_tenant_financials FROM public.order_financials
   WHERE atelier_id = '22222222-2222-2222-2222-222222222222';
 
+  SELECT count(*) INTO v_financial_audit FROM public.audit_log
+  WHERE table_name = 'order_financials';
+
   SELECT count(*) INTO v_client_rows FROM public.members
   WHERE role = 'client' AND atelier_id = '11111111-1111-1111-1111-111111111111';
 
@@ -168,6 +209,7 @@ BEGIN
   ASSERT v_other_client_appointments = 0, 'CRITICAL: Patron saw another patron appointment';
   ASSERT v_own_financials >= 2, 'Patron must see the balance on their own orders';
   ASSERT v_other_tenant_financials = 0, 'CRITICAL: Patron saw another tenant financials';
+  ASSERT v_financial_audit = 0, 'CRITICAL: Patron can read financial audit values';
   -- A patron sees exactly one client row: their own. Never another patron.
   ASSERT v_client_rows = 1, 'CRITICAL: Patron client-directory visibility must be self only';
   ASSERT v_other_patron_row = 0, 'CRITICAL: Patron saw another patron member row';
@@ -210,20 +252,22 @@ BEGIN
 END $$;
 
 -- ----------------------------------------------------------------------------
--- TEST 6: ANONYMOUS BOOKING IS LIMITED TO PENDING, ACCOUNT-LESS REQUESTS
+-- TEST 6: ANONYMOUS BOOKING WRITES STAY CLOSED UNTIL THE RATE-LIMITED EDGE PATH
 -- ----------------------------------------------------------------------------
 DO $$
 BEGIN
-  INSERT INTO public.appointments (
-    atelier_id, client_name, client_phone, service_type, slot_datetime, status
-  ) VALUES (
-    '11111111-1111-1111-1111-111111111111',
-    'Walk-in Patron',
-    '+254700000001',
-    'grand_agbada',
-    now() + interval '3 days',
-    'pending'
-  );
+  BEGIN
+    INSERT INTO public.appointments (
+      atelier_id, client_name, client_phone, service_type, slot_datetime, status
+    ) VALUES (
+      '11111111-1111-1111-1111-111111111111',
+      'Walk-in Patron', '+254700000001', 'grand_agbada',
+      now() + interval '3 days', 'pending'
+    );
+    RAISE EXCEPTION 'expected anonymous pending-request denial';
+  EXCEPTION
+    WHEN insufficient_privilege THEN NULL;
+  END;
 
   BEGIN
     INSERT INTO public.appointments (
@@ -241,7 +285,7 @@ BEGIN
     WHEN insufficient_privilege THEN NULL;
   END;
 
-  RAISE NOTICE 'PASS [6] anonymous booking: pending accepted, confirmed denied';
+  RAISE NOTICE 'PASS [6] anonymous appointment writes denied pending rate-limited edge boundary';
 END $$;
 
 -- ----------------------------------------------------------------------------
@@ -436,6 +480,91 @@ BEGIN
 
   ASSERT v_blocked = 3, 'CRITICAL: A tenant_id mutation was not blocked';
   RAISE NOTICE 'PASS [12] tenant-id mutation guards: blocked=%', v_blocked;
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- TEST 13: A PATRON CAN ONLY FILE A PENDING REQUEST FOR THEMSELVES
+-- ----------------------------------------------------------------------------
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub": "a3333333-3333-3333-3333-333333333333", "role": "authenticated"}';
+
+DO $$
+DECLARE
+  v_inserted uuid;
+BEGIN
+  INSERT INTO public.appointments (
+    atelier_id, client_id, client_name, client_phone, service_type, slot_datetime, status
+  ) VALUES (
+    '11111111-1111-1111-1111-111111111111',
+    'a3333333-3333-3333-3333-333333333333',
+    'Dr. Zainab Al-Mansoor', '+254733445566', 'grand_agbada', now() + interval '5 days', 'pending'
+  ) RETURNING id INTO v_inserted;
+  ASSERT v_inserted IS NOT NULL, 'patron should be able to file their own pending request';
+
+  BEGIN
+    INSERT INTO public.appointments (
+      atelier_id, client_id, client_name, client_phone, service_type, slot_datetime, status
+    ) VALUES (
+      '11111111-1111-1111-1111-111111111111',
+      'a3333333-3333-3333-3333-333333333333',
+      'Dr. Zainab Al-Mansoor', '+254733445566', 'grand_agbada', now() + interval '6 days', 'confirmed'
+    );
+    RAISE EXCEPTION 'expected patron confirmed request denial';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.appointments (
+      atelier_id, client_id, client_name, client_phone, service_type, slot_datetime, status,
+      assigned_tailor_id
+    ) VALUES (
+      '11111111-1111-1111-1111-111111111111',
+      'a3333333-3333-3333-3333-333333333333',
+      'Dr. Zainab Al-Mansoor', '+254733445566', 'grand_agbada', now() + interval '7 days', 'pending',
+      'a1111111-1111-1111-1111-111111111111'
+    );
+    RAISE EXCEPTION 'expected patron assigned-tailor denial';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.appointments (
+      atelier_id, client_id, client_name, client_phone, service_type, slot_datetime, status
+    ) VALUES (
+      '22222222-2222-2222-2222-222222222222',
+      'a3333333-3333-3333-3333-333333333333',
+      'Dr. Zainab Al-Mansoor', '+254733445566', 'grand_agbada', now() + interval '8 days', 'pending'
+    );
+    RAISE EXCEPTION 'expected patron cross-tenant request denial';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  RAISE NOTICE 'PASS [13] patron appointment insert is own-tenant pending request only';
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- TEST 14: STAFF CANNOT USE THE PATRON REQUEST INSERT POLICY
+-- ----------------------------------------------------------------------------
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub": "a1111111-1111-1111-1111-111111111111", "role": "authenticated"}';
+
+DO $$
+BEGIN
+  BEGIN
+    INSERT INTO public.appointments (
+      atelier_id, client_id, client_name, client_phone, service_type, slot_datetime, status
+    ) VALUES (
+      '11111111-1111-1111-1111-111111111111',
+      'a1111111-1111-1111-1111-111111111111',
+      'Chief Tailor', '+254700000099', 'grand_agbada', now() + interval '9 days', 'pending'
+    );
+    RAISE EXCEPTION 'expected owner appointment insert denial';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  RAISE NOTICE 'PASS [14] owner cannot use patron pending-request insert policy';
 END $$;
 
 ROLLBACK;

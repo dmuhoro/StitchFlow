@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useStitchFlow } from '../context/StitchFlowContext';
 import { Loader2, Scissors, KeyRound, MapPin, AlertTriangle } from 'lucide-react';
+import { emit } from '../lib/telemetry';
 
 /**
  * Production front door.
@@ -18,6 +19,15 @@ const AtelierLanding: React.FC = () => {
     showToast,
   } = useStitchFlow();
   const [code, setCode] = useState('');
+  const landingTracked = useRef(false);
+
+  // The front door is the only public Supabase-mode surface. Count it once, when
+  // resolution finishes, and never attach the atelier id or the invite code.
+  useEffect(() => {
+    if (publicAtelierLoading || landingTracked.current) return;
+    landingTracked.current = true;
+    emit('landing_view', { data_mode: 'supabase', route: 'landing' });
+  }, [publicAtelierLoading]);
 
   const redeemCode = (event: React.FormEvent) => {
     event.preventDefault();

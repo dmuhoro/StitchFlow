@@ -40,3 +40,16 @@ PASS / FAIL / BLOCKED
 | Release and tag | `2026-11-01_release.md` | PASS |
 | Deployment | `2026-11-01_deployment.md` | PASS (deploy only; artifact later found to contain demo code) |
 | Sprint 0 eight-gate verification | `2026-11-05_sprint-0-verification.md` | 7 PASS / 1 FAIL |
+| Live-data pilot readiness | `2026-11-07-pilot-readiness.md` | Local PASS; production later repaired in rc.2 |
+| v1.4.0-rc.1 release checkpoint | `2026-11-08_v1.4.0-rc.1.md` | Prerelease; production schema was still missing |
+| v1.4.0-rc.2 hosted repair | `2026-11-08_v1.4.0-rc.2-hosted-repair.md` | Hosted schema parity PASS; artifact gate PASS; live publish BLOCKED on Netlify credits; browser journeys BLOCKED on identities |
+| Milestone 1 pilot hardening | `2026-11-08_milestone-1-pilot-hardening.md` | Local tenant/database/unit checks and fresh-artifact hosted journeys PASS; live publish and restore rehearsal BLOCKED |
+| Vercel pilot readiness | `2026-11-08_vercel-pilot-readiness.md` | Historical checkpoint; current approved deployment and hosted read-only roles pass, booking awaits synthetic-fixture approval, and live restore remains blocked |
+| v1.4.0-rc.3 hosted recovery attempt | `2026-11-08_v1.4.0-rc.3-hosted-recovery.md` | Migration applied and hosted rollback proof PASS; remote E2E 1/6; backup/restore and release BLOCKED |
+| Hermetic E2E and restore harness | `2026-11-09_e2e-harness.md` | Local 6/6 journeys twice, 7/7 negative controls, truncated dump rejected and full 16-table restore/RLS PASS; live restore and deploy BLOCKED |
+| Pilot gate reconciliation | `2026-11-10_pilot-gate-reconciliation.md` | Local gates, corrected remote CI, approved hosted deployment and three read-only roles PASS; hosted booking fixture and live restore BLOCKED |
+| Live booking attempt | `booking-flow.md` | BLOCKED; remote UI mismatch prevented booking; no screenshot or confirmation |
+| Published-secret boundary | `2026-11-10_bundle-secret-boundary.md` | Build refuses credential-shaped `VITE_` names; 9/9 controls; no publication found; DB password and access token must be rotated |
+| Hosted rehearsal precondition | `2026-11-10_hosted-rehearsal-precondition.md` | Probe classifies network/authentication failure as exit 2; direct host IPv6-unreachable; Session pooler reachable but authentication rejected; no dump |
+| Credential-free local gate rerun | `2026-11-10_local-gate-rerun.md` | Build, lint, unit, DB, hermetic E2E, 11/11 controls, docs, and local restore PASS; hosted restore blocked on Session-pooler authentication |
+| Node.js version contract | `2026-11-13_node-version-contract.md` | `.nvmrc`, `engines.node`, and the Vercel project all declare major 22 with a guard that rejects drift (14/14 controls); local production-target build PASS; remote source build NOT PROVEN |

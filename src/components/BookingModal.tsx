@@ -29,6 +29,9 @@ export const BookingModal: React.FC = () => {
     appointments, 
     bookAppointment,
     currentUser,
+    currentRole,
+    currentAtelier,
+    isSupabaseMode,
     selectedLookbookForBooking,
     setSelectedLookbookForBooking
   } = useStitchFlow();
@@ -52,6 +55,29 @@ export const BookingModal: React.FC = () => {
   const [bookingError, setBookingError] = useState<string | null>(null);
 
   if (!bookingModalOpen) return null;
+
+  if (isSupabaseMode && currentRole === 'visitor') {
+    const close = () => {
+      setBookingModalOpen(false);
+      setSelectedLookbookForBooking(null);
+    };
+    const whatsappDigits = currentAtelier.whatsapp.replace(/\D/g, '');
+    const message = encodeURIComponent('Hello, I would like to arrange an African couture fitting.');
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+        <div className="w-full max-w-md space-y-4 rounded-3xl border border-[#E5DACB] bg-white p-6 text-center shadow-2xl">
+          <h3 className="font-display text-xl font-bold">Online fitting requests are not open yet</h3>
+          <p className="text-sm text-[#6A5D52]">The atelier is preparing protected online booking. Contact the team directly to arrange your fitting.</p>
+          {whatsappDigits && (
+            <a href={`https://wa.me/${whatsappDigits}?text=${message}`} target="_blank" rel="noreferrer" className="inline-flex rounded-xl bg-[#161311] px-4 py-2.5 text-sm font-semibold text-white">
+              Contact the atelier on WhatsApp
+            </a>
+          )}
+          <button type="button" onClick={close} className="block w-full rounded-xl border border-[#C8B69F] px-4 py-2 text-sm font-semibold">Close</button>
+        </div>
+      </div>
+    );
+  }
 
   const tailors = profiles.filter(p => p.role === 'employee');
   // Production profiles carry real UUIDs; a seeded demo id must never be sent
@@ -231,10 +257,12 @@ export const BookingModal: React.FC = () => {
               </div>
               <div>
                 <h4 className="font-display text-2xl font-bold text-[#161311]">
-                  Ceremonial Fitting Reserved!
+                  {isSupabaseMode ? 'Fitting Request Sent' : 'Ceremonial Fitting Reserved!'}
                 </h4>
                 <p className="text-sm text-[#6A5D52] max-w-md mx-auto mt-1">
-                  We have reserved your consultation for <strong>{selectedDate} at {selectedTime}</strong>. Our master artisan has received your cultural event requirements.
+                  {isSupabaseMode
+                    ? <>Your preferred time is <strong>{selectedDate} at {selectedTime}</strong>. The atelier must confirm a protected resource slot before the fitting is booked.</>
+                    : <>We have reserved your consultation for <strong>{selectedDate} at {selectedTime}</strong>. Our master artisan has received your cultural event requirements.</>}
                 </p>
               </div>
 

@@ -340,10 +340,12 @@ begin
   where atelier_id = '22222222-2222-2222-2222-222222222222';
   select count(*) into v_idempotency from public.idempotency_keys;
 
-  -- Three resources exist in A; the client sees only the two active ones.
-  assert v_resources = 2, 'client must see only active resources, saw ' || v_resources;
+  -- Tenant A has two seeded active resources plus the two active fixtures in
+  -- this test; the retired third fixture is invisible to a client. Rules are
+  -- six seeded weekdays per active resource (12) plus seven fixture rules.
+  assert v_resources = 4, 'client must see only active resources, saw ' || v_resources;
   assert v_other_resources = 0, 'CRITICAL: client read another tenant resources';
-  assert v_rules = 7, 'client must see the seven Tenant A weekday rules, saw ' || v_rules;
+  assert v_rules = 19, 'client must see the nineteen Tenant A weekday rules, saw ' || v_rules;
   assert v_other_rules = 0, 'CRITICAL: client read another tenant availability rules';
   assert v_blackouts = 1, 'client must see their tenant blackout, saw ' || v_blackouts;
 
@@ -439,7 +441,7 @@ begin
   select count(*) into v_other from public.bookings
   where atelier_id = '22222222-2222-2222-2222-222222222222';
 
-  assert v_resources = 3, 'owner must see all three Tenant A resources, saw ' || v_resources;
+  assert v_resources = 5, 'owner must see all five Tenant A resources, saw ' || v_resources;
   assert v_bookings = 2, 'owner must see the tenant bookings, saw ' || v_bookings;
   assert v_other = 0, 'CRITICAL: owner read another tenant bookings';
 
@@ -684,8 +686,11 @@ do $$
 declare
   v_first jsonb;
   v_second jsonb;
+  v_third jsonb;
   v_conflict jsonb;
   v_rows int;
+  v_token_first text;
+  v_token_second text;
 begin
   v_first := public.hold_slot(
     '11111111-1111-1111-1111-111111111111',
@@ -698,6 +703,7 @@ begin
     10
   );
   assert v_first ? 'booking_id', 'idempotent hold failed: ' || v_first::text;
+  v_token_first := v_first ->> 'hold_token';
 
   v_second := public.hold_slot(
     '11111111-1111-1111-1111-111111111111',
@@ -711,8 +717,37 @@ begin
   );
   assert v_second ->> 'booking_id' = v_first ->> 'booking_id',
     'same key + same payload must return the original booking';
-  assert v_second ->> 'hold_token' = v_first ->> 'hold_token',
-    'same key + same payload must return the original hold token';
+  assert v_second ->> 'replayed' = 'true',
+    'a replay must declare itself as a replay';
+  v_token_second := v_second ->> 'hold_token';
+  assert v_token_second <> v_token_first,
+    'a replay must rotate the hold token, not return the original';
+
+  -- The rotated token invalidates the first one; only the newest token can
+  -- confirm. This is what keeps a leaked historical replay from being useful.
+  v_third := public.confirm_booking(v_token_first);
+  assert v_third ->> 'error' = 'invalid_hold_token',
+    'the superseded hold token must not confirm, got ' || v_third::text;
+
+  v_third := public.confirm_booking(v_token_second);
+  assert v_third ->> 'status' = 'confirmed',
+    'the rotated token must confirm, got ' || v_third::text;
+
+  -- A replay after confirmation returns the current state with no token.
+  v_third := public.hold_slot(
+    '11111111-1111-1111-1111-111111111111',
+    'c1111111-1111-1111-1111-111111111111',
+    tstzrange('2027-05-13 09:00+00', '2027-05-13 10:00+00', '[)'),
+    'fitting',
+    'a3333333-3333-3333-3333-333333333333',
+    null, null, null, null, null,
+    'idem-hold-1',
+    10
+  );
+  assert v_third ->> 'status' = 'confirmed',
+    'a replay after confirmation must report the confirmed state';
+  assert v_third ->> 'hold_token' is null,
+    'a finished hold must not hand back a token';
 
   v_conflict := public.hold_slot(
     '11111111-1111-1111-1111-111111111111',
@@ -734,7 +769,7 @@ begin
 
   perform public.cancel_booking((v_first ->> 'booking_id')::uuid);
 
-  raise notice 'PASS [B20] hold idempotency replay and mismatch conflict';
+  raise notice 'PASS [B20] replay rotates the token; old token invalid; mismatch conflicts';
 end $$;
 
 -- ----------------------------------------------------------------------------

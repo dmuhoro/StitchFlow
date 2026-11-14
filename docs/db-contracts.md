@@ -81,6 +81,12 @@ Staff insert/update; owner delete.
 **Access:** owner all; assigned employee read/update; patron read own. Patron and artisan names are
 resolved from `members`; they are not stored here.
 
+**Application write scope:** `persistOrderStatus` resolves `order_code` inside the supplied
+`atelier_id` and repeats the tenant predicate on the update; `persistTailorAssignment` filters by
+both `atelier_id` and `order_code`. Both fail closed when no atelier is resolved and report a
+missing/inaccessible row rather than treating a zero-row update as success. The code is unique only
+within an atelier, so duplicate codes across tenants are an intentional regression fixture.
+
 ### `order_financials`
 
 | Column | Type | Notes |
@@ -93,6 +99,26 @@ resolved from `members`; they are not stored here.
 | `updated_at` | timestamptz | |
 
 **Access:** owner read/write; patron read own order only (`client_owns_order`); artisan never.
+Owner inserts, updates, and deletes are recorded in `audit_log` with actor and before/after financial
+values. Financial audit rows are visible only to owners; staff and patrons cannot retrieve those
+values through the broader audit feed.
+
+### `audit_log`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid pk | |
+| `atelier_id` | uuid | tenant |
+| `actor_user_id` | uuid | nullable for system/service writes |
+| `table_name` | text | audited table |
+| `record_id` | uuid | affected record key; `order_id` for financials |
+| `action` | text | `insert`, `update`, or `delete` |
+| `before_data`, `after_data` | jsonb | change snapshots; financial snapshots contain only order id, deposit, balance, and currency |
+| `created_at` | timestamptz | UTC |
+
+**Access:** active atelier members may read non-financial audit rows in their atelier. Only owners
+may read `order_financials` audit rows. Clients cannot insert, update, or delete audit rows; trigger
+functions write them.
 
 ### `order_progress_notes`
 
@@ -139,15 +165,24 @@ resolved from `members`; they are not stored here.
 | `slot_datetime` | timestamptz | |
 | `status` | text | `pending`, `confirmed`, `completed`, `cancelled` |
 | `assigned_tailor_id` | uuid | |
+| `source` | text | optional origin label (`public`, `staff`, or `client`) |
 | `cultural_occasion`, `notes`, `reference_url` | text | |
 | `created_at`, `updated_at` | timestamptz | |
 
-**Access:** `anon` insert only when `status = 'pending'` and `client_id is null`; patron own; owner
-all; assigned employee read/update.
+**Access:** anonymous inserts are disabled until the rate-limited guest boundary ships; patron own;
+owner all; assigned employee read/update.
 
-**Legacy status (2026-11-07):** this table is unchanged by the Sprint 3 booking engine. It still has
-no resource, duration, hold, idempotency key, or overlap constraint, and
-`appointments_public_insert` is retained. It is a second booking store until ADR-009 §8 retires it.
+**Request status:** this table is the fitting-request inbox, not the authority for confirmed time.
+An authenticated client may insert only a `pending` request for themselves in their own atelier,
+with no assigned tailor. Anonymous inserts are disabled until the rate-limited guest boundary. A
+database trigger refuses direct `confirmed` or
+`completed` status changes unless a linked `bookings` row is confirmed. When a linked booking is
+confirmed, the request becomes `confirmed` in the same transaction; cancellation returns it to
+`pending` for rebooking. Pending requests can share a requested time because they are proposals, not
+reserved resource time. `appointments_public_insert` is retired and table-level `INSERT` is revoked
+from `anon`; live visitor requests remain disabled until a rate-limited guest boundary is implemented.
+Migration `20261107220000_restrict_client_appointment_insert.sql` also enforces the patron-only,
+pending, own-tenant request shape.
 
 ### `booking_resources`
 
@@ -202,6 +237,7 @@ bookable — availability fails closed.
 | `id` | uuid pk | |
 | `atelier_id` | uuid | tenant |
 | `resource_id` | uuid | composite FK with `atelier_id` |
+| `appointment_id` | uuid | nullable, composite FK ties an accepted request to this tenant's booking |
 | `during` | tstzrange | finite, non-empty; normalised to `[)` |
 | `status` | text | `held`, `confirmed`, `cancelled`, `expired` |
 | `client_id` | uuid | nullable for a guest booking |
@@ -219,6 +255,16 @@ Two live reservations for one resource can never overlap; the database is the au
 
 **Access:** staff read all bookings in their tenant; a patron reads their own. There is deliberately
 no `INSERT`, `UPDATE`, or `DELETE` policy — every mutation goes through an RPC.
+
+### Booking setup and request status enforcement
+
+- `create_booking_resource(...)` is owner-only and creates a resource plus its weekly availability
+  rules atomically. Capacity stays one; no rules means no available slots.
+- `get_availability(...)` returns a bounded, tenant-scoped availability projection to active members.
+- `appointments_guard_booking_status` blocks direct confirmation/completion without a confirmed
+  linked booking and blocks cancellation while a live hold or booking exists.
+- `bookings_sync_appointment_status` keeps linked requests in step with protected booking
+  confirmation and cancellation.
 
 ### `idempotency_keys`
 
@@ -252,6 +298,9 @@ replayed; booking rows retain only the token hash.
 
 **Access:** patron own insert/read; owner read/update in tenant.
 
+**Application write scope:** feedback status updates filter by both `atelier_id` and feedback `id`.
+Missing tenant resolution and rows outside the selected atelier fail closed.
+
 ## Functions
 
 | Function | Kind | Purpose |
@@ -265,6 +314,11 @@ replayed; booking rows retain only the token hash.
 | `guard_member_mutation()` | trigger | blocks role/tenant escalation |
 | `prevent_atelier_creator_reassignment()` | trigger | immutable creator |
 | `set_updated_at()` | trigger | UTC timestamp |
+| `create_booking_resource(...)` | security definer, RPC | owner-only atomic resource and weekly schedule setup |
+| `get_availability(...)` | security definer, RPC | bounded tenant-scoped availability projection |
+| `guard_appointment_booking_status()` | trigger | blocks request confirmation without a protected booking |
+| `sync_appointment_booking_status()` | trigger | syncs requests after linked booking confirmation/cancellation |
+| `write_financials_audit_log()` | trigger | records owner financial changes without granting staff or patrons access to snapshots |
 | `hold_slot(...)` | security definer, RPC | tenant check, availability/blackout, expiry sweep, exclusion-backed hold, idempotent replay |
 | `confirm_booking(text)` | security definer, RPC | token hash lookup, tenant check, `held` → `confirmed` |
 | `cancel_booking(uuid)` | security definer, RPC | tenant/role check, idempotent `cancelled` |
@@ -305,6 +359,13 @@ transaction, and is callable only by `authenticated`. The retired
 20261106150000_sprint1_hardening.sql
 20261106160000_atomic_owner_onboarding.sql
 20261107120000_booking_engine.sql
+20261107130000_booking_staff_slice.sql
+20261107200000_add_audit_log.sql
+20261107201000_owner_invitation_permissions.sql
+20261107202000_add_source_to_appointments.sql
+20261107210000_guard_appointment_booking_status.sql
+20261107220000_restrict_client_appointment_insert.sql
+20261108173000_audit_order_financials.sql
 ```
 
 `rls_final` is authoritative for policies; `currency_alignment` widens the currency contract to
@@ -315,11 +376,11 @@ resource/booking tables and RPCs and does not alter `appointments`.
 ## Verification
 
 `npm run verify:db` applies the chain to an empty `postgres:16`, loads `supabase/seed.sql`, runs the
-12-scenario `supabase/tests/rls_isolation_test.sql`, the hosted/local E2E suite, the booking-engine
+14-scenario `supabase/tests/rls_isolation_test.sql`, including owner audit capture and employee/patron
+financial-audit denial, the hosted/local E2E suite, the booking-engine
 RLS/RPC suite, and a 200-attempt / 50-concurrent exclusion proof, then asserts RLS on every public
 table.
 
-The booking suite proves the new `bookings` store. It does **not** make `appointments` safe: that
-legacy table still accepts overlapping rows and its anonymous insert policy is retained. Gate 8
-closure for the legacy table is ADR-009 §8 work, not part of this layer. Evidence:
-[`evidence/2026-11-07-booking-engine.md`](evidence/2026-11-07-booking-engine.md).
+Pending appointment rows remain proposals and can share a requested time; they do not reserve a
+resource. Anonymous writes are disabled, while authenticated patrons can only add their own pending
+requests. Protected booking rows remain the authority for reserved time.

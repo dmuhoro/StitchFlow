@@ -1,7 +1,7 @@
 # Architecture
 
 > Canonical architecture for StitchFlow. Agent summary: `.ai/context/01_architecture.md`.
-> The SSR shell in [ADR-008](adr/ADR-008-single-tanstack-start-app.md) is **Proposed, not built**.
+> [ADR-008](adr/ADR-008-single-tanstack-start-app.md) is an approved future direction, not built.
 > Everything in §1–§5 describes the code that exists today.
 
 ## 1. Shape
@@ -14,7 +14,7 @@ publishable key. Authorization is entirely Postgres Row Level Security.
 ┌──────────────────────────────────────────────────────────────┐
 │ Browser                                                      │
 │  React 19 + Vite 8 + Tailwind 4                              │
-│  StitchFlowContext ──► atelier-repository ──► supabase-js    │
+│  StitchFlowContext ──► atelier repositories ──► supabase-js │
 └───────────────────────────────┬──────────────────────────────┘
                                 │ HTTPS (publishable key + JWT)
 ┌───────────────────────────────▼──────────────────────────────┐
@@ -23,8 +23,11 @@ publishable key. Authorization is entirely Postgres Row Level Security.
 └──────────────────────────────────────────────────────────────┘
 ```
 
-Static hosting is Netlify (`netlify.toml`): `npm run build` → `dist/`, SPA fallback to
-`index.html`, and security headers.
+Static hosting for the supervised pilot is Vercel (`vercel.json`): `npm run build` uses the
+Milestone 1 SPA configuration (`vite.pilot.config.ts`) to produce `dist/`, with an SPA fallback to
+`index.html` and security headers. `netlify.toml` is retained as legacy configuration; it is not the
+authoritative deployment target. Both Vite configs describe the static SPA; supported app scripts
+explicitly select `vite.pilot.config.ts`.
 
 ## 2. Modules
 
@@ -38,6 +41,7 @@ Static hosting is Netlify (`netlify.toml`): `npm run build` → `dist/`, SPA fal
 | `src/lib/atelier-repository.ts` | All reads and writes; row → domain mapping |
 | `src/lib/storage.ts` | Namespaced `localStorage` for demo mode |
 | `src/data/initialData.ts` | Demo tenancy and records |
+| `vite.pilot.config.ts` | Supported static SPA build for the managed pilot |
 | `src/types.ts` | Domain contracts |
 | `src/assets/images/` | Bundled couture imagery |
 
@@ -76,9 +80,13 @@ Verified state of this layer (2026-11-07 booking-engine run):
   PostgREST write cannot bypass the tenant check, expiry sweep, idempotency ledger, or exclusion.
 - Guest contact details can be stored only by staff in this layer; anonymous callers cannot execute
   any booking RPC.
-- `appointments` is deliberately unchanged: it still has no resource, duration, hold, idempotency
-  key, or overlap constraint, and no owner/employee `INSERT` policy. It remains a second booking
-  store until ADR-009 §8 retires it.
+- `appointments` remains the fitting request inbox, without resource, duration, hold, or overlap
+  semantics. A database guard blocks confirmation/completion unless a linked `bookings` row is
+  confirmed, and booking transitions synchronize request status. The owner workspace reads
+  availability, confirms via hold/confirm RPCs, and cancels via `cancel_booking`. Direct anonymous
+  appointment writes are disabled until a rate-limited guest boundary is deployed. Authenticated
+  clients can insert only their own pending request, without a staff assignment; other roles cannot
+  use that insert policy.
 
 See [`db-contracts.md`](db-contracts.md) for table contracts and
 [`security.md`](security.md) for the invariant list.
@@ -88,17 +96,22 @@ See [`db-contracts.md`](db-contracts.md) for table contracts and
 | Check | Command | What it proves |
 |-------|---------|----------------|
 | Types | `npm run lint` | `tsc --noEmit` is clean |
+| Repository writes | `npm run test:unit` | Tenant resolution fails closed; duplicate human keys cannot update another atelier |
 | Bundle | `npm run build` | Production build succeeds |
-| Artifacts | `npm run verify:build` | No literal source paths; no secret in output. **It does not prove demo code is absent** — see the P0 in `docs/audit/2026-11-05_sprint-0-audit.md` |
+| Artifacts | `npm run verify:build` | No literal source paths or secrets; Supabase-mode build also rejects known demo identities, PIN, credential cards, tenant slugs and demo copy |
+| Browser smoke | `npm run test:e2e -- --grep "public entry renders"` | Public entry renders and its sign-in action opens the auth dialog |
+| Hermetic browser journeys | `npm run test:e2e:hermetic` | Starts a disposable local Supabase stack with Auth and PostgREST, resets migrations and seeds, then runs the six browser journeys without hosted credentials |
 | Docs | `npm run check:docs` | Every relative Markdown link resolves |
-| Database | `npm run verify:db` | Chain applies to empty DB; 12-scenario RLS suite, 15 E2E scenarios, booking RPC suite, and a 200-attempt / 50-concurrent exclusion proof pass |
-| CI | `.github/workflows/ci.yml` | All of the above on every push |
+| Database | `npm run verify:db` | Chain applies to empty DB; 14-scenario RLS suite, 15 E2E scenarios, booking RPC suite, and a 200-attempt / 50-concurrent exclusion proof pass |
+| CI | `.github/workflows/ci.yml` | All checks on every branch push and pull request; the hermetic E2E job needs no production credentials |
 
 ## 7. Deployment
 
-Netlify builds from `main`. Required environment: `VITE_SUPABASE_URL`,
-`VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_DATA_MODE=supabase`. The deploy is authorized by the
-repository owner; the agent must never request a token in chat. See
+Vercel builds from the connected repository using `npm run build` and `vite.pilot.config.ts`.
+Required Production environment: `VITE_SUPABASE_URL`,
+`VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_DATA_MODE=supabase`. Preview deployments use demo mode.
+Vercel's `VERCEL_ENV=production` activates the postbuild production gate. The deploy is authorized
+by the repository owner; the agent must never request a token in chat. See
 [`runbooks/deployment.md`](runbooks/deployment.md).
 
 ## 8. Deliberate non-goals
@@ -106,6 +119,6 @@ repository owner; the agent must never request a token in chat. See
 No server framework, no ORM, no server-side rendering, no payments in v1.0.0, and no multi-atelier
 membership per user. These are recorded so a future change does not assume they exist.
 
-Two of these are now proposed changes, not permanent non-goals: ADR-008 proposes a single TanStack
-Start app for SSR, and ADR-010 proposes an append-only payments ledger. Neither is implemented.
-Until the owner approves those ADRs, the non-goals above remain the shipped truth.
+ADR-008 approves a future single TanStack Start app for SSR, and ADR-010 proposes an append-only
+payments ledger. Neither is implemented. SSR, payments, and other Milestone 2 work are not part of
+the supervised Vercel pilot.

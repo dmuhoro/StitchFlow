@@ -101,10 +101,10 @@ insert into public.orders (
   description, garment_type, fabric_details, estimated_delivery, photo_url
 ) values
   ('e2e10001-0001-4001-8001-000000000001', (select id from e2e_ids where k='atelier_a'),
-   'E2E-A-001', 'e2e00003-0003-4003-8003-000000000003', 'e2e00002-0002-4002-8002-000000000002',
+   'E2E-SHARED-001', 'e2e00003-0003-4003-8003-000000000003', 'e2e00002-0002-4002-8002-000000000002',
    'stitching', 'Agbada proof order A', 'Grand Agbada', 'Aso-Oke', current_date + 10, null),
   ('e2e10002-0002-4002-8002-000000000002', (select id from e2e_ids where k='atelier_b'),
-   'E2E-B-001', 'e2e00005-0005-4005-8005-000000000005', null,
+   'E2E-SHARED-001', 'e2e00005-0005-4005-8005-000000000005', null,
    'cutting', 'Agbada proof order B', 'Grand Agbada', 'Aso-Oke', current_date + 12, null);
 
 insert into public.order_financials (order_id, atelier_id, deposit_amount, balance_due, currency)
@@ -137,6 +137,7 @@ DECLARE
   v_other_measurements int;
   v_other_members int;
   v_updated int;
+  v_human_key_updated int;
 BEGIN
   SELECT count(*) INTO v_own_orders FROM public.orders WHERE atelier_id = (SELECT id FROM e2e_ids WHERE k='atelier_a');
   SELECT count(*) INTO v_other_orders FROM public.orders WHERE atelier_id = (SELECT id FROM e2e_ids WHERE k='atelier_b');
@@ -146,18 +147,38 @@ BEGIN
   UPDATE public.orders SET status = 'ready' WHERE atelier_id = (SELECT id FROM e2e_ids WHERE k='atelier_b');
   GET DIAGNOSTICS v_updated = ROW_COUNT;
 
+  UPDATE public.orders SET status = 'ready' WHERE order_code = 'E2E-SHARED-001';
+  GET DIAGNOSTICS v_human_key_updated = ROW_COUNT;
+
   ASSERT v_own_orders = 1, 'Owner A must see their own order';
   ASSERT v_other_orders = 0, 'CRITICAL: Owner A read Tenant B orders';
   ASSERT v_other_measurements = 0, 'CRITICAL: Owner A read Tenant B measurements';
   ASSERT v_other_members = 0, 'CRITICAL: Owner A read Tenant B staff';
   ASSERT v_updated = 0, 'CRITICAL: Owner A mutated Tenant B orders';
-  RAISE NOTICE 'PASS [E2E-3] Owner A isolation: own=%, otherOrders=%, otherMeasurements=%, mutated=%',
+  ASSERT v_human_key_updated = 1, 'Owner A should update only its duplicate human-key row';
+  RAISE NOTICE 'PASS [E2E-3] Owner A isolation: own=%, otherOrders=%, otherMeasurements=%, tenantScoped=%',
     v_own_orders, v_other_orders, v_other_measurements, v_updated;
+END $$;
+
+reset role;
+
+DO $$
+DECLARE
+  v_a_status text;
+  v_b_status text;
+BEGIN
+  SELECT status INTO v_a_status FROM public.orders WHERE id = 'e2e10001-0001-4001-8001-000000000001';
+  SELECT status INTO v_b_status FROM public.orders WHERE id = 'e2e10002-0002-4002-8002-000000000002';
+
+  ASSERT v_a_status = 'ready', 'Owner A update did not reach its matching order';
+  ASSERT v_b_status = 'cutting', 'CRITICAL: Owner A changed Tenant B order with the same order_code';
+  RAISE NOTICE 'PASS [E2E-3a] duplicate order_code update affected only the owner tenant';
 END $$;
 
 -- ----------------------------------------------------------------------------
 -- 5. OWNER B CANNOT READ TENANT A (bidirectional proof)
 -- ----------------------------------------------------------------------------
+set local role authenticated;
 set local "request.jwt.claims" = '{"sub": "e2e00004-0004-4004-8004-000000000004", "role": "authenticated"}';
 
 DO $$

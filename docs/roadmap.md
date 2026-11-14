@@ -5,7 +5,7 @@
 ## v1.0.0 — Launch readiness (released, demo-first)
 
 - Reproducible schema and seed.
-- Proven tenant isolation (12 scenarios; gates 1–7).
+- Proven tenant isolation (14 scenarios; gates 1–7 plus appointment insert boundaries).
 - Bundled cultural imagery.
 - Wired persistence with fail-closed configuration.
 - CI, release, tag, clean tree, truthful docs.
@@ -19,16 +19,21 @@ defects, so it is not certified for a live atelier. See
 Audit and decisions only. ADR-008 through ADR-011 are **Proposed**. Sprint 1 is blocked until
 ADR-008 and ADR-011 are approved.
 
-## v1.1.0 — First pilot atelier (partially shipped)
+## Milestone 1 — Managed single-atelier pilot (in progress)
 
-Shipped: atomic owner onboarding (`create_atelier_with_owner`), invitation redemption, audit trail
-for orders/measurements/settings/roles. Remaining:
+Shipped locally: atomic owner onboarding (`create_atelier_with_owner`), invitation redemption,
+audit trail for orders/measurements/settings/roles, production artifact gate, tenant-scoped
+repository writes, hosted identity fixtures, and the controlled owner/staff/patron browser journeys
+against the fresh static build and hosted Supabase.
 
-- Remove demo code from the production artifact and make `verify:build` assert its absence.
-- Tenant-correct order writes (`atelier_id` + `order_code`).
-- Three-identity end-to-end verification against a hosted project.
-- Media storage with signed URLs for garment photography.
-- Email/WhatsApp transactional notifications.
+- Repository owner must confirm the Vercel project/domain and authorize publication of the reviewed
+  artifact; the current hosted deployment has not been verified against this checkout.
+- Run live-site role and booking-confirmation verification after the publish. Do not mark the pilot
+  complete before this check passes.
+- Complete and record an owner-authorized live-source restore to a disposable target before
+  non-synthetic atelier data is accepted.
+- Partner integrations remain out of Milestone 1: media storage signed URLs, transactional
+  email/WhatsApp, payments, guest edge-function, capacity > one booking.
 
 ## v1.2.0 — Booking engine, database layer (released)
 
@@ -44,9 +49,10 @@ Shipped:
 
 Remaining for the booking engine:
 
-- Frontend/UI wiring of the RPCs.
-- Retire/backfill `appointments` (ADR-009 §8).
-- Guest edge-function boundary with per-IP/phone/tenant rate limits and a bot challenge.
+- Live-Vercel verification of the owner UI and status-guard migration. Local database and
+  hosted-schema checks pass; role UI checks pass against the fresh local build.
+- Guest edge-function boundary with per-IP/phone/tenant rate limits and a bot challenge. Until it
+  exists, direct anonymous appointment inserts and the live visitor booking form are disabled.
 - `booking_slots` and capacity greater than one.
 - Scheduled expiry sweeper and its operational alert.
 
@@ -64,6 +70,15 @@ Remaining for the booking engine:
 - Consent, retention, export, and deletion workflows.
 - Monitoring, alerting, and an operations dashboard.
 - Multi-atelier membership if pilot demand proves it.
+
+## v2 — Public-ready product (later)
+
+Guest booking with a rate-limited edge boundary, payments, transactional communications, public
+tenant resolution/SSR, media storage, multi-atelier support, broader operational monitoring, and
+multi-region failover remain future scope. **Payments, SSR, guest booking, multi-region failover,
+and broad operational analytics are explicitly deferred to v2.** These are not prerequisites to
+finishing the supervised pilot. Do not start this scope until the single-atelier pilot has passed
+its hosted workflow and recovery acceptance criteria.
 
 ## Explicit non-goals
 

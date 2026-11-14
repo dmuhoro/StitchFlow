@@ -12,13 +12,15 @@
 | [ADR-004](../../docs/adr/ADR-004-baseline-reconciliation.md) | Reconcile the legacy baseline with a guarded migration | Accepted |
 | [ADR-005](../../docs/adr/ADR-005-fail-closed-data-mode.md) | `VITE_DATA_MODE` fails closed | Accepted |
 | [ADR-006](../../docs/adr/ADR-006-vite-local-asset-imports.md) | Local imagery is imported through Vite | Accepted |
-| [ADR-007](../../docs/adr/ADR-007-static-netlify-deployment.md) | Static SPA on Netlify with explicit env | Accepted |
-| [ADR-008](../../docs/adr/ADR-008-single-tanstack-start-app.md) | One TanStack Start app: public SSR + authenticated app groups | **Proposed** |
+| [ADR-007](../../docs/adr/ADR-007-static-netlify-deployment.md) | Static SPA on Netlify with explicit env | Provider superseded by ADR-012 |
+| [ADR-008](../../docs/adr/ADR-008-single-tanstack-start-app.md) | One TanStack Start app: public SSR + authenticated app groups | Approved; not implemented |
 | [ADR-009](../../docs/adr/ADR-009-booking-concurrency.md) | Booking exclusion constraints + expiring holds + idempotency | **Proposed** |
 | [ADR-010](../../docs/adr/ADR-010-payments-and-ledger.md) | Append-only ledger + idempotent webhooks + derived balances | **Proposed** |
-| [ADR-011](../../docs/adr/ADR-011-tenant-resolution.md) | Tenant by verified domain → subdomain → slug | **Proposed** |
+| [ADR-011](../../docs/adr/ADR-011-tenant-resolution.md) | Tenant by verified domain → subdomain → slug | Approved; not implemented |
+| [ADR-012](../../docs/adr/ADR-012-vercel-static-pilot-hosting.md) | Vercel static hosting for the supervised pilot | Accepted |
 
-ADR-008 and ADR-011 are hard gates before Sprint 1. None of the four is implemented.
+ADR-008, ADR-011, and ADR-012 are approved. ADR-008 SSR and ADR-011 tenant resolution are not
+implemented in the current supervised pilot. ADR-009 and ADR-010 remain proposed.
 
 ## Pre-ADR decisions (historical)
 

@@ -1,10 +1,15 @@
 name: CI
 
+# Every push on every branch is gated. Before this, only `main` was covered, so a
+# feature branch could sit red indefinitely and the first signal arrived after a
+# merge. Pull requests are gated regardless of their base branch for the same
+# reason: the branch that needs the signal is the one being proposed.
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
-    branches: [main]
+    branches: ['**']
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -17,7 +22,7 @@ jobs:
   quality:
     name: Types, docs and bundle
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -29,8 +34,16 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Assert the declared Node.js version
+        env:
+          NODE_CONTRACT_STRICT: '1'
+        run: npm run check:node
+
       - name: Types
         run: npm run lint
+
+      - name: Repository write-boundary tests
+        run: npm run test:unit
 
       - name: Documentation links
         run: npm run check:docs
@@ -54,6 +67,46 @@ jobs:
         env:
           VITE_DATA_MODE: supabase
         run: npm run verify:build
+
+      # Negative proof: a production deploy context must REJECT a demo-mode
+      # artifact. Without this step the gate could regress to a no-op and CI
+      # would still be green.
+      - name: Prove the production gate rejects a demo-mode artifact
+        run: |
+          npm run build
+          if CONTEXT=production node scripts/ci/verify-build.mjs; then
+            echo "FAIL: the production gate accepted a demo-mode artifact."
+            exit 1
+          fi
+          echo "PASS: the production gate rejected the demo-mode artifact."
+
+      - name: Prove Vercel production rejects a demo-mode artifact
+        run: |
+          VITE_DATA_MODE=demo npm run build
+          if VERCEL_ENV=production node scripts/ci/verify-build.mjs; then
+            echo "FAIL: the Vercel production gate accepted a demo-mode artifact."
+            exit 1
+          fi
+          echo "PASS: the Vercel production gate rejected the demo-mode artifact."
+
+      # Negative proof: the project ref embedded in the artifact must match the
+      # configured environment. A stale dist pointed at a different backend must
+      # fail even when the URL is well-shaped.
+      - name: Prove the production gate rejects artifact/env project drift
+        run: |
+          VITE_DATA_MODE=supabase \
+          VITE_SUPABASE_URL=https://artifactref.supabase.co \
+          VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_artifactref_0123456789abcdef \
+          npm run build
+          if CONTEXT=production \
+             VITE_DATA_MODE=supabase \
+             VITE_SUPABASE_URL=https://differentref.supabase.co \
+             VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_differentref_0123456789abcdef \
+             node scripts/ci/verify-build.mjs; then
+            echo "FAIL: the production gate accepted an artifact built for another project."
+            exit 1
+          fi
+          echo "PASS: the production gate rejected artifact/env project drift."
 
   database:
     name: Migration chain and RLS
@@ -91,3 +144,55 @@ jobs:
 
       - name: Replay migrations, seed and RLS suite
         run: npm run verify:db:host
+
+  e2e:
+    name: Hermetic browser journey
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      # The suite runs against a disposable local Supabase stack. It needs no
+      # project ref, no publishable key, and no hosted database password, so it
+      # gates a work branch even before the owner provisions anything. It also
+      # runs the public-entry smoke against the correct Supabase-mode artifact.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.0.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Assert the declared Node.js version
+        env:
+          NODE_CONTRACT_STRICT: '1'
+        run: npm run check:node
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Confirm the disposable stack is available
+        run: |
+          docker info >/dev/null
+          supabase --version
+
+      - name: Hermetic browser suite (clean run then immediate re-run)
+        env:
+          # Keep the first stack alive so the immediate re-run reuses it and
+          # resets the data instead of paying for a second image pull. The
+          # re-run is the property under test: a consumed slot must not leak.
+          STITCHFLOW_E2E_KEEP: '1'
+          STITCHFLOW_E2E_WORKDIR: /tmp/stitchflow-e2e
+        run: |
+          npm run test:e2e:hermetic
+          npm run test:e2e:hermetic
+
+      # Every gate above is only trusted if it has been seen rejecting its
+      # failure. This script feeds each gate the failure it exists to catch.
+      - name: Negative controls
+        run: npm run verify:controls

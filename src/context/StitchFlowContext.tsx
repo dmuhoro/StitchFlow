@@ -5,6 +5,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { clearStitchFlowStorage, readStorage, readStorageString, writeStorage } from '../lib/storage';
+import { emit } from '../lib/telemetry';
 import { 
   UserRole, 
   ThemeMode,
@@ -85,6 +86,8 @@ interface StitchFlowContextType {
   isProductionMode: boolean;
   authLoading: boolean;
   authError: string | null;
+  /** Session email even when the user has no membership yet (invite redemption). */
+  authenticatedEmail: string | null;
   needsOnboarding: boolean;
   atelierNotFound: boolean;
   publicAtelierLoading: boolean;
@@ -92,6 +95,7 @@ interface StitchFlowContextType {
   acceptInvitation: (code: string) => Promise<{ success: boolean; atelier_id?: string; role?: string; error?: string }>;
   invitations: Invitation[];
   refreshInvitations: () => Promise<void>;
+  refreshAtelier: () => Promise<void>;
   inviteMember: (input: { email: string; role: 'employee' | 'client'; sendEmail: boolean }) => Promise<Invitation>;
   revokeInvitation: (id: string) => Promise<void>;
   invitationLink: (code: string) => string;
@@ -108,7 +112,7 @@ interface StitchFlowContextType {
   setActiveClientId: (id: string) => void;
   currency: 'KES' | 'NGN' | 'USD';
   setCurrency: (c: 'KES' | 'NGN' | 'USD') => void;
-  formatCurrency: (kesAmount: number) => string;
+  formatCurrency: (amount: number, currency?: 'KES' | 'NGN' | 'USD') => string;
   
   // Data entities
   profiles: Profile[];
@@ -248,6 +252,10 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
   const [authLoading, setAuthLoading] = useState(dataMode === 'supabase');
   const [authError, setAuthError] = useState<string | null>(null);
+  // The authenticated session's email, independent of membership. An invitee is
+  // a signed-in user with no `members` row until they redeem a code, so the
+  // invitation screen cannot key its signed-in state on `currentUser`.
+  const [authenticatedEmail, setAuthenticatedEmail] = useState<string | null>(null);
   const [activeAtelierId, setActiveAtelierId] = useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authTargetRole, setAuthTargetRole] = useState<UserRole | null>(null);
@@ -326,6 +334,11 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
 
   const applyAuthenticatedMember = async () => {
+    // Capture the session identity before resolving membership: a signed-in
+    // invitee has no membership yet and must still reach the redeem step.
+    const authUser = supabase ? (await supabase.auth.getUser()).data.user : null;
+    setAuthenticatedEmail(authUser?.email ?? null);
+
     const member = await getCurrentMember();
     if (!member) {
       setCurrentUser(null);
@@ -407,6 +420,11 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setInvitations(await listInvitationsRepository(activeAtelierId));
   };
 
+  const refreshAtelier = async () => {
+    if (!isProductionMode || !currentUser) return;
+    await applyAuthenticatedMember();
+  };
+
   const inviteMember = async (input: { email: string; role: 'employee' | 'client'; sendEmail: boolean }) => {
     if (!isProductionMode || !activeAtelierId) {
       throw new Error('Invitations are available only for a live atelier.');
@@ -434,7 +452,10 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const revokeInvitation = async (id: string) => {
-    await revokeInvitationRepository(id);
+    if (!isProductionMode || !activeAtelierId) {
+      throw new Error('No live atelier is resolved for invitation management.');
+    }
+    await revokeInvitationRepository(activeAtelierId, id);
     setInvitations(prev => prev.filter(invitation => invitation.id !== id));
     showToast('Invitation revoked.');
   };
@@ -738,6 +759,9 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setAuthError(error.message);
       throw error;
     }
+    // Credentials were accepted. No identity is attached: the sink only receives
+    // the enumerated data mode.
+    emit('auth_signed_in', { data_mode: 'supabase', outcome: 'success' });
   };
 
   const sendMagicLink = async (email: string, redirectTo?: string) => {
@@ -756,6 +780,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const logout = () => {
     if (isProductionMode && supabase) void supabase.auth.signOut();
     setCurrentUser(null);
+    setAuthenticatedEmail(null);
     setProfiles([]);
     setCurrentRoleState('visitor');
     setInvitations([]);
@@ -799,16 +824,12 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  const formatCurrency = (kesAmount: number): string => {
-    if (currency === 'USD') {
-      const usdAmount = Math.round(kesAmount / 130);
-      return `$${usdAmount.toLocaleString()}`;
-    }
-    if (currency === 'NGN') {
-      const ngnAmount = Math.round(kesAmount * 11.5);
-      return `₦${ngnAmount.toLocaleString()}`;
-    }
-    return `${kesAmount.toLocaleString()} KES`;
+  const formatCurrency = (amount: number, amountCurrency: 'KES' | 'NGN' | 'USD' = currency): string => {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: amountCurrency,
+      maximumFractionDigits: 0,
+    }).format(amount);
   };
 
   const updateOrderStatus = (orderId: string, newStatus: ProductionStatus, note?: string) => {
@@ -985,10 +1006,18 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const updateAppointmentStatus = (id: string, status: AppointmentStatus) => {
+    if (isProductionMode && status === 'confirmed') {
+      showToast('Confirm this request through the protected booking workspace so a resource slot is reserved.');
+      return;
+    }
+    if (isProductionMode && !activeAtelierId) {
+      showToast('No atelier is resolved for this session. The fitting status was not saved.');
+      return;
+    }
     setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
-    if (isProductionMode) {
+    if (isProductionMode && activeAtelierId) {
       void saveOrToast(
-        persistAppointmentStatus(id, status),
+        persistAppointmentStatus(activeAtelierId, id, status),
         `Appointment status updated to ${status}`
       );
     } else {
@@ -1020,9 +1049,13 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const updateFeedbackStatus = (id: string, status: 'open' | 'addressed' | 'resolved') => {
+    if (isProductionMode && !activeAtelierId) {
+      showToast('No atelier is resolved for this session. Feedback status was not saved.');
+      return;
+    }
     setFeedbacks(prev => prev.map(f => f.id === id ? { ...f, resolution_status: status } : f));
-    if (isProductionMode) {
-      void saveOrToast(persistFeedbackStatus(id, status), `Feedback marked as ${status}`);
+    if (isProductionMode && activeAtelierId) {
+      void saveOrToast(persistFeedbackStatus(activeAtelierId, id, status), `Feedback marked as ${status}`);
     } else {
       showToast(`Feedback marked as ${status}`);
     }
@@ -1083,6 +1116,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       settingsModalOpen,
       setSettingsModalOpen,
       currentUser,
+      authenticatedEmail,
       loginAsUser,
       signInWithPassword,
       sendMagicLink,
@@ -1097,6 +1131,7 @@ export const StitchFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       acceptInvitation,
       invitations,
       refreshInvitations,
+      refreshAtelier,
       inviteMember,
       revokeInvitation,
       invitationLink,

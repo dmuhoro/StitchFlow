@@ -14,6 +14,7 @@
 | Build integrity | `dist/` | `npm run verify:build` |
 | Documentation links | `**/*.md` | `npm run check:docs` |
 | CI orchestration | `.github/workflows/ci.yml` | GitHub Actions |
+| Hosted role and booking journeys | `e2e/role-access.spec.ts`, `e2e/booking-confirm.spec.ts` | `npm run test:e2e` with owner-provisioned fixture variables |
 
 ## RLS suite scenarios
 
@@ -22,7 +23,7 @@
 3. Artisan sees assigned orders, no financials, and resolves names.
 4. Patron sees own measurements, orders and balances; not another patron's.
 5. Anonymous visitor sees published lookbook only.
-6. Anonymous booking is limited to pending, account-less requests.
+6. Anonymous appointment insertion is denied until the rate-limited guest boundary exists.
 7. Owner cannot update another tenant's orders.
 8. Cross-tenant insert is rejected by `WITH CHECK`.
 9. Patron cannot escalate their own role.

@@ -270,7 +270,7 @@ export const Navbar: React.FC = () => {
                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#161311] dark:bg-[#D4A347] text-[#FAF6F0] dark:text-[#161311] hover:bg-[#2C241E] transition-all shadow-sm"
                 >
                   <KeyRound className="w-3.5 h-3.5 text-[#D4A347] dark:text-[#161311]" />
-                  <span>Atelier Sign In</span>
+                  <span>Enter Atelier</span>
                 </button>
               )}
 

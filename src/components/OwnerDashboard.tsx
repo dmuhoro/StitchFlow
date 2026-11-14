@@ -17,12 +17,12 @@ import {
   Calendar, 
   Sparkles, 
   MessageSquare, 
-  ArrowUpRight,
   ShieldCheck,
   Lock
 } from 'lucide-react';
 import { useStitchFlow } from '../context/StitchFlowContext';
 import { Order, ProductionStatus } from '../types';
+import { BookingWorkspace } from './BookingWorkspace';
 import { AccessGate } from './AccessGate';
 import { TeamInvitesPanel } from './TeamInvitesPanel';
 
@@ -34,7 +34,8 @@ export const OwnerDashboard: React.FC = () => {
     addOrder, 
     profiles, 
     appointments, 
-    updateAppointmentStatus, 
+    updateAppointmentStatus,
+    isSupabaseMode,
     measurements, 
     feedbacks, 
     updateFeedbackStatus,
@@ -76,8 +77,17 @@ export const OwnerDashboard: React.FC = () => {
   const [lbDays, setLbDays] = useState(14);
   const [lbImage, setLbImage] = useState('https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80');
 
-  const totalRevenue = orders.reduce((sum, o) => sum + o.deposit_amount + (o.status === 'ready' ? o.balance_due : 0), 0);
-  const pendingBalance = orders.reduce((sum, o) => sum + (o.status !== 'ready' ? o.balance_due : 0), 0);
+  const currencyTotals = (kind: 'deposits' | 'balance') => {
+    const totals = orders.reduce<Record<'KES' | 'NGN' | 'USD', number>>((sum, order) => {
+      if (kind === 'deposits') sum[order.currency] += order.deposit_amount;
+      else if (order.status !== 'ready') sum[order.currency] += order.balance_due;
+      return sum;
+    }, { KES: 0, NGN: 0, USD: 0 });
+    const nonZero = (Object.keys(totals) as ('KES' | 'NGN' | 'USD')[]).filter(code => totals[code] !== 0);
+    return nonZero.length ? nonZero.map(code => formatCurrency(totals[code], code)).join(' · ') : formatCurrency(0);
+  };
+  const depositAmounts = currencyTotals('deposits');
+  const pendingBalance = currencyTotals('balance');
   const activeOrdersCount = orders.filter(o => o.status !== 'ready').length;
   const readyOrdersCount = orders.filter(o => o.status === 'ready').length;
 
@@ -188,10 +198,10 @@ export const OwnerDashboard: React.FC = () => {
             </span>
           </div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#161311] dark:text-[#F5EFE6] mt-1">
-            Executive Production & Financial Suite
+            Executive Production & Order Terms
           </h1>
           <p className="text-xs text-[#6A5D52] dark:text-[#B8ABA0] mt-0.5">
-            Demo cashflow metrics, tailor bench workload distribution, and ceremony commissions.
+            Order terms and workshop progress. Payments and reconciliation are not tracked here.
           </p>
         </div>
 
@@ -210,27 +220,27 @@ export const OwnerDashboard: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-[#1C1917] p-5 rounded-3xl border border-[#E5DACB] dark:border-[#332C27] shadow-sm">
           <div className="flex items-center justify-between text-xs text-[#6A5D52] dark:text-[#B8ABA0]">
-            <span className="font-semibold uppercase tracking-wider text-[10px]">Realized Revenue</span>
+            <span className="font-semibold uppercase tracking-wider text-[10px]">Deposit amounts on orders</span>
             <DollarSign className="w-4 h-4 text-[#D4A347]" />
           </div>
           <div className="font-mono text-xl sm:text-2xl font-bold text-[#161311] dark:text-[#F5EFE6] mt-2">
-            {formatCurrency(totalRevenue)}
+            {depositAmounts}
           </div>
-          <div className="text-[11px] text-green-700 dark:text-green-400 font-medium flex items-center gap-1 mt-1">
-            <ArrowUpRight className="w-3 h-3" /> +22.4% vs last wedding season
+          <div className="text-[11px] text-[#6A5D52] dark:text-[#8A7D73] mt-1">
+            Order amounts only; this is not a record of payments received.
           </div>
         </div>
 
         <div className="bg-white dark:bg-[#1C1917] p-5 rounded-3xl border border-[#E5DACB] dark:border-[#332C27] shadow-sm">
           <div className="flex items-center justify-between text-xs text-[#6A5D52] dark:text-[#B8ABA0]">
-            <span className="font-semibold uppercase tracking-wider text-[10px]">Pending Balances</span>
+            <span className="font-semibold uppercase tracking-wider text-[10px]">Outstanding order amounts</span>
             <Clock className="w-4 h-4 text-[#98897C]" />
           </div>
           <div className="font-mono text-xl sm:text-2xl font-bold text-[#161311] dark:text-[#F5EFE6] mt-2">
-            {formatCurrency(pendingBalance)}
+            {pendingBalance}
           </div>
           <div className="text-[11px] text-[#6A5D52] dark:text-[#8A7D73] mt-1">
-            Receivable upon final ceremonial handover
+            Order balances grouped by their recorded currency
           </div>
         </div>
 
@@ -484,7 +494,7 @@ export const OwnerDashboard: React.FC = () => {
                           <div className="flex items-center justify-between text-[11px] pt-1">
                             <span className="text-[#98897C]">Balance:</span>
                             <span className="font-mono font-bold text-[#161311] dark:text-[#F5EFE6]">
-                              {formatCurrency(ord.balance_due)}
+                              {formatCurrency(ord.balance_due, ord.currency)}
                             </span>
                           </div>
 
@@ -536,10 +546,11 @@ export const OwnerDashboard: React.FC = () => {
               Ceremonial Fitting & Consultation Queue
             </h3>
             <span className="text-xs text-[#6A5D52] dark:text-[#B8ABA0]">
-              Double-booking protection active
+              Slot protection applies after a fitting is confirmed through the booking workspace.
             </span>
           </div>
 
+          {isSupabaseMode && <BookingWorkspace />}
           <div className="bg-white dark:bg-[#1C1917] rounded-3xl border border-[#E5DACB] dark:border-[#332C27] overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
@@ -547,7 +558,7 @@ export const OwnerDashboard: React.FC = () => {
                   <tr>
                     <th className="px-4 py-3">Patron</th>
                     <th className="px-4 py-3">Occasion & Service</th>
-                    <th className="px-4 py-3">Fitting Slot</th>
+                    <th className="px-4 py-3">Requested Slot</th>
                     <th className="px-4 py-3">Assigned Artisan</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3 text-right">Actions</th>
@@ -586,7 +597,7 @@ export const OwnerDashboard: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right space-x-1.5">
-                        {apt.status === 'pending' && (
+                        {!isSupabaseMode && apt.status === 'pending' && (
                           <button
                             onClick={() => updateAppointmentStatus(apt.id, 'confirmed')}
                             className="px-2.5 py-1 bg-[#161311] dark:bg-[#D4A347] text-[#FAF6F0] dark:text-[#161311] rounded-lg text-[11px] font-semibold"
@@ -594,12 +605,20 @@ export const OwnerDashboard: React.FC = () => {
                             Confirm Fitting
                           </button>
                         )}
-                        <button
+                        {isSupabaseMode && apt.status === 'pending' && (
+                          <button
+                            onClick={() => updateAppointmentStatus(apt.id, 'cancelled')}
+                            className="px-2.5 py-1 bg-white dark:bg-[#24201D] border border-[#C8B69F] dark:border-[#4A4039] rounded-lg text-[11px] font-medium"
+                          >
+                            Decline request
+                          </button>
+                        )}
+                        {apt.status === 'confirmed' && <button
                           onClick={() => updateAppointmentStatus(apt.id, 'completed')}
                           className="px-2.5 py-1 bg-white dark:bg-[#24201D] border border-[#C8B69F] dark:border-[#4A4039] rounded-lg text-[11px] font-medium"
                         >
                           Mark Done
-                        </button>
+                        </button>}
                       </td>
                     </tr>
                   ))}
