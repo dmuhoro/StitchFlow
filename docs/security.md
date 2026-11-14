@@ -78,6 +78,27 @@ to expose an RPC surface.
 - `.env.local` is gitignored; `.env.example` is placeholders only.
 - Evidence files redact credentials as `***REDACTED***`.
 
+### Publication guards
+
+The prefix, not a review, decides publication: a bundler inlines any `VITE_`,
+`NEXT_PUBLIC_`, or `REACT_APP_` value. Three boundaries refuse a credential.
+
+| Boundary | Where | Refuses |
+|----------|-------|---------|
+| Config time | `vite.pilot.config.ts` and `vite.config.ts` → `scripts/ci/env-guard.mjs` | any public-prefixed name whose remainder matches `PASSWORD\|PASSPHRASE\|SECRET\|SERVICE_ROLE\|SERVICE_KEY\|PRIVATE_KEY\|ACCESS_KEY\|CREDENTIAL\|TOKEN\|DATABASE_URL\|DATABASE\|POSTGRES\|_DB_URL`, in the process environment or any `.env*` file |
+| Deploy time — names | `scripts/ci/verify-build.mjs` | the same names, re-checked independently of the build config, so a second config cannot bypass the first guard |
+| Deploy time — artifacts | `scripts/ci/verify-build.mjs` → `scripts/ci/secret-scan.mjs` | `sbp_` secret keys, `postgres(ql)://user:password@host` URIs, and JWTs whose decoded payload has `role: "service_role"` — in `dist/` and every server artifact root that exists (`api/`, `netlify/functions/`, `.vercel/output/functions`, `server.js`) |
+
+Both checks are name- and shape-based: refusing to publish a secret never requires
+reading it, and a finding reports only the pattern, file, and line. Placeholder
+shapes (`<password>`, `${DB_PASSWORD}`, `***`, `changeme`, `USER`) are deliberately
+excluded from the URI check so instructional text does not block a real build.
+
+`npm run verify:secret-guard` feeds each guard the failure it exists to catch and
+asserts a non-zero exit, including an end-to-end run of `verify:build` against a
+planted secret key in `dist/`. A guard that has never been observed rejecting
+anything is decoration, not evidence.
+
 ## Telemetry
 
 - The browser may send only allowlisted event names and enumerated property values.

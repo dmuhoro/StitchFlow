@@ -68,6 +68,12 @@ jobs:
           VITE_DATA_MODE: supabase
         run: npm run verify:build
 
+      # A guard that has never rejected anything is decoration. These controls
+      # plant a secret key, a database URI with a password, a service_role JWT
+      # and a credential-shaped VITE_ name, and require each boundary to refuse.
+      - name: Negative controls for the publication guards
+        run: npm run verify:secret-guard
+
       # Negative proof: a production deploy context must REJECT a demo-mode
       # artifact. Without this step the gate could regress to a no-op and CI
       # would still be green.
