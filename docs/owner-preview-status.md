@@ -32,22 +32,29 @@ cited evidence. **NOT RUN** = never executed, or the feature does not exist yet.
 | **0.2** Secret triage | **DONE — no committed secret** | [`audit/2026-11-13_phase-0-hygiene.md`](audit/2026-11-13_phase-0-hygiene.md) — 6 of 6 flagged matches are placeholders; `.env.test` names inventoried |
 | **0.3** Owner registers | **DONE** | this file plus [`owner-blockers.md`](owner-blockers.md) (B1–B17) |
 | **0.4** Branch / tag proposals | **DONE — B and C executed by the owner** | hygiene report §0.4; B15 open, B16 closed |
-| **0.5** Publication guards | **DONE — rebased onto merged `main` in PR #8, pending merge** | 15/15 negative controls, mutation-tested; CI recorded in PR #8 |
+| **0.5** Publication guards | **DONE — rebased onto merged `main` in PR #8 (`13a977e`), pending merge** | 15/15 Node controls + 14/14 bash controls; all three required checks pass on both runs ([push 43569855717](https://github.com/dmuhoro/StitchFlow/actions/runs/43569855717), [PR 43569861206](https://github.com/dmuhoro/StitchFlow/actions/runs/43569861206)) |
 
 Item 0.5 detail: both Vite configs (`vite.pilot.config.ts`, the supported build,
 and `vite.config.ts`) call one shared name guard in `scripts/ci/env-guard.mjs`, so
-a credential-shaped `VITE_*` name is refused before an artifact exists;
+a credential-shaped public-prefixed name is refused before an artifact exists;
 `verify-build` re-checks the names independently and scans `dist/` plus every
 existing server artifact root for `sbp_` keys, database URIs with an embedded
-password, and `service_role` JWTs; `npm run verify:controls` proves each guard
-rejects what it exists to catch.
+password, and `service_role` JWTs; `npm run verify:controls` runs both the bash
+artifact/demo controls and the Node publication controls, and every guard is
+observed rejecting its own failure.
+
+PR #7 head `921a599` passed the same three checks in runs
+[43569855621](https://github.com/dmuhoro/StitchFlow/actions/runs/43569855621)
+(push) and
+[43569861237](https://github.com/dmuhoro/StitchFlow/actions/runs/43569861237)
+(pull request). The only change after those runs is this evidence line.
 
 ## Observed gaps outside Phase 0 scope (one line each, not fixed here)
 
 - Owner-invitation trigger `check_owner_creation` can never fire: `invitations.role` is constrained to `('employee','client')` (`supabase/migrations/20261106130000_sprint1_invitations.sql:10`) — assigned to Phase 2.2(c).
 - `check_owner_creation` is not tenant-scoped (no `atelier_id` predicate, `20261107201000_owner_invitation_permissions.sql:14`) — assigned to Phase 2.2(c).
 - The last owner can be deleted: `members_owner_delete` exists (`20261031112000_rls_final.sql:252`) and the guard covers only `UPDATE OF role` — assigned to Phase 2.2(c).
-- `.env.pilot` holds live pilot credentials, is untracked and unignored on `main`; PR #3 adds the `.env*` rule — see [`audit/2026-11-13_phase-0-hygiene.md`](audit/2026-11-13_phase-0-hygiene.md).
+- `.env.pilot` holds live pilot credentials; it was untracked and unignored before PR #3. **Resolved by the merge**: `.gitignore:20` now ignores `.env*`, and the file was never committed.
 
 ## What this table deliberately does not claim
 
