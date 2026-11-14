@@ -3,11 +3,16 @@ import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { defineConfig } from 'vite';
+import { assertNoPublishedSecrets } from './scripts/ci/env-guard.mjs';
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.VITE_DATA_MODE === 'supabase';
 
 export default defineConfig(() => {
+  // The same guard the supported config uses; a second config must not be a
+  // bypass.
+  assertNoPublishedSecrets({ rootDir });
+
   // Specific aliases must precede the generic '@' root alias.
   const alias: Record<string, string> = {
     './AuthModal': isProduction

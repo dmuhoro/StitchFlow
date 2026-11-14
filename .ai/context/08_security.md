@@ -47,6 +47,19 @@ default_currency, whatsapp_number, default_unit, timestamps). It does not receiv
 - Forbidden in the browser: service-role key, database password, JWT secret, any provider secret.
 - `.env.local` is gitignored. `.env.example` contains placeholders only.
 
+### Publication guards (condensed from `docs/security.md`)
+
+- `vite.pilot.config.ts` and `vite.config.ts` call one shared guard
+  (`scripts/ci/env-guard.mjs`) that refuses a build when a `VITE_`,
+  `NEXT_PUBLIC_`, or `REACT_APP_` name looks like a credential.
+- `verify-build` re-checks the same names independently of the build config and
+  scans `dist/`, `api/`, `netlify/functions/`, `.vercel/output/functions` and
+  `server.js` for an `sbp_` key, a database URI with an embedded password, and a
+  `service_role` JWT (`scripts/ci/secret-scan.mjs`).
+- `npm run verify:secret-guard` is the negative-control suite: it fails if any of
+  those guards stops rejecting. `npm run verify:controls` runs it after the
+  artifact/demo controls.
+
 ## Residual risks
 
 | Risk | Status |

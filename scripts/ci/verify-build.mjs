@@ -23,10 +23,18 @@
  * This runs as `postbuild`, so the deploy boundary itself fails closed. It is
  * not enough for CI to run a separate assertion that a misconfigured deploy can
  * skip.
+ *
+ * Independently of the deploy context, every emitted artifact is also:
+ *   - name-checked for a credential-shaped published variable, and
+ *   - scanned for a live `sbp_` key, a database URI with an embedded password,
+ *     and a `service_role` JWT (the payload is base64url, so a plain text search
+ *     is not enough).
  */
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
-import { join, resolve, dirname, extname } from 'node:path';
+import { join, resolve, dirname, extname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { collectForbiddenViteNames, findEnvFiles } from './env-guard.mjs';
+import { scanPaths } from './secret-scan.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const DIST = join(ROOT, 'dist');
@@ -76,43 +84,41 @@ if (/service_role/i.test(corpus)) {
   fail('bundle contains a service_role marker. A service-role key must never reach the browser.');
 }
 
-// --- published secrets ------------------------------------------------------
-// Vite inlines every `VITE_*` value into the bundle. A credential with a public
-// prefix is therefore a credential that ships. The config-time guard refuses
-// this build, but a gate that only exists in one config can be bypassed by a
-// second config, so the artifact gate checks the same invariant independently.
-const PUBLIC_PREFIX = /^(VITE_|NEXT_PUBLIC_|REACT_APP_)/;
-const SECRET_SHAPED =
-  /(PASSWORD|PASSPHRASE|SECRET|SERVICE_ROLE|SERVICE_KEY|PRIVATE_KEY|ACCESS_KEY|CREDENTIAL|TOKEN|DATABASE_URL|POSTGRES|_DB_URL)/i;
+// --- published secrets: name guard ------------------------------------------
+// Vite inlines every `VITE_*` value into the browser bundle, so a credential
+// with that prefix is a credential that ships. Both Vite configs refuse this at
+// config time, but a gate that lives in one config can be bypassed by a second
+// config, so the deploy gate re-checks the invariant independently. Name-based
+// on purpose: refusing to publish a secret must never require reading it.
+const envFiles = findEnvFiles(ROOT);
+const forbiddenNames = collectForbiddenViteNames({ rootDir: ROOT });
+if (forbiddenNames.length > 0) {
+  fail(
+    `${forbiddenNames.length} credential-shaped public variable name(s) are present in the ` +
+      `process environment or one of ${envFiles.length} .env file(s): ${forbiddenNames.join(', ')}. ` +
+      'A VITE_ value is inlined into the browser bundle; rename it without the public prefix ' +
+      'and keep the value server-side.'
+  );
+}
 
-const envSources = [
-  ...Object.keys(process.env).map((key) => ({ where: 'the process environment', key })),
-  ...readdirSync(ROOT)
-    .filter((name) => name === '.env' || name.startsWith('.env.'))
-    .flatMap((name) => {
-      let body = '';
-      try {
-        body = readFileSync(join(ROOT, name), 'utf8');
-      } catch {
-        return [];
-      }
-      return body
-        .split('\n')
-        .map((line) => line.trim())
-        .filter((line) => line && !line.startsWith('#'))
-        .map((line) => line.replace(/^export\s+/, '').split('=')[0].trim())
-        .filter(Boolean)
-        .map((key) => ({ where: name, key }));
-    }),
+// --- published secrets: artifact scan (client AND server) -------------------
+// The name guard cannot see a credential pasted straight into source, and a
+// service_role JWT is base64url, so a plain text search misses it. Scan the
+// emitted artifacts themselves. Server roots are listed even when absent so the
+// same gate keeps working after a serverless function directory is added.
+const SERVER_ARTIFACT_ROOTS = [
+  join(ROOT, 'api'),
+  join(ROOT, 'netlify/functions'),
+  join(ROOT, '.vercel/output/functions'),
+  join(ROOT, 'server.js'),
 ];
-
-for (const { where, key } of envSources) {
-  if (PUBLIC_PREFIX.test(key) && SECRET_SHAPED.test(key.replace(PUBLIC_PREFIX, ''))) {
-    fail(
-      `${where} defines ${key}, which looks like a credential but carries a public prefix; ` +
-        `Vite would inline it into the browser bundle. Remove it from every .env* file.`,
-    );
-  }
+const scanRoots = [DIST, ...SERVER_ARTIFACT_ROOTS.filter((candidate) => existsSync(candidate))];
+const { findings, scanned: scannedArtifacts } = scanPaths(scanRoots);
+for (const finding of findings) {
+  fail(
+    `${finding.pattern} at ${relative(ROOT, finding.file)}:${finding.line}. ` +
+      'A live credential must never be emitted into a deployable artifact.'
+  );
 }
 
 const imageAssets = files.filter((file) => /\/assets\/.*\.(jpe?g|png|webp|avif|gif)$/i.test(file));
@@ -247,5 +253,7 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `PASS: ${files.length} build files, ${imageAssets.length} hashed image assets, no dev-only or placeholder artifacts.`
+  `PASS: ${files.length} build files, ${imageAssets.length} hashed image assets, ` +
+    `${scannedArtifacts} artifact file(s) secret-scanned across ${scanRoots.length} root(s), ` +
+    `${envFiles.length} .env file(s) name-checked, no dev-only or placeholder artifacts.`
 );

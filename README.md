@@ -73,18 +73,21 @@ npm run lint           # TypeScript validation
 npm run test:unit      # Repository write-boundary regressions
 npm run check:docs     # Relative Markdown link check
 npm run build          # Production bundle
-npm run verify:build   # Artifact assertions (paths and placeholders)
+npm run verify:build   # Artifact assertions (paths, placeholders, published secrets)
+npm run verify:secret-guard  # Negative controls: prove the publication guards can fail
 npm run verify:db      # Disposable postgres:16 + RLS, E2E, booking RPC and concurrency suites
 npm run test:e2e       # Public-entry smoke plus configured hosted journeys
 npm run preflight          # What this checkout can run, and which credentials are present
 npm run test:e2e:hermetic  # Six browser journeys against a disposable local Supabase stack
-npm run verify:controls    # Negative controls: each artifact/demo gate must reject its failure
+npm run verify:controls    # Negative controls: publication guards, artifact/demo gates, Node contract
 npm run rehearse:restore   # Dump -> restore -> RLS rehearsal, with corrupt-archive self-controls
 npm run preview        # Serve the production bundle locally
 npm run audit          # Dependency vulnerability check
 ```
 
 `verify:build` runs as `postbuild` on every build. In a production deploy context it requires `VITE_DATA_MODE=supabase` with configured, non-placeholder Supabase values and rejects demo identities, the demo PIN, credential cards and demo slugs; CI proves the gate rejects a demo artifact.
+
+Both Vite configs call one shared name guard (`scripts/ci/env-guard.mjs`), so a variable whose name looks like a credential but carries a public prefix (`VITE_`, `NEXT_PUBLIC_`, `REACT_APP_`) fails before an artifact exists. `verify:build` re-checks the same names independently and scans `dist/` plus every server artifact root for an `sbp_` secret key, a database URI with an embedded password, and a JWT whose payload has `role: "service_role"`. `verify:secret-guard` proves each check rejects what it exists to catch.
 
 The supported `dev`, `build`, and `preview` scripts use `vite.pilot.config.ts`, a static SPA
 configuration for Milestone 1. The root `vite.config.ts` is also a static SPA configuration; app

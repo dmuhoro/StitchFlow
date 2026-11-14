@@ -64,6 +64,12 @@ passed 1/1 with its synthetic fixture now consumed; live restore remains blocked
   found in `.env.local` with a `VITE_` prefix; no evidence of publication was found in local artifacts,
   git history, or the live bundle, and both must still be rotated by the owner. See
   `docs/evidence/2026-11-10_bundle-secret-boundary.md`.
+- The duplicated public-prefix name guard is now one shared module, `scripts/ci/env-guard.mjs`, called
+  by both Vite configs and by the deploy gate. `verify-build` additionally scans `dist/` and every
+  existing server artifact root for an `sbp_` secret key, a database URI with an embedded password,
+  and a JWT whose decoded payload carries `role: "service_role"`. `npm run verify:secret-guard` plants
+  each failure and requires a non-zero exit, including an end-to-end run against `dist/`; it is wired
+  into CI and chained into `npm run verify:controls`.
 
 ### Fixed
 
